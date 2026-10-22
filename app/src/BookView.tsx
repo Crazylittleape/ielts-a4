@@ -12,9 +12,10 @@ interface Props {
   onAnswer: (answer: BookAnswer) => Promise<boolean>;
   onSetDailyGroups: (count: number) => void;
   onSpeak: (word: string) => void;
+  onFocus: (word: string, reason?: string) => Promise<boolean>;
 }
 
-export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak }: Props) {
+export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onFocus }: Props) {
   const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study'>('library');
   const [unitId, setUnitId] = useState(BOOK.units[0].id);
   const [revealed, setRevealed] = useState(false);
@@ -85,7 +86,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
             </div>}
           </form>}
         </Card>
-        {!spellingMode && revealed && <div className="grid grid-cols-2 gap-3"><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></div>}
+        {!spellingMode && revealed && <div className="space-y-3"><div className="grid grid-cols-2 gap-3"><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></div><button type="button" className="w-full rounded-2xl border border-honey-200 bg-honey-50 px-4 py-2.5 text-sm font-bold text-honey-700" onClick={() => void onFocus(word.word, '词书回忆模糊/忘记')}>加入 A4 攻坚 · 明天复习</button></div>}
         {spellingMode && checked !== null && <button type="button" className={`${primaryBtn} w-full`} onClick={() => void submitAnswer({kind:'spelling',text:checked})}>继续</button>}
         <p className="px-2 text-center text-xs leading-relaxed text-ink-soft">每轮错题会在轮末重练。确认后自动保存，完成三轮后计入已学。</p>
       </div>

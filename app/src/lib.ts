@@ -26,6 +26,7 @@ export interface WordItem {
   isMastered?: boolean;
   favorite?: boolean;
   mastered?: boolean;
+  focus?: { active: boolean; addedAt: string; nextDate: string; reason?: string };
 }
 
 export interface WordFields {
@@ -128,10 +129,22 @@ function scheduleReview(w: WordItem, day: string, rating: 1 | 2 | 3 | 4): { word
   // A4 is a daily worksheet: even Again is reviewed on the next local day.
   const dueDay = formatDate(result.card.due) > day ? formatDate(result.card.due) : addDays(day, 1);
   result.card.due = parseDate(dueDay);
+  const focus = w.focus?.active ? { ...w.focus, active: rating <= 2, nextDate: dueDay } : w.focus;
   return {
-    word: { ...w, card: serializeCard(result.card), nextReviewDate: dueDay, reviewHistory: uniqSorted([...w.reviewHistory, day]), isHard: w.isHard || result.card.lapses >= 4 },
+    word: { ...w, card: serializeCard(result.card), nextReviewDate: dueDay, reviewHistory: uniqSorted([...w.reviewHistory, day]), isHard: w.isHard || result.card.lapses >= 4, ...(focus ? { focus } : {}) },
     log: JSON.parse(JSON.stringify(result.log)) as Record<string, unknown>
   };
+}
+
+export function addToFocus(w: WordItem, day: string, reason = '词书复习薄弱'): WordItem {
+  const nextDate = addDays(day, 1);
+  const existing = w.focus;
+  const due = w.nextReviewDate > nextDate ? nextDate : w.nextReviewDate;
+  return { ...w, nextReviewDate: due, focus: { active: true, addedAt: existing?.addedAt ?? day, nextDate, reason: existing?.reason ?? reason } };
+}
+
+export function isFocusDueOn(w: WordItem, day: string): boolean {
+  return Boolean(w.focus?.active && w.focus.nextDate <= day && !w.reviewHistory.includes(day));
 }
 
 export function completeReview(w: WordItem, day: string): WordItem {
@@ -207,7 +220,10 @@ export function normalizeWord(raw: unknown, fallbackDay: string): WordItem | nul
     tag: typeof r.tag === 'string' && r.tag.trim() ? r.tag.trim() : undefined,
     card: r.card as SerializedCard | undefined,
     isFavorite: Boolean(r.isFavorite ?? r.favorite),
-    isMastered: Boolean(r.isMastered ?? r.mastered)
+    isMastered: Boolean(r.isMastered ?? r.mastered),
+    focus: isRecord(r.focus) && typeof r.focus.active === 'boolean' && isValidDate(r.focus.addedAt) && isValidDate(r.focus.nextDate)
+      ? { active: r.focus.active, addedAt: r.focus.addedAt, nextDate: r.focus.nextDate, ...(typeof r.focus.reason === 'string' ? { reason: r.focus.reason } : {}) }
+      : undefined
   };
 }
 

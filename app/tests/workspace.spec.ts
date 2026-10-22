@@ -20,6 +20,7 @@ test('migrate, grade once, bulk remainder and persist after reload',async({page}
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await start(page);
   await page.getByRole('button',{name:/A4 刷词/}).click();
+  await page.getByRole('button',{name:'当前：重点攻坚 · 切换全部 FSRS 到期'}).click();
   await page.getByRole('button',{name:'忘记',exact:true}).first().click();
   await expect(page.getByRole('button',{name:'忘记',exact:true})).toHaveCount(3);
   await page.getByRole('button',{name:/完成本页复习打卡/}).click();

@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Home, BookOpenText, Library, X } from 'lucide-react';
 import type { AppState, WordFields, WordItem } from './lib';
-import { buildSchedule, createWord, gradeWord, resetWord, parseBackup, mergeBackup, seedWords, speak, todayStr } from './lib';
+import { addToFocus, buildSchedule, createWord, gradeWord, resetWord, parseBackup, mergeBackup, seedWords, speak, todayStr } from './lib';
 import { openWorkspace, persistWorkspace } from './db';
 import { MatchingGame, Statistics } from './Practice';
 import { Dashboard } from './Dashboard';
 import { A4View } from './A4View';
 import { AddView } from './AddView';
 import { BookView } from './BookView';
-import { beginGroup, answerBookQuestion, getBookProgress, type BookAnswer } from './book';
+import { beginGroup, answerBookQuestion, getBookProgress, getBookQuestion, type BookAnswer } from './book';
 import { BankView } from './BankView';
 import { Confetti, Field, Toast, inputCls, primaryBtn, ghostBtn } from './ui';
 
@@ -178,6 +178,22 @@ export default function App() {
     const s = current.current;
     if (s && await commit(resetWord(s, id, today))) showToast('已重置为顽固词，明天再复习', 'warn');
   };
+  const onFocus = async (word: string, reason?: string) => {
+    const s = current.current;
+    if (!s) return false;
+    let target = s.words.find(w => w.word.toLowerCase() === word.toLowerCase());
+    let words = s.words;
+    if (!target) {
+      const question = getBookQuestion(s);
+      if (!question || question.word.word.toLowerCase() !== word.toLowerCase()) return false;
+      target = createWord({ ...question.word, tag: question.word.tag || '雅思词汇真经' }, today);
+      words = [...words, target];
+    }
+    const wasActive = Boolean(target.focus?.active);
+    const saved = await commit({ ...s, words: words.map(w => w.id === target!.id ? addToFocus(w, today, reason) : w) });
+    if (saved) showToast(wasActive ? '已在 A4 攻坚中，保持原任务' : '已加入 A4 攻坚，明天开始复习', 'ok');
+    return saved;
+  };
   const onCheckout = async (ids: string[]) => {
     const s = current.current;
     if (!s || busy.current) return;
@@ -234,14 +250,14 @@ export default function App() {
   return <div className="mx-auto min-h-screen max-w-[480px] font-ui text-ink">
     {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><BookView state={state} today={today} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} /></>}
+      {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><BookView state={state} today={today} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onFocus={onFocus} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} schedule={schedule} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View words={state.words} today={today} date={a4Date} schedule={schedule} onBack={() => setTab('home')} onHardReset={onHardReset} onCheckout={onCheckout} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
       {tab === 'bank' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('add')}>录入新词</button></div><BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onResetSeed={onResetSeed} onClearAll={onClearAll} toast={showToast} /></>}
       {tab === 'quiz' && <MatchingGame words={gameWords} scopeLabel={todayWords.length ? '今日新词与复习词' : '今天没有任务，使用全部词库加练'} onBack={() => setTab('home')} onSpeak={onSpeak} />}
       {tab === 'stats' && <Statistics state={state} today={today} onBack={() => setTab('home')} />}
-      <TabBar tab={tab} onChange={changeTab} due={schedule[today]?.due.length || 0} />
+      <TabBar tab={tab} onChange={changeTab} due={state.words.filter(w => w.focus?.active && w.focus.nextDate <= today && !w.reviewHistory.includes(today)).length} />
       {editing && <EditSheet word={editing} onSave={onSaveEdit} onClose={() => setEditing(null)} />}
     </fieldset>
     {saving && <p role="status" className="fixed left-1/2 top-2 z-[80] -translate-x-1/2 rounded-full bg-white px-4 py-2 text-sm shadow-card">正在保存…</p>}

@@ -56,3 +56,11 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - Screenshots of English, phonetic, spelling and incorrect-answer feedback inspected. No horizontal overflow in any of the three study modes at iPhone 13 viewport.
 - Existing dependency audit: zero production findings; seven development-only advisories in inherited Tailwind 3 dependencies (five high, two moderate). No dependency change in this feature.
 - Actual iPhone hardware, Safari voices, standalone Add to Home Screen, native keyboard behavior and device storage persistence still require device checks. Browser emulation does not verify those.
+
+## A4 重点攻坚（2026-10-22）
+
+- 词书仍负责按原章节、原组顺序教学和回忆；A4 默认只显示用户手动点选的困难词，不再把整组词书当成第二套词库。
+- `WordItem.focus` 只保存攻坚状态（`active`、`addedAt`、`nextDate`、`reason`），A4 通过同一个 `WordItem.id` 读取释义、音标、同义词和真经 List 标签；FSRS 卡和复习日志仍只有一套。
+- 加入后安排到明天；重复点击幂等。A4 成功评分会退出当前攻坚清单但保留长期 FSRS 到期日；困难/忘记会继续保留并按 FSRS 重新排期。每个词每天最多评分一次。
+- 词书回忆卡提供“加入 A4 攻坚 · 明天复习”，不点击就不会加入；A4 页可切换“重点攻坚 / 全部 FSRS 到期”，底部角标只统计当日攻坚到期词。
+- 本次本地验证：`npm test` 36 项、`npm run build` 通过、移动 Chromium/WebKit E2E 20/20。新增核心测试覆盖同 ID、明日到期、重复加入、失败保留和成功退出。

@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { backupJson, buildSchedule, createWord, gradeWord, isDueOn, mergeStates, parseBackup, resetWord, STORAGE_KEY, type AppState } from './lib';
+import { addToFocus, backupJson, buildSchedule, createWord, gradeWord, isDueOn, isFocusDueOn, mergeStates, parseBackup, resetWord, STORAGE_KEY, type AppState } from './lib';
 import { db, openWorkspace, persistWorkspace } from './db';
 
 const day = '2026-10-22';
@@ -11,6 +11,21 @@ Object.defineProperty(globalThis, 'localStorage', { value: { getItem: (key: stri
 beforeEach(async () => { memory.clear(); await db.delete(); await db.open(); });
 
 describe('daily FSRS', () => {
+  it('keeps A4 as the same word card, schedules tomorrow, is idempotent, and exits only after success', () => {
+    const state = makeState();
+    const id = state.words[0].id;
+    const focused = { ...state, words: state.words.map(w => w.id === id ? addToFocus(w, day, '模糊') : w) };
+    expect(focused.words[0].id).toBe(id);
+    expect(focused.words[0].focus).toMatchObject({ active: true, addedAt: day, nextDate: '2026-10-23' });
+    expect(isFocusDueOn(focused.words[0], '2026-10-23')).toBe(true);
+    const duplicate = { ...focused, words: focused.words.map(w => w.id === id ? addToFocus(w, day, '再次点击') : w) };
+    expect(duplicate.words[0].focus).toEqual(focused.words[0].focus);
+    const failed = gradeWord(duplicate, id, '2026-10-23', 1);
+    expect(failed.words[0].focus?.active).toBe(true);
+    const passed = gradeWord(failed, id, failed.words[0].nextReviewDate, 3);
+    expect(passed.words[0].focus?.active).toBe(false);
+    expect(passed.words[0].nextReviewDate > '2026-10-23').toBe(true);
+  });
   it('grades once per day and persists a future due date and log', () => {
     const state = makeState();
     const graded = gradeWord(state, state.words[0].id, day, 3);

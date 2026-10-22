@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Shuffle, Volume2, Flame, Check, Pencil, CheckCircle2 } from 'lucide-react';
 import type { DaySchedule, WordItem } from './lib';
-import { diffDays, isDueOn, parseDate, shuffle, weekdayCN } from './lib';
+import { diffDays, isDueOn, isFocusDueOn, parseDate, shuffle, weekdayCN } from './lib';
 import { Segmented, StageChip, primaryBtn, Empty } from './ui';
 
 type MaskMode = 'all' | 'en' | 'cn' | 'random';
@@ -29,20 +29,21 @@ interface Props {
 export function A4View({ words, today, date, schedule, onBack, onHardReset, onCheckout, onGrade, onSpeak, onEdit }: Props) {
   const isToday = date === today;
   const [practice, setPractice] = useState<string[]>([]);
+  const [focusOnly, setFocusOnly] = useState(true);
   useEffect(() => { setPractice([]); setChecked(new Set()); setRevealed(new Set()); }, [date, today]);
   const byId = useMemo(() => new Map(words.map((w) => [w.id, w])), [words]);
 
   const baseIds = useMemo(() => {
     const s = schedule[date];
     if (isToday) {
-      const due = words.filter((w) => isDueOn(w, today)).map((w) => w.id);
+      const due = words.filter((w) => focusOnly ? isFocusDueOn(w, today) : isDueOn(w, today)).map((w) => w.id);
       const done = words.filter((w) => w.reviewHistory.includes(today) && w.createdAt !== today && !isDueOn(w, today)).map((w) => w.id);
-      return practice.length ? practice : Array.from(new Set([...due, ...done]));
+      return practice.length ? practice : Array.from(new Set(focusOnly ? due : [...due, ...done]));
     }
     if (!s) return [] as string[];
     if (date < today) return Array.from(new Set([...s.done, ...s.added]));
     return Array.from(new Set([...s.planned.map((p) => p.id), ...s.added]));
-  }, [words, schedule, date, today, isToday, practice]);
+  }, [words, schedule, date, today, isToday, practice, focusOnly]);
 
   const [order, setOrder] = useState<string[]>(baseIds);
   useEffect(() => {
@@ -112,7 +113,7 @@ export function A4View({ words, today, date, schedule, onBack, onHardReset, onCh
           </button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate font-serif text-[20px] font-semibold leading-tight text-ink">
-              {d.getMonth() + 1} 月 {d.getDate()} 日 <span className="text-rose-400">·</span> 电子 A4 纸
+              {d.getMonth() + 1} 月 {d.getDate()} 日 <span className="text-rose-400">·</span> {focusOnly ? '重点攻坚 A4' : '全部 FSRS A4'}
             </h1>
             <p className="text-[11px] font-bold text-ink-soft">
               {relLabel} · 周{weekdayCN(d)} · {list.length} 词 · {checked.size} 已勾选
@@ -132,6 +133,7 @@ export function A4View({ words, today, date, schedule, onBack, onHardReset, onCh
         <div className="mt-2">
           <Segmented options={MASK_MODES} value={mode} onChange={setMode} />
           <p className="mt-1 text-center text-[10px] font-bold text-ink-faint">{hint}</p>
+            {isToday && <button type="button" className="mt-2 w-full rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-bold text-rose-500" onClick={() => { setFocusOnly(v => !v); setPractice([]); }}>{focusOnly ? '当前：重点攻坚 · 切换全部 FSRS 到期' : '当前：全部 FSRS 到期 · 切换重点攻坚'}</button>}
         </div>
       </header>
 
@@ -169,12 +171,14 @@ export function A4View({ words, today, date, schedule, onBack, onHardReset, onCh
                             <Volume2 size={10} className="shrink-0 text-rose-300" />
                             <span className="break-all leading-tight">{w.phonetic || '点击朗读'}</span>
                           </div>
+                          {w.tag && <div className="truncate text-[9px] font-bold text-lilac-500">{w.tag}</div>}
                         </div>
                       </button>
                       <button type="button" onClick={() => (cnMasked || revealed.has(`${w.id}:cn`) ? toggleReveal(w, 'cn') : onEdit(w))} className="min-w-0 text-left">
                         <div className={`${cnMasked ? 'masked' : ''} min-w-0 px-1 py-0.5`}>
                           <div className="line-clamp-2 text-[13px] font-bold leading-snug text-ink">{w.meaning}</div>
                           {w.synonyms && <div className="truncate text-[11px] font-semibold italic text-lilac-500">≈ {w.synonyms}</div>}
+                          {w.focus?.reason && <div className="truncate text-[9px] font-bold text-honey-600">{w.focus.reason}</div>}
                         </div>
                       </button>
                     </div>
