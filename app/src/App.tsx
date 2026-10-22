@@ -8,7 +8,7 @@ import { Dashboard } from './Dashboard';
 import { A4View } from './A4View';
 import { AddView } from './AddView';
 import { BookView } from './BookView';
-import { beginGroup, confirmBookWord, getBookProgress } from './book';
+import { beginGroup, answerBookQuestion, getBookProgress, type BookAnswer } from './book';
 import { BankView } from './BankView';
 import { Confetti, Field, Toast, inputCls, primaryBtn, ghostBtn } from './ui';
 
@@ -220,9 +220,9 @@ export default function App() {
     const next = beginGroup(s, groupId);
     return next.bookLearning?.active?.groupId === groupId && await commit(next);
   };
-  const onConfirmWord = async () => {
+  const onBookAnswer = async (answer: BookAnswer) => {
     const s = current.current;
-    return s ? commit(confirmBookWord(s, today)) : false;
+    return s ? commit(answerBookQuestion(s, today, answer)) : false;
   };
   const onSetDailyGroups = async (dailyGroups: number) => {
     const s = current.current;
@@ -234,7 +234,7 @@ export default function App() {
   return <div className="mx-auto min-h-screen max-w-[480px] font-ui text-ink">
     {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><BookView state={state} today={today} onBegin={onBeginGroup} onConfirmWord={onConfirmWord} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} /></>}
+      {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><BookView state={state} today={today} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} schedule={schedule} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View words={state.words} today={today} date={a4Date} schedule={schedule} onBack={() => setTab('home')} onHardReset={onHardReset} onCheckout={onCheckout} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}

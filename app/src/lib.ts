@@ -48,7 +48,7 @@ export interface BookLearning {
   bookId: string;
   dailyGroups: number;
   completed: Record<string, string>;
-  active?: { groupId: string; seen: number };
+  active?: { groupId: string; seen: number; round?: 0 | 1 | 2; retry?: number[]; inRetry?: boolean };
 }
 
 export const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -372,8 +372,13 @@ function parseBookLearning(value: unknown): BookLearning {
   if (value.active !== undefined) {
     const active = value.active;
     const next = BOOK_GROUPS[count];
-    if (!isRecord(active) || !next || active.groupId !== next.id || typeof active.seen !== 'number' || !Number.isInteger(active.seen) || active.seen < 0 || active.seen >= next.words.length) throw new Error('词书学习位置无效');
-    progress.active = { groupId: next.id, seen: active.seen };
+    if (!isRecord(active) || !next || active.groupId !== next.id || typeof active.seen !== 'number' || !Number.isInteger(active.seen) || active.seen < 0 || active.seen > next.words.length) throw new Error('词书学习位置无效');
+    const seen = active.seen;
+    const round = active.round === undefined ? 0 : active.round;
+    const retry = active.retry === undefined ? [] : active.retry;
+    const inRetry = active.inRetry === undefined ? false : active.inRetry;
+    if (typeof round !== 'number' || ![0, 1, 2].includes(round) || !Array.isArray(retry) || retry.some(index => typeof index !== 'number' || !Number.isInteger(index) || index < 0 || index >= next.words.length) || new Set(retry).size !== retry.length || typeof inRetry !== 'boolean' || (inRetry ? seen !== next.words.length || retry.length === 0 : seen >= next.words.length || retry.some(index => index >= seen))) throw new Error('词书学习轮次或重试记录无效');
+    progress.active = { groupId: next.id, seen, ...(active.round === undefined ? {} : { round: round as 0 | 1 | 2 }), ...(active.retry === undefined ? {} : { retry }), ...(active.inRetry === undefined ? {} : { inRetry }) };
   }
   return progress;
 }
@@ -429,7 +434,13 @@ function mergeBookLearning(current?: BookLearning, incoming?: BookLearning): Boo
     if (!completed[id] || date < completed[id]) completed[id] = date;
   }
   const next = BOOK_GROUPS.find(group => !completed[group.id]);
-  const active = [current?.active, incoming?.active].filter(cursor => cursor && cursor.groupId === next?.id).sort((a, b) => b!.seen - a!.seen)[0];
+  const cursors = [current?.active, incoming?.active].filter((cursor): cursor is NonNullable<BookLearning['active']> => Boolean(cursor && cursor.groupId === next?.id));
+  cursors.sort((a, b) => (b.round ?? 0) - (a.round ?? 0) || Number(b.inRetry ?? false) - Number(a.inRetry ?? false) || b.seen - a.seen);
+  const active = cursors[0] ? { ...cursors[0] } : undefined;
+  if (active) {
+    const retry = [...new Set(cursors.filter(cursor => (cursor.round ?? 0) === (active.round ?? 0)).flatMap(cursor => cursor.retry ?? []))];
+    if (retry.length || active.retry !== undefined) active.retry = retry;
+  }
   return { bookId: BOOK.id, dailyGroups: current?.dailyGroups ?? incoming?.dailyGroups ?? 2, completed, ...(active ? { active: { ...active } } : {}) };
 }
 

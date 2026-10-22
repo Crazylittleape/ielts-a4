@@ -14,3 +14,5 @@ Carlito fonts: Copyright 2013 The Carlito Project Authors; SIL Open Font License
 Runtime libraries: React/ReactDOM/scheduler, Dexie, ts-fsrs — MIT; lucide-react — ISC. Exact versions in package-lock.json. Their license notices are included alongside this file.
 
 This prototype is local-first. Learning records stay in this browser's IndexedDB. Manual full JSON backup includes words, cards, logs, buckets, settings and explicit book-study progress. It does not include a cloud account or synchronization.
+
+Learning-flow source study: TypeWords (GPL-3.0), Qwerty Learner (GPL-3.0), Anki (AGPL-3.0-or-later), and MuJing (GPL-3.0). Their application source was read to compare stages, recall directions, spelling checks and retry/resume behavior. The three-round implementation here was independently written; no application code from these projects is bundled. Pinned commits and source locations are documented in docs/LEARNING-MODES-RESEARCH.md.

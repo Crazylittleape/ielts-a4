@@ -44,16 +44,55 @@ export function getBookWord(word: string): WordFields {
 export function beginGroup(state: AppState, groupId: string): AppState {
   const progress = getBookProgress(state);
   if (progress.active || getBookStats(state).current?.id !== groupId) return state;
-  return { ...state, bookLearning: { ...progress, active: { groupId, seen: 0 } } };
+  return { ...state, bookLearning: { ...progress, active: { groupId, seen: 0, round: 0, retry: [], inRetry: false } } };
 }
 
-export function confirmBookWord(state: AppState, today: string): AppState {
+export type BookAnswer = { kind: 'recall'; remembered: boolean } | { kind: 'spelling'; text: string };
+
+export function getBookQuestion(state: AppState) {
+  const active = getBookProgress(state).active;
+  const group = getBookStats(state).current;
+  if (!active || !group || active.groupId !== group.id) return undefined;
+  const round = active.round ?? 0;
+  const inRetry = active.inRetry ?? false;
+  const retry = active.retry ?? [];
+  const wordIndex = inRetry ? retry[0] : active.seen;
+  const kind = (['english', 'phonetic', 'spelling'] as const)[round];
+  return { word: getBookWord(group.words[wordIndex]), wordIndex, kind, round, inRetry, pendingRetries: retry.length };
+}
+
+export function checkBookSpelling(expected: string, typed: string): boolean {
+  const normalize = (value: string) => value.normalize('NFC').toLowerCase().trim().replace(/\s+/g, ' ');
+  const answer = normalize(typed);
+  return answer.length > 0 && answer === normalize(expected);
+}
+
+export function answerBookQuestion(state: AppState, today: string, answer: BookAnswer): AppState {
   if (!isValidDate(today)) throw new Error('无效的学习日期');
   const progress = getBookProgress(state);
-  const group = getBookStats(state).current;
-  if (!progress.active || !group || progress.active.groupId !== group.id) return state;
-  const seen = progress.active.seen + 1;
-  if (seen < group.words.length) return { ...state, bookLearning: { ...progress, active: { groupId: group.id, seen } } };
+  const question = getBookQuestion(state);
+  if (!question || !progress.active) return state;
+  if (answer.kind !== (question.kind === 'spelling' ? 'spelling' : 'recall')) throw new Error('回答类型与学习轮次不匹配');
+  const correct = answer.kind === 'spelling' ? checkBookSpelling(question.word.word, answer.text) : answer.remembered;
+  const group = getBookStats(state).current!;
+  let round = question.round;
+  let seen = progress.active.seen;
+  let retry = [...(progress.active.retry ?? [])];
+  let inRetry = question.inRetry;
+  if (inRetry) {
+    retry.shift();
+    if (!correct) retry.push(question.wordIndex);
+  } else {
+    if (!correct && !retry.includes(question.wordIndex)) retry.push(question.wordIndex);
+    seen++;
+  }
+  if (seen === group.words.length && retry.length) inRetry = true;
+  if (seen === group.words.length && retry.length === 0 && round < 2) {
+    round = (round + 1) as 1 | 2;
+    seen = 0;
+    inRetry = false;
+  }
+  if (seen < group.words.length || retry.length) return { ...state, bookLearning: { ...progress, active: { groupId: group.id, seen, round, retry, inRetry } } };
   const have = new Set(state.words.map(word => word.word.toLowerCase()));
   const fresh = group.words.filter(word => !have.has(word.toLowerCase())).map(word => createWord({ ...getBookWord(word), tag: `${BOOK.title} · ${group.unitTitle} · 第 ${group.index} 组` }, today));
   return {

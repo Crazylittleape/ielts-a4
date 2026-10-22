@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import sequence from './data/book-sequence.json';
 import { BOOK, BOOK_GROUPS, BOOK_WORD_COUNT } from './bookCatalog';
-import { beginGroup, confirmBookWord, dailyPlan, getBookProgress, getBookStats, getBookWord } from './book';
+import { answerBookQuestion, beginGroup, checkBookSpelling, dailyPlan, getBookProgress, getBookQuestion, getBookStats, getBookWord } from './book';
 import { backupJson, createWord, gradeWord, mergeStates, parseBackup, type AppState } from './lib';
 import { db, openWorkspace, persistWorkspace } from './db';
 
@@ -10,10 +10,14 @@ const today = '2026-10-22';
 const empty = (): AppState => ({ words: [], revlog: [], skipped: [], settings: { dailyClaim: 30, lastClaimDate: '' } });
 const memory = new Map<string, string>();
 Object.defineProperty(globalThis, 'localStorage', { value: { getItem: (key: string) => memory.get(key) ?? null, setItem: (key: string, value: string) => memory.set(key, value) }, configurable: true });
+const pass = (state: AppState, day = today): AppState => {
+  const question = getBookQuestion(state);
+  return answerBookQuestion(state, day, question?.kind === 'spelling' ? { kind: 'spelling', text: question.word.word } : { kind: 'recall', remembered: true });
+};
 const complete = (state: AppState, day = today): AppState => {
   const group = getBookStats(state).current!;
   let next = beginGroup(state, group.id);
-  for (const _ of group.words) next = confirmBookWord(next, day);
+  while (getBookQuestion(next)) next = pass(next, day);
   return next;
 };
 
@@ -69,7 +73,7 @@ describe('ordered first study', () => {
     expect(dailyPlan(state, today).wordCount).toBe(50);
     expect(getBookStats(state)).toMatchObject({ total: 3630, learned: 0, remaining: 3630, mastered: 0, percent: 0, completedGroups: 0 });
     const started = beginGroup(state, 'u01-g01');
-    expect(started.bookLearning!.active).toEqual({ groupId: 'u01-g01', seen: 0 });
+    expect(started.bookLearning!.active).toEqual({ groupId: 'u01-g01', seen: 0, round: 0, retry: [], inRetry: false });
     expect(getBookStats(started).learned).toBe(0);
     expect(started.words).toEqual(state.words);
     expect(beginGroup(started, 'u01-g01')).toBe(started);
@@ -77,17 +81,21 @@ describe('ordered first study', () => {
   });
   it('counts only a full group and adds its cards once with tomorrow due dates', () => {
     let state = beginGroup(empty(), 'u01-g01');
-    for (let i = 0; i < 24; i++) state = confirmBookWord(state, today);
+    for (let i = 0; i < 24; i++) state = pass(state, today);
     expect(state.bookLearning!.active!.seen).toBe(24);
     expect(getBookStats(state).learned).toBe(0);
     expect(state.words).toHaveLength(0);
-    state = confirmBookWord(state, today);
+    state = pass(state, today);
+    expect(getBookQuestion(state)).toMatchObject({ round: 1, kind: 'phonetic', wordIndex: 0 });
+    expect(state.words).toHaveLength(0);
+    expect(getBookStats(state).learned).toBe(0);
+    for (let i = 0; i < 50; i++) state = pass(state, today);
     expect(state.bookLearning!.active).toBeUndefined();
     expect(state.bookLearning!.completed).toEqual({ 'u01-g01': today });
     expect(getBookStats(state)).toMatchObject({ learned: 25, remaining: 3605, completedGroups: 1 });
     expect(state.words).toHaveLength(25);
     expect(state.words.every(w => w.nextReviewDate === '2026-10-23')).toBe(true);
-    expect(confirmBookWord(state, today)).toBe(state);
+    expect(pass(state, today)).toBe(state);
     expect(beginGroup(state, 'u01-g01')).toBe(state);
     expect(dailyPlan(state, today)).toMatchObject({ completed: 1, wordCount: 50 });
     expect(dailyPlan(state, today).remainingGroups.map(g => g.id)).toEqual(['u01-g02']);
@@ -129,14 +137,14 @@ describe('book progress persistence and recovery', () => {
   it('round-trips partial study and group completion through backup and IndexedDB', async () => {
     await openWorkspace(today);
     let state = beginGroup(empty(), 'u01-g01');
-    state = confirmBookWord(state, today);
-    state = confirmBookWord(state, today);
+    state = pass(state, today);
+    state = pass(state, today);
     expect(parseBackup(backupJson(state), today)).toEqual(state);
     await persistWorkspace(state);
     state = (await openWorkspace(today)).state;
     expect(state.bookLearning!.active!.seen).toBe(2);
     expect(state.words).toHaveLength(0);
-    for (let i = 2; i < 25; i++) state = confirmBookWord(state, today);
+    state = complete(state);
     await persistWorkspace(state);
     const loaded = (await openWorkspace(today)).state;
     expect(loaded.bookLearning).toEqual(state.bookLearning);
@@ -178,9 +186,9 @@ describe('book progress persistence and recovery', () => {
     local.bookLearning!.dailyGroups = 3;
     let incoming = complete(empty(), today);
     incoming = beginGroup(incoming, 'u01-g02');
-    incoming = confirmBookWord(confirmBookWord(incoming, today), today);
+    incoming = pass(pass(incoming, today), today);
     const merged = mergeStates(local, incoming);
-    expect(merged.bookLearning).toEqual({ bookId: BOOK.id, dailyGroups: 3, completed: { 'u01-g01': '2026-10-21' }, active: { groupId: 'u01-g02', seen: 2 } });
+    expect(merged.bookLearning).toEqual({ bookId: BOOK.id, dailyGroups: 3, completed: { 'u01-g01': '2026-10-21' }, active: { groupId: 'u01-g02', seen: 2, round: 0, retry: [], inRetry: false } });
     expect(dailyPlan(merged, today).completed).toBe(0);
     expect(mergeStates(merged, incoming)).toEqual(merged);
     const further = complete(incoming);
@@ -188,5 +196,96 @@ describe('book progress persistence and recovery', () => {
     expect(getBookStats(advanced).learned).toBe(50);
     expect(advanced.bookLearning!.active).toBeUndefined();
     expect(parseBackup(backupJson(advanced), today)).toEqual(advanced);
+  });
+});
+
+
+describe('three-round responses and retries', () => {
+  it('keeps book order, queues misses, rotates failures and blocks advancement until all retries pass', () => {
+    let state = beginGroup(empty(), 'u01-g01');
+    state = answerBookQuestion(state, today, { kind: 'recall', remembered: false });
+    state = pass(state);
+    state = answerBookQuestion(state, today, { kind: 'recall', remembered: false });
+    expect(getBookQuestion(state)).toMatchObject({ wordIndex: 3, pendingRetries: 2, inRetry: false });
+    for (let i = 3; i < 25; i++) state = pass(state);
+    expect(getBookQuestion(state)).toMatchObject({ round: 0, wordIndex: 0, inRetry: true, pendingRetries: 2 });
+    state = answerBookQuestion(state, today, { kind: 'recall', remembered: false });
+    expect(getBookQuestion(state)).toMatchObject({ wordIndex: 2, pendingRetries: 2 });
+    state = pass(state);
+    expect(getBookQuestion(state)).toMatchObject({ wordIndex: 0, pendingRetries: 1 });
+    state = pass(state);
+    expect(getBookQuestion(state)).toMatchObject({ round: 1, wordIndex: 0, inRetry: false, pendingRetries: 0 });
+    for (let i = 0; i < 25; i++) state = pass(state);
+    expect(getBookQuestion(state)).toMatchObject({ round: 2, kind: 'spelling' });
+    state = answerBookQuestion(state, today, { kind: 'spelling', text: '' });
+    for (let i = 1; i < 25; i++) state = pass(state);
+    expect(state.words).toHaveLength(0);
+    expect(getBookQuestion(state)).toMatchObject({ round: 2, inRetry: true, wordIndex: 0 });
+    state = answerBookQuestion(state, today, { kind: 'spelling', text: 'wrong' });
+    expect(getBookQuestion(state)).toMatchObject({ round: 2, inRetry: true, pendingRetries: 1 });
+    expect(state.revlog).toEqual([]);
+    state = pass(state);
+    expect(state.words).toHaveLength(25);
+    expect(getBookQuestion(state)).toBeUndefined();
+  });
+  it('normalizes spelling without discarding meaningful accents or hyphens', () => {
+    expect(checkBookSpelling('El Niño', '  EL  NIÑO  ')).toBe(true);
+    expect(checkBookSpelling('El Niño', 'El Nino')).toBe(false);
+    expect(checkBookSpelling('shade-tolerant', 'SHADE-TOLERANT')).toBe(true);
+    expect(checkBookSpelling('shade-tolerant', 'shade tolerant')).toBe(false);
+    expect(checkBookSpelling('word', '   ')).toBe(false);
+  });
+  it('rejects answers belonging to another round and invalid dates without changing state', () => {
+    const state = beginGroup(empty(), 'u01-g01');
+    expect(() => answerBookQuestion(state, today, { kind: 'spelling', text: 'atmosphere' })).toThrow();
+    expect(() => answerBookQuestion(state, '2026-02-30', { kind: 'recall', remembered: true })).toThrow();
+    let spelling = state;
+    for (let i = 0; i < 50; i++) spelling = pass(spelling);
+    expect(() => answerBookQuestion(spelling, today, { kind: 'recall', remembered: true })).toThrow();
+    expect(state.bookLearning!.active!.seen).toBe(0);
+  });
+  it('preserves retry phase through backup and IndexedDB and resumes legacy cursors in round one', async () => {
+    await openWorkspace(today);
+    let state = beginGroup(empty(), 'u01-g01');
+    state = answerBookQuestion(state, today, { kind: 'recall', remembered: false });
+    for (let i = 1; i < 25; i++) state = pass(state);
+    expect(parseBackup(backupJson(state), today)).toEqual(state);
+    await persistWorkspace(state);
+    const loaded = (await openWorkspace(today)).state;
+    expect(loaded).toEqual(state);
+    expect(getBookQuestion(loaded)).toMatchObject({ round: 0, wordIndex: 0, inRetry: true });
+    const legacy = { ...empty(), bookLearning: { ...getBookProgress(empty()), active: { groupId: 'u01-g01', seen: 24 } } };
+    const restored = parseBackup(backupJson(legacy), today);
+    expect(restored.bookLearning).toEqual(legacy.bookLearning);
+    expect(getBookQuestion(restored)).toMatchObject({ round: 0, wordIndex: 24 });
+    expect(getBookQuestion(pass(restored))).toMatchObject({ round: 1, wordIndex: 0 });
+    expect(pass(restored).words).toHaveLength(0);
+  });
+  it('rejects malformed round, retry and phase state in backups', () => {
+    const base = { groupId: 'u01-g01', seen: 3, round: 0, retry: [0], inRetry: false };
+    const bad = [
+      { round: -1 }, { round: 3 }, { round: 1.5 }, { round: null }, { retry: null }, { inRetry: null }, { retry: [0, 0] }, { retry: [-1] },
+      { retry: [25] }, { retry: [1.5] }, { retry: ['0'] }, { retry: [3] },
+      { inRetry: true }, { inRetry: 'yes' }, { seen: 25 },
+      { seen: 25, inRetry: true, retry: [] }
+    ];
+    for (const change of bad) {
+      const state = { ...empty(), bookLearning: { ...getBookProgress(empty()), active: { ...base, ...change } } };
+      expect(() => parseBackup(backupJson(state as AppState), today)).toThrow();
+    }
+  });
+  it('merges the furthest round, phase and cursor while conservatively preserving same-round misses', () => {
+    const cursor = (round: 0 | 1 | 2, seen: number, retry: number[], inRetry = false): AppState => ({ ...empty(), bookLearning: { ...getBookProgress(empty()), active: { groupId: 'u01-g01', round, seen, retry, inRetry } } });
+    const base = cursor(0, 10, [1]);
+    const later = cursor(1, 2, []);
+    expect(mergeStates(base, later).bookLearning!.active).toEqual(later.bookLearning!.active);
+    expect(mergeStates(later, base).bookLearning!.active).toEqual(later.bookLearning!.active);
+    const merged = mergeStates(base, cursor(0, 12, [2]));
+    expect(merged.bookLearning!.active).toMatchObject({ round: 0, seen: 12, retry: [2, 1], inRetry: false });
+    expect(parseBackup(backupJson(merged), today)).toEqual(merged);
+    const retry = mergeStates(merged, cursor(0, 25, [3], true));
+    expect(retry.bookLearning!.active).toMatchObject({ round: 0, seen: 25, retry: [3, 2, 1], inRetry: true });
+    expect(mergeStates(retry, merged)).toEqual(retry);
+    expect(mergeStates(retry, retry)).toEqual(retry);
   });
 });

@@ -2,30 +2,36 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpen, Check, ChevronRight, Lock, Volume2 } from 'lucide-react';
 import type { AppState } from './lib';
 import { BOOK, BOOK_GROUPS, type BookGroup } from './bookCatalog';
-import { dailyPlan, getBookProgress, getBookStats, getBookWord } from './book';
+import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, checkBookSpelling, type BookAnswer } from './book';
 import { Card, PageHeader, Field, inputCls, primaryBtn, ghostBtn } from './ui';
 
 interface Props {
   state: AppState;
   today: string;
   onBegin: (groupId: string) => Promise<boolean>;
-  onConfirmWord: () => Promise<boolean>;
+  onAnswer: (answer: BookAnswer) => Promise<boolean>;
   onSetDailyGroups: (count: number) => void;
   onSpeak: (word: string) => void;
 }
 
-export function BookView({ state, today, onBegin, onConfirmWord, onSetDailyGroups, onSpeak }: Props) {
+export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak }: Props) {
   const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study'>('library');
   const [unitId, setUnitId] = useState(BOOK.units[0].id);
   const [revealed, setRevealed] = useState(false);
+  const [spelling, setSpelling] = useState('');
+  const [checked, setChecked] = useState<string | null>(null);
   const progress = getBookProgress(state);
   const stats = getBookStats(state);
   const plan = dailyPlan(state, today);
   const active = progress.active;
   const activeGroup = BOOK_GROUPS.find(group => group.id === active?.groupId);
   const unit = BOOK.units.find(item => item.id === unitId)!;
-  useEffect(() => { setRevealed(false); }, [active?.groupId, active?.seen]);
+  const question = getBookQuestion(state);
+  useEffect(() => { setRevealed(false); setSpelling(''); setChecked(null); }, [active?.groupId, active?.seen, question?.round, question?.inRetry, question?.wordIndex]);
 
+  const submitAnswer = async (answer: BookAnswer) => {
+    if (await onAnswer(answer)) { setRevealed(false); setSpelling(''); setChecked(null); }
+  };
   const go = (next: typeof screen) => { setScreen(next); window.scrollTo({ top: 0 }); };
   const start = async (group: BookGroup) => {
     if (await onBegin(group.id)) go('study');
@@ -54,21 +60,34 @@ export function BookView({ state, today, onBegin, onConfirmWord, onSetDailyGroup
   </div>;
 
   if (screen === 'study') {
-    if (!active || !activeGroup) return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="px-4"><Card className="space-y-4 p-6 text-center"><Check className="mx-auto text-sage-500" size={36} /><h2 className="font-serif text-2xl">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始复习。</p><button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></Card></div></div>;
-    const word = getBookWord(activeGroup.words[active.seen]);
-    const last = active.seen === activeGroup.words.length - 1;
+    if (!active || !activeGroup || !question) return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="px-4"><Card className="space-y-4 p-6 text-center"><Check className="mx-auto text-sage-500" size={36} /><h2 className="font-serif text-2xl">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始复习。</p><button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></Card></div></div>;
+    const { word, kind, round } = question;
+    const mode = ['英文回忆中文', '音标回忆中文', '中文拼写英文'][round];
+    const spellingMode = kind === 'spelling';
+    const showTarget = kind === 'english' || (kind === 'phonetic' && !word.phonetic) || revealed || checked !== null;
     return <div className="safe-bottom-pad">
-      <PageHeader title={`${activeGroup.unitTitle} · 第 ${activeGroup.index} 组`} subtitle={`本组第 ${active.seen + 1} / ${activeGroup.words.length} 词`} left={back('book')} />
+      <PageHeader title={`${activeGroup.unitTitle} · 第 ${activeGroup.index} 组`} subtitle={question.inRetry ? `错题重练 · 剩余 ${question.pendingRetries} 题` : `本轮第 ${active.seen + 1} / ${activeGroup.words.length} 词`} left={back('book')} />
       <div className="space-y-4 px-4">
         <Card className="space-y-5 px-6 py-8 text-center">
-          <p className="text-xs font-bold tracking-widest text-lilac-500">初学 · 按词书顺序</p>
-          <h2 className="break-words font-serif text-4xl font-semibold">{word.word}</h2>
-          <p className="text-sm text-ink-soft">{word.phonetic || '点击朗读听发音'}</p>
-          <button type="button" className={ghostBtn} onClick={() => onSpeak(word.word)} aria-label={`朗读 ${word.word}`}><Volume2 size={17} /> 朗读</button>
-          {revealed ? <p className="whitespace-pre-line border-t border-rose-50 pt-5 text-left text-base leading-relaxed">{word.meaning}</p> : <button type="button" className={`${ghostBtn} w-full`} onClick={() => setRevealed(true)}>显示释义</button>}
+          <p className="text-xs font-bold text-lilac-500">第 {round + 1} / 3 轮 · {mode}</p>
+          {spellingMode ? <p className="whitespace-pre-line text-left text-lg leading-relaxed">{word.meaning}</p> : <>
+            {showTarget && <h2 className="break-words font-serif text-4xl font-semibold">{word.word}</h2>}
+            {word.phonetic && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft`}>{word.phonetic}</p>}
+            {kind === 'phonetic' && !word.phonetic && <p className="text-xs text-ink-soft">暂无音标，本题使用英文提示</p>}
+            <button type="button" className={ghostBtn} onClick={() => onSpeak(word.word)} aria-label={showTarget ? `朗读 ${word.word}` : '朗读提示'}><Volume2 size={17} /> 朗读</button>
+            {revealed ? <p className="whitespace-pre-line border-t border-rose-50 pt-5 text-left text-base leading-relaxed">{word.meaning}</p> : <button type="button" className={`${ghostBtn} w-full`} onClick={() => setRevealed(true)}>显示答案</button>}
+          </>}
+          {spellingMode && <form className="space-y-4" onSubmit={event => { event.preventDefault(); if (checked === null && spelling.trim()) setChecked(spelling); }}>
+            <Field label="英文拼写"><input className={inputCls} aria-label="英文拼写" value={spelling} onChange={event => setSpelling(event.target.value)} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="off" readOnly={checked !== null} placeholder="输入英文" /></Field>
+            {checked === null ? <><button type="submit" className={`${primaryBtn} w-full`} disabled={!spelling.trim()}>检查拼写</button><button type="button" className={`${ghostBtn} w-full`} onClick={() => setChecked('')}>想不起来</button></> : <div role="status" className="space-y-2 text-left text-sm">
+              <p className={checkBookSpelling(word.word, checked) ? 'font-bold text-sage-500' : 'font-bold text-rose-500'}>{checkBookSpelling(word.word, checked) ? '拼写正确' : '拼写有误，稍后重练'}</p>
+              <p>你的答案：{checked || '未作答'}</p><p>正确答案：{word.word}</p>
+            </div>}
+          </form>}
         </Card>
-        {revealed && <button type="button" className={`${primaryBtn} w-full`} onClick={() => void onConfirmWord()}>{last ? '完成本组学习' : '已学习，下一词'}</button>}
-        <p className="px-2 text-center text-xs leading-relaxed text-ink-soft">确认后自动保存，可随时返回。完成本组全部单词后计入已学。</p>
+        {!spellingMode && revealed && <div className="grid grid-cols-2 gap-3"><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></div>}
+        {spellingMode && checked !== null && <button type="button" className={`${primaryBtn} w-full`} onClick={() => void submitAnswer({kind:'spelling',text:checked})}>继续</button>}
+        <p className="px-2 text-center text-xs leading-relaxed text-ink-soft">每轮错题会在轮末重练。确认后自动保存，完成三轮后计入已学。</p>
       </div>
     </div>;
   }
@@ -80,7 +99,7 @@ export function BookView({ state, today, onBegin, onConfirmWord, onSetDailyGroup
       {unit.groups.map(group => {
         const done = Boolean(progress.completed[group.id]);
         const available = !done && stats.current?.id === group.id && (Boolean(active) || plan.remainingGroups.length > 0);
-        return <Card key={group.id} className="p-4"><button type="button" className="flex w-full items-center justify-between gap-3 text-left disabled:text-ink-faint" disabled={!available} onClick={() => void start(group)}><span><span className="block text-sm font-bold">第 {group.index} 组 · {group.words.length} 词</span><span className="mt-1 block text-xs">{done ? '已完成' : active?.groupId === group.id ? `学习中 · 已确认 ${active.seen} 词` : available ? '待学习' : '待解锁'}</span></span>{done ? <Check size={18} className="text-sage-500" /> : available ? <ChevronRight size={18} /> : <Lock size={16} />}</button><p className="mt-2 text-xs text-ink-faint">{group.words[0]} — {group.words[group.words.length - 1]}</p></Card>;
+        return <Card key={group.id} className="p-4"><button type="button" className="flex w-full items-center justify-between gap-3 text-left disabled:text-ink-faint" disabled={!available} onClick={() => void start(group)}><span><span className="block text-sm font-bold">第 {group.index} 组 · {group.words.length} 词</span><span className="mt-1 block text-xs">{done ? '已完成' : active?.groupId === group.id ? `学习中 · 第 ${(active.round ?? 0) + 1} / 3 轮` : available ? '待学习' : '待解锁'}</span></span>{done ? <Check size={18} className="text-sage-500" /> : available ? <ChevronRight size={18} /> : <Lock size={16} />}</button><p className="mt-2 text-xs text-ink-faint">{group.words[0]} — {group.words[group.words.length - 1]}</p></Card>;
       })}
     </div>
   </div>;
