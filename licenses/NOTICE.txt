@@ -1,0 +1,20 @@
+IELTS A4 v3 — Third-party sources and notices
+
+Application source recovered from the user-provided Devin v2 bundle. No new overall application license is selected here. The owner must choose the product's source-code license separately. Public visibility does not waive copyright.
+
+ECDICT: https://github.com/skywind3000/ECDICT
+MIT, copyright skywind3000. The bundled exam subset is inherited from v2. 145 additional exact dictionary entries were extracted from ecdict.csv at commit bc015ed2e24a7abef49fc6dbbb7fe32c1dadaf8b. Definitions and phonetics come from ECDICT; no publisher definitions or phonetics were copied from the book sequence.
+
+English sequence: https://github.com/RealKai42/qwerty-learner/blob/1182426f2bd0a28c95302c33f9e19136b1262a70/public/dicts/IELTSVocabularyBible.json
+3,673 source rows deduplicated by lowercase English name, retaining the first occurrence, into 3,630 names. Only the name field is used. Chapter headings and boundaries were aligned with hefengxian/my-ielts at 5cef573933663c4673c6e0093f1df04e68018b1a (src/pages/vocabulary/vocabulary.txt). No reference definitions or examples are bundled. This is a deduplicated transcription, not a publisher-verified edition. Groups of 25 are app study groups within chapters, not original printed subgroups. Exact ECDICT coverage: 3,628/3,630. Two short definitions were authored for this prototype: El Niño (n. 厄尔尼诺现象) and shade-tolerant (adj. 耐阴的). See docs/BOOK-SOURCE.md in the source repository for the boundary audit.
+The upstream repository declares GPL-3.0; its license is included. The specific word-list data's rights and publisher permissions are not established by the repository license. This derivative sequence is retained for the approved prototype with its provenance. It is NOT asserted to be cleared for proprietary commercial redistribution. Before a closed-source/commercial release, establish appropriate permissions and license compatibility or replace this sequence with independently curated, permissively licensed content. No Qwerty application code is used.
+
+Carlito fonts: Copyright 2013 The Carlito Project Authors; SIL Open Font License 1.1. Reserved Font Name Carlito.
+
+Runtime libraries: React/ReactDOM/scheduler, Dexie, ts-fsrs — MIT; lucide-react — ISC. Exact versions in package-lock.json. Their license notices are included alongside this file.
+
+This prototype is local-first. Learning records stay in this browser's IndexedDB. Manual full JSON backup includes words, cards, logs, buckets, settings and explicit book-study progress. It does not include a cloud account or synchronization.
+
+Learning-flow source study: TypeWords (GPL-3.0), Qwerty Learner (GPL-3.0), Anki (AGPL-3.0-or-later), and MuJing (GPL-3.0). Their application source was read to compare stages, recall directions, spelling checks and retry/resume behavior. The three-round implementation here was independently written; no application code from these projects is bundled. Pinned commits and source locations are documented in docs/LEARNING-MODES-RESEARCH.md.
+
+Teaching examples (app/src/data/book-examples.json): 50 example sentences, sense labels and collocations for the first two groups were written independently for this project (marked “例句（自编）” in the UI). They are not copied from the publisher, ECDICT, 不背单词 or any referenced repository.
