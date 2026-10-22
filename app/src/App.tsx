@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Home, BookOpenText, PlusCircle, Library, X } from 'lucide-react';
+import { Home, BookOpenText, Library, X } from 'lucide-react';
 import type { AppState, WordFields, WordItem } from './lib';
-import { buildSchedule, createWord, gradeWord, resetWord, parseBackup, mergeBackup, seedWords, speak, todayStr, uniqSorted } from './lib';
+import { buildSchedule, createWord, gradeWord, resetWord, parseBackup, mergeBackup, seedWords, speak, todayStr } from './lib';
 import { openWorkspace, persistWorkspace } from './db';
 import { MatchingGame, Statistics } from './Practice';
 import { Dashboard } from './Dashboard';
 import { A4View } from './A4View';
 import { AddView } from './AddView';
+import { BookView } from './BookView';
+import { beginGroup, confirmBookWord, getBookProgress } from './book';
 import { BankView } from './BankView';
 import { Confetti, Field, Toast, inputCls, primaryBtn, ghostBtn } from './ui';
 
-type Tab = 'home' | 'a4' | 'add' | 'bank' | 'quiz' | 'stats';
+type Tab = 'home' | 'dashboard' | 'a4' | 'add' | 'bank' | 'quiz' | 'stats';
 type ToastTone = 'ok' | 'warn' | 'info';
 
 function useToday(): string {
@@ -73,10 +75,10 @@ function EditSheet({ word, onSave, onClose }: { word: WordItem; onSave: (w: Word
 
 function TabBar({ tab, onChange, due }: { tab: Tab; onChange: (t: Tab) => void; due: number }) {
   const items: { key: Tab; label: string; Icon: typeof Home }[] = [
-    { key: 'home', label: '看板', Icon: Home },
+    { key: 'home', label: '词书库', Icon: Library },
     { key: 'a4', label: 'A4 刷词', Icon: BookOpenText },
-    { key: 'add', label: '录入', Icon: PlusCircle },
-    { key: 'bank', label: '词库', Icon: Library }
+    { key: 'dashboard', label: '看板', Icon: Home },
+    { key: 'bank', label: '我的单词', Icon: BookOpenText }
   ];
   return (
     <nav className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-rose-100/70 bg-white/90 backdrop-blur-md">
@@ -125,7 +127,7 @@ export default function App() {
       if (!active) return;
       current.current = result.state;
       setState(result.state);
-      if (result.fresh) showToast('已载入示例词，可在词库清空后录入自己的词', 'info');
+      if (result.fresh) showToast('词书已就绪；我的单词中含少量示例词，可自行清空', 'info');
     }).catch(error => { if (active) setLoadError(String(error instanceof Error ? error.message : error)); });
     return () => { active = false; };
   }, [showToast]);
@@ -165,7 +167,7 @@ export default function App() {
       have.add(key); fresh.push(createWord(f, today));
     });
     if (!fresh.length) return 0;
-    const next = { ...s, words: [...s.words, ...fresh], settings: {...s.settings, lastClaimDate:today} };
+    const next = { ...s, words: [...s.words, ...fresh] };
     return await commit(next) ? fresh.length : 0;
   };
   const onGrade = async (id: string, rating: 1 | 2 | 3 | 4) => {
@@ -209,21 +211,34 @@ export default function App() {
   };
   const onResetSeed = async () => {
     const s = current.current;
-    if (s && window.confirm('用示例词覆盖当前词库和复习日志？建议先导出备份。')) await commit({...s, words:seedWords(today), revlog:[]});
+    if (s && window.confirm('用示例词覆盖当前词库、词书进度和复习日志？建议先导出备份。')) await commit({...s, words:seedWords(today), revlog:[], bookLearning:undefined});
   };
-  const onClearAll = async () => { const s = current.current; if (s) await commit({...s, words:[], revlog:[]}); };
-  const onSkip = async (word: string) => { const s = current.current; if (s) await commit({...s, skipped:uniqSorted([...s.skipped, word])}); };
-  const onSetDailyClaim = async (n: number) => { const s = current.current; if (s) await commit({...s, settings:{...s.settings, dailyClaim:n}}); };
+  const onClearAll = async () => { const s = current.current; if (s) await commit({...s, words:[], revlog:[], bookLearning:undefined}); };
+  const onBeginGroup = async (groupId: string) => {
+    const s = current.current;
+    if (!s) return false;
+    const next = beginGroup(s, groupId);
+    return next.bookLearning?.active?.groupId === groupId && await commit(next);
+  };
+  const onConfirmWord = async () => {
+    const s = current.current;
+    return s ? commit(confirmBookWord(s, today)) : false;
+  };
+  const onSetDailyGroups = async (dailyGroups: number) => {
+    const s = current.current;
+    if (s) await commit({ ...s, bookLearning: { ...getBookProgress(s), dailyGroups } });
+  };
   const changeTab = (t: Tab) => { if (t === 'a4') setA4Date(today); setTab(t); window.scrollTo({top:0}); };
 
   if (!state) return <main className="mx-auto max-w-[480px] space-y-4 p-6"><h1 className="text-xl font-bold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
   return <div className="mx-auto min-h-screen max-w-[480px] font-ui text-ink">
     {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><Dashboard words={state.words} today={today} schedule={schedule} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} /></>}
+      {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><BookView state={state} today={today} onBegin={onBeginGroup} onConfirmWord={onConfirmWord} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} /></>}
+      {tab === 'dashboard' && <Dashboard words={state.words} today={today} schedule={schedule} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View words={state.words} today={today} date={a4Date} schedule={schedule} onBack={() => setTab('home')} onHardReset={onHardReset} onCheckout={onCheckout} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
-      {tab === 'add' && <AddView words={state.words} skipped={state.skipped} dailyClaim={state.settings.dailyClaim} onAdd={addWords} onSkip={onSkip} onSetDailyClaim={onSetDailyClaim} toast={showToast} />}
-      {tab === 'bank' && <BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onResetSeed={onResetSeed} onClearAll={onClearAll} toast={showToast} />}
+      {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
+      {tab === 'bank' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('add')}>录入新词</button></div><BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onResetSeed={onResetSeed} onClearAll={onClearAll} toast={showToast} /></>}
       {tab === 'quiz' && <MatchingGame words={gameWords} scopeLabel={todayWords.length ? '今日新词与复习词' : '今天没有任务，使用全部词库加练'} onBack={() => setTab('home')} onSpeak={onSpeak} />}
       {tab === 'stats' && <Statistics state={state} today={today} onBack={() => setTab('home')} />}
       <TabBar tab={tab} onChange={changeTab} due={schedule[today]?.due.length || 0} />

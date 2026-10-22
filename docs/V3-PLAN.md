@@ -1,3 +1,5 @@
+> Superseded product flow (2026-10-22): use `docs/superpowers/plans/2026-10-22-book-learning.md` and `docs/CONTINUE.md` for current behavior. The original 30-word/daily-claim book flow below is historical; it has been replaced by chapters and fixed groups of 25.
+
 # V3 continuation
 
 Continue Devin session 4689fedb63524b10a48c31625689b913 from recovered v2 source. Preserve A4 mobile styling.

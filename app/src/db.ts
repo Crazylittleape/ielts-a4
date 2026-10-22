@@ -28,7 +28,8 @@ async function writeSnapshot(state: AppState, revision: number): Promise<void> {
     { key: 'initialized', value: true },
     { key: 'revision', value: revision },
     { key: 'settings', value: state.settings },
-    { key: 'skipped', value: state.skipped }
+    { key: 'skipped', value: state.skipped },
+    ...(state.bookLearning ? [{ key: 'bookLearning', value: state.bookLearning }] : [])
   ]);
 }
 
@@ -62,15 +63,15 @@ export async function openWorkspace(today: string): Promise<{ state: AppState; f
 
 async function readSnapshot(today: string): Promise<AppState> {
   return db.transaction('r', db.words, db.cards, db.revlog, db.meta, async () => {
-    const [words, cards, revlog, settings, skipped, revision] = await Promise.all([
-      db.words.toArray(), db.cards.toArray(), db.revlog.toArray(), db.meta.get('settings'), db.meta.get('skipped'), db.meta.get('revision')
+    const [words, cards, revlog, settings, skipped, revision, bookLearning] = await Promise.all([
+      db.words.toArray(), db.cards.toArray(), db.revlog.toArray(), db.meta.get('settings'), db.meta.get('skipped'), db.meta.get('revision'), db.meta.get('bookLearning')
     ]);
     if (!Number.isInteger(revision?.value) || Number(revision?.value) < 0) throw new Error('数据库版本记录损坏，请先保留备份');
     loadedRevision = Number(revision?.value);
     const byId = new Map(cards.map((row) => [row.id, row.card]));
     const wordIds = new Set(words.map((w) => w.id));
     if (words.some((w) => !byId.has(w.id)) || cards.some((c) => !wordIds.has(c.id))) throw new Error('数据库中的单词和复习卡不匹配，请先保留备份');
-    return parseBackup(JSON.stringify({ version: 3, words: words.map((w) => ({ ...w, card: byId.get(w.id) })), revlog, settings: settings?.value, skipped: skipped?.value }), today);
+    return parseBackup(JSON.stringify({ version: 3, words: words.map((w) => ({ ...w, card: byId.get(w.id) })), revlog, settings: settings?.value, skipped: skipped?.value, bookLearning: bookLearning?.value }), today);
   });
 }
 

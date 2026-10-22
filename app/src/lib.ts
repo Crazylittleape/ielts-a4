@@ -1,4 +1,5 @@
 import { createEmptyCard, fsrs, Rating, State, type Card } from 'ts-fsrs';
+import { BOOK, BOOK_GROUPS } from './bookCatalog';
 
 export const STORAGE_KEY = 'ielts_a4_workspace_v2';
 export const LEGACY_KEY = 'ielts_a4_workspace_v1';
@@ -40,6 +41,14 @@ export interface AppState {
   words: WordItem[];
   skipped: string[];
   settings: { dailyClaim: number; lastClaimDate: string };
+  bookLearning?: BookLearning;
+}
+
+export interface BookLearning {
+  bookId: string;
+  dailyGroups: number;
+  completed: Record<string, string>;
+  active?: { groupId: string; seen: number };
 }
 
 export const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -347,6 +356,28 @@ function validCard(value: unknown): value is SerializedCard {
   return fields.every((key) => typeof value[key] === 'number' && Number.isFinite(value[key]) && Number(value[key]) >= 0) && typeof value.state === 'number' && [0, 1, 2, 3].includes(value.state) && Number(value.difficulty) <= 10 && (Number(value.reps) === 0 || isTimestamp(value.last_review)) && ['reps', 'lapses', 'scheduled_days', 'learning_steps'].every((key) => Number.isInteger(Number(value[key])));
 }
 
+function parseBookLearning(value: unknown): BookLearning {
+  if (!isRecord(value) || value.bookId !== BOOK.id || typeof value.dailyGroups !== 'number' || !Number.isInteger(value.dailyGroups) || value.dailyGroups < 1 || value.dailyGroups > 10 || !isRecord(value.completed)) throw new Error('词书学习设置无效');
+  const completed: Record<string, string> = {};
+  const count = Object.keys(value.completed).length;
+  if (count > BOOK_GROUPS.length) throw new Error('词书完成记录无效');
+  for (const [i, group] of BOOK_GROUPS.entries()) {
+    const day = value.completed[group.id];
+    if (i < count) {
+      if (!isValidDate(day)) throw new Error('词书完成记录必须按组顺序保存，且日期有效');
+      completed[group.id] = day;
+    } else if (day !== undefined) throw new Error('词书完成记录必须按组顺序保存');
+  }
+  const progress: BookLearning = { bookId: BOOK.id, dailyGroups: value.dailyGroups, completed };
+  if (value.active !== undefined) {
+    const active = value.active;
+    const next = BOOK_GROUPS[count];
+    if (!isRecord(active) || !next || active.groupId !== next.id || typeof active.seen !== 'number' || !Number.isInteger(active.seen) || active.seen < 0 || active.seen >= next.words.length) throw new Error('词书学习位置无效');
+    progress.active = { groupId: next.id, seen: active.seen };
+  }
+  return progress;
+}
+
 export function parseBackup(text: string, today: string): AppState {
   const parsed: unknown = JSON.parse(text);
   if (!Array.isArray(parsed) && !isRecord(parsed)) throw new Error('备份格式无效');
@@ -388,7 +419,18 @@ export function parseBackup(text: string, today: string): AppState {
     if (entry.rating === 0 ? log.action !== 'reset' : !isTimestamp(log.review) || !isTimestamp(log.due) || log.rating !== entry.rating || typeof log.state !== 'number' || ![0, 1, 2, 3].includes(log.state) || ['stability', 'difficulty', 'elapsed_days', 'last_elapsed_days', 'scheduled_days', 'learning_steps'].some((key) => typeof log[key] !== 'number' || !Number.isFinite(log[key]) || Number(log[key]) < 0)) throw new Error('复习日志内容无效');
     logIds.add(entry.id); revlog.push(entry as unknown as ReviewEntry);
   }
-  return { words, skipped: Array.isArray(obj.skipped) ? uniqSorted(obj.skipped as string[]) : [], settings, revlog };
+  return { words, skipped: Array.isArray(obj.skipped) ? uniqSorted(obj.skipped as string[]) : [], settings, revlog, ...(obj.bookLearning === undefined ? {} : { bookLearning: parseBookLearning(obj.bookLearning) }) };
+}
+
+function mergeBookLearning(current?: BookLearning, incoming?: BookLearning): BookLearning | undefined {
+  if (!current && !incoming) return undefined;
+  const completed = { ...current?.completed };
+  for (const [id, date] of Object.entries(incoming?.completed ?? {})) {
+    if (!completed[id] || date < completed[id]) completed[id] = date;
+  }
+  const next = BOOK_GROUPS.find(group => !completed[group.id]);
+  const active = [current?.active, incoming?.active].filter(cursor => cursor && cursor.groupId === next?.id).sort((a, b) => b!.seen - a!.seen)[0];
+  return { bookId: BOOK.id, dailyGroups: current?.dailyGroups ?? incoming?.dailyGroups ?? 2, completed, ...(active ? { active: { ...active } } : {}) };
 }
 
 export function mergeStates(current: AppState, incoming: AppState): AppState {
@@ -418,7 +460,8 @@ export function mergeStates(current: AppState, incoming: AppState): AppState {
     revlog.push({ ...entry, wordId, id: seen.has(entry.id) ? uid() : entry.id });
     seen.add(revlog[revlog.length - 1].id); signatures.add(signature);
   }
-  return { ...current, words, skipped: uniqSorted([...current.skipped, ...incoming.skipped]), revlog };
+  const bookLearning = mergeBookLearning(current.bookLearning, incoming.bookLearning);
+  return { ...current, words, skipped: uniqSorted([...current.skipped, ...incoming.skipped]), revlog, ...(bookLearning ? { bookLearning } : {}) };
 }
 
 export const mergeBackup = mergeStates;

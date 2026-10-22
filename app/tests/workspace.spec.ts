@@ -31,28 +31,40 @@ test('migrate, grade once, bulk remainder and persist after reload',async({page}
   expect(errors).toEqual([]);
 });
 test('new word form completes, favorites/mastered are reversible and durable',async({page})=>{
-  await start(page);await page.getByRole('button',{name:'录入',exact:true}).click();
+  await start(page);await page.getByRole('button',{name:'我的单词',exact:true}).click();await page.getByRole('button',{name:'录入新词',exact:true}).click();
   await page.getByPlaceholder('ubiquitous',{exact:true}).fill('zebra');
   await page.getByLabel(/中文释义/).fill('n. 斑马');
   await page.getByRole('button',{name:/录入并排进FSRS日历/}).first().click();
   await expect(page.getByPlaceholder('ubiquitous',{exact:true})).toHaveValue('');
-  await page.getByRole('button',{name:'词库',exact:true}).click();
+  await page.getByRole('button',{name:'我的单词',exact:true}).click();
   const row=page.getByRole('listitem').filter({has:page.getByRole('button',{name:'zebra',exact:true})});
   await row.getByRole('button',{name:'收藏',exact:true}).click();await expect(row.getByRole('button',{name:'取消收藏',exact:true})).toBeVisible();
   await row.getByRole('button',{name:'掌握',exact:true}).click();await expect(row.getByRole('button',{name:'恢复复习',exact:true})).toBeVisible();
-  await page.reload();await page.getByRole('button',{name:'词库',exact:true}).click();
+  await page.reload();await page.getByRole('button',{name:'我的单词',exact:true}).click();
   await expect(row.getByRole('button',{name:'恢复复习',exact:true})).toBeVisible();
   await row.getByRole('button',{name:'恢复复习',exact:true}).click();await expect(row.getByRole('button',{name:'掌握',exact:true})).toBeVisible();
 });
-test('built-in sequence import includes dictionary preview and artificial group labels',async({page})=>{
-  await start(page);await page.getByRole('button',{name:'录入',exact:true}).click();await page.getByRole('button',{name:'真经词序',exact:true}).click();
-  await expect(page.getByLabel('内置词组')).toHaveValue('1');
-  await page.getByRole('button',{name:'查词典补全音标与释义',exact:true}).click();
-  await expect(page.getByText('atmosphere',{exact:true})).toBeVisible();
-  await page.getByPlaceholder('手填中文释义（留空则跳过）').fill('厄尔尼诺现象');
-  await page.getByRole('button',{name:/排入FSRS日历/}).click();
-  await expect(page.getByText(/已排入 30 个词/)).toBeVisible();
-  expect((await snapshot(page)).words).toHaveLength(34);
+test('book library uses real units and opening a group does not count as learned',async({page})=>{
+  await start(page);
+  await expect(page.getByRole('heading',{name:'词书库',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
+  await expect(page.getByText('已学 0 词',{exact:true})).toBeVisible();
+  await expect(page.getByText('剩余 3630 词',{exact:true})).toBeVisible();
+  await expect(page.getByText('今日计划 2 组 · 50 词',{exact:true})).toBeVisible();
+  await page.getByLabel('每日学习组数',{exact:true}).selectOption('3');
+  await expect(page.getByText('今日计划 3 组 · 75 词',{exact:true})).toBeVisible();
+  await page.reload();await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
+  await expect(page.getByLabel('每日学习组数',{exact:true})).toHaveValue('3');
+  await page.getByLabel('每日学习组数',{exact:true}).selectOption('2');
+  await page.getByRole('button',{name:/第 1 单元 自然地理/}).click();
+  await expect(page.getByRole('button',{name:/第 10 组 · 16 词/})).toBeDisabled();
+  await page.getByRole('button',{name:/第 1 组 · 25 词/}).click();
+  await expect(page.getByRole('heading',{name:'atmosphere',exact:true})).toBeVisible();
+  expect((await snapshot(page)).words).toHaveLength(4);
+  await page.reload();await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
+  await expect(page.getByText('已学 0 词',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'继续本组学习',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'atmosphere',exact:true})).toBeVisible();
 });
 test('matching score, deadline and free practice do not write scheduling data',async({page})=>{
   await start(page);const before=await snapshot(page);
@@ -71,7 +83,7 @@ test('scoped PWA supports offline reload and mobile layout',async({page,context}
 });
 test('invalid and cancelled backup recovery preserve input and database',async({page})=>{
   await start(page);const before=await snapshot(page);
-  await page.getByRole('button',{name:'词库',exact:true}).click();
+  await page.getByRole('button',{name:'我的单词',exact:true}).click();
   await page.getByRole('button',{name:'粘贴 JSON 恢复',exact:true}).click();
   const input=page.getByPlaceholder('{"words":[...]}');
   await input.fill('{broken');await page.getByRole('button',{name:'合并导入',exact:true}).click();
@@ -80,22 +92,44 @@ test('invalid and cancelled backup recovery preserve input and database',async({
   page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'覆盖恢复',exact:true}).click();
   await expect(input).toHaveValue(JSON.stringify(fixture));expect(await snapshot(page)).toEqual(before);
 });
-test('daily book-sequence claiming continues past already imported words',async({page})=>{
-  await start(page);await page.getByRole('button',{name:'录入',exact:true}).click();await page.getByRole('button',{name:'真经词序',exact:true}).click();
-  await page.getByRole('button',{name:'10',exact:true}).click();
-  await page.getByRole('button',{name:'按词序领取接下来 10 词',exact:true}).click();
-  await expect(page.getByText(/已按词序领取 10 词/)).toBeVisible();
-  await page.getByRole('button',{name:'按词序领取接下来 10 词',exact:true}).click();
-  await expect.poll(async()=> (await snapshot(page)).words.length).toBe(24);
-  expect(new Set((await snapshot(page)).words.map((word:any)=>word.word)).size).toBe(24);
+test('study resumes within a group, counts completion once and continues in book order',async({page})=>{
+  await start(page);await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
+  await page.getByRole('button',{name:'开始今日学习',exact:true}).click();
+  await page.getByRole('button',{name:'显示释义',exact:true}).click();
+  await page.getByRole('button',{name:'已学习，下一词',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'hydrosphere',exact:true})).toBeVisible();
+  await page.reload();await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
+  await page.getByRole('button',{name:'继续本组学习',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'hydrosphere',exact:true})).toBeVisible();
+  for(let i=1;i<25;i++){
+    await page.getByRole('button',{name:'显示释义',exact:true}).click();
+    await page.getByRole('button',{name:i===24?'完成本组学习':'已学习，下一词',exact:true}).click();
+  }
+  await expect(page.getByText('本组学习完成',{exact:true})).toBeVisible();
+  expect((await snapshot(page)).words).toHaveLength(29);
+  await page.getByRole('button',{name:'返回词书',exact:true}).click();
+  await expect(page.getByText('已学 25 词',{exact:true})).toBeVisible();
+  await expect(page.getByText('剩余 3605 词',{exact:true})).toBeVisible();
+  await expect(page.getByText('今日已完成 1 / 2 组',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'开始今日学习',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'magnet',exact:true})).toBeVisible();
+  await page.reload();await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
+  await expect(page.getByText('已学 25 词',{exact:true})).toBeVisible();
+  expect((await snapshot(page)).words).toHaveLength(29);
+  await page.getByRole('button',{name:'我的单词',exact:true}).click();
+  await page.getByRole('button',{name:'清空单词和进度',exact:true}).click();
+  await page.getByRole('button',{name:'确认清空单词和进度？',exact:true}).click();
+  await page.reload();await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
+  await expect(page.getByText('已学 0 词',{exact:true})).toBeVisible();
+  expect((await snapshot(page)).words).toHaveLength(0);
 });
 test('stale tab rejection retains new word form and existing records',async({page,context})=>{
   await start(page);
-  const other=await context.newPage();await other.goto('/');await other.getByRole('button',{name:'词库',exact:true}).click();
+  const other=await context.newPage();await other.goto('/');await other.getByRole('button',{name:'我的单词',exact:true}).click();
   await other.getByRole('button',{name:'收藏',exact:true}).first().click();
   await expect(other.getByRole('button',{name:'取消收藏',exact:true})).toHaveCount(1);
   const before=await snapshot(page);
-  await page.getByRole('button',{name:'录入',exact:true}).click();
+  await page.getByRole('button',{name:'我的单词',exact:true}).click();await page.getByRole('button',{name:'录入新词',exact:true}).click();
   await page.getByPlaceholder('ubiquitous',{exact:true}).fill('quokka');await page.getByLabel(/中文释义/).fill('短尾矮袋鼠');
   await page.getByRole('button',{name:'录入并排进FSRS日历',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('保存未完成');

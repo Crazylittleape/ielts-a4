@@ -27,7 +27,12 @@ Keep `package-lock.json`. `app/dist/` contains the production static site; copy 
 - Mastered words are excluded from automatic review, reversible. Favorites independent. Mistakes include any Again log; stubborn means manual flag or at least four FSRS lapses.
 - Quiz uses today’s new/due/completed words, with a labeled whole-library fallback if no current set. Scoring and random practice do not write cards or logs.
 - Calendar and seven-day load show each card’s CURRENT next due date. Future grades can change it; do not extrapolate a fake fixed FSRS schedule.
-- Book sequence: 3,630 unique English names; 121 artificial groups of 30, plus configurable next-unlearned claiming. 3,628 ECDICT matches; El Niño and shade-tolerant remain manual inputs. Do not copy publisher definitions.
+- Main flow: book library → book → chapter → ordered 25-word groups. 《雅思词汇真经》去重整理版 contains 3,630 unique names, 22 sourced chapter boundaries and 155 app groups. Chapter tails remain shorter and groups never cross chapters. Source boundaries/limits: `docs/BOOK-SOURCE.md`.
+- Default daily target is 2 groups (normally 50 words); selectable 1–10 groups, persisted. Today's plan includes groups completed today plus enough upcoming groups to reach the target, without sliding forward after completion. Chapter tails use actual word counts.
+- `AppState.bookLearning` records book ID `ielts-bible-core-v1`, dailyGroups, an ordered completed-group/date prefix, and optional active group/confirmed-word cursor. Opening a book/group, importing or skipping a word does not increase learned count. Confirming all words commits completion and adds missing FSRS cards due tomorrow atomically. Existing cards/history/logs are retained. Mastery is distinct from initial-study completion.
+- Every confirmed word saves its cursor. Partial groups do not add cards or count as learned until completed; reopening resumes the active cursor. Deleting an individual card does not erase historical initial-study completion. Clearing all words or restoring example data also resets book progress.
+- Old v1/v2/v3 backups without book progress remain compatible and start book progress at zero; do not infer completion from old claims. New book fields are optional validated v3 fields and survive IndexedDB, JSON backup, replacement and merge. Merge retains the earliest completion date, the furthest valid cursor, and the local daily target when set (otherwise incoming target).
+- Manual single/paste entry remains under 我的单词 → 录入新词. The old artificial 30-word book import and daily-word claim UI were removed. Exact dictionary coverage is 3,628 plus two short authored gap definitions; no publisher definitions were copied.
 - License/provenance notices are in `app/public/licenses/NOTICE.txt`. The upstream sequence is from a GPL-3.0 repository; its specific data rights are unconfirmed. Before a proprietary/commercial release, resolve permissions/compatibility or replace with independently curated permissive data. No overall app license was selected in this continuation.
 
 ## Not implemented in this phase
@@ -40,13 +45,11 @@ Work on `codex/continue-v3`; do not reapply the v2 ZIP or discard this source. K
 
 On actual iPhone, separately check Safari speech voices, silent-mode behavior, Add to Home Screen, storage persistence, standalone launch, and offline reload. Desktop WebKit emulation is useful but does not replace a real-device check.
 
-## Verification at handoff (2026-10-22)
+## Verification at handoff (2026-10-22 book flow)
 
-- `npm test`: 16/16 core/content tests passed.
-- `npm run test:e2e`: 16/16 passed across mobile Chromium and mobile WebKit (8 scenarios each). Covers migration, one-grade-per-day, bulk remainder, reload, favorites/mastered reversal, built-in group/manual gaps, sequential daily claims, quiz timer/score and no scheduling writes, offline reload/mobile width, invalid/cancelled restore retention, stale-tab preservation.
+- `npm test`: 29 core/content/book tests passed, including a reproduced/fixed backup-merge target regression.
+- `npm run test:e2e`: 16/16 passed across mobile Chromium and mobile WebKit (eight scenarios each), including daily-target selection/reload, opening without learned credit, partial-group resume, full-group completion, next-group order and clearing progress; existing grading, backup, offline and stale-tab scenarios also passed.
 - `npm run build`: TypeScript and Vite production build passed.
-- `git diff --check`: passed.
-- `npm ls --depth=0`: dependency tree valid.
-- `npm audit --omit=dev`: 0 production dependency vulnerabilities reported. Full audit still reports 7 development-only advisories in inherited Tailwind 3 dependencies (5 high, 2 moderate). Resolving those requires a Tailwind major migration; this continuation preserves the UI and records that follow-up instead of mixing in an unrelated style/build migration.
-- Manual visual inspection: 390px-wide home and A4 screenshots. Actual iPhone hardware and Add to Home Screen remain to verify.
-- Requirements review passed after fixing imported-log schedule blocking, next-unlearned daily claiming, today's quiz scope, and preserving failed/cancelled restore input.
+- Existing dependency audit: zero production findings; seven development-only advisories in inherited Tailwind 3 dependencies (five high, two moderate). No dependency change in this feature.
+- Mobile screenshots of library, overview, first unit and revealed study card inspected; no horizontal overflow on the study screen.
+- Actual iPhone hardware, Safari voices, standalone Add to Home Screen and device storage persistence still require device checks. Browser emulation does not verify those.

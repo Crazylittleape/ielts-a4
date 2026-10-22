@@ -107,7 +107,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
 
   return (
     <div className="safe-bottom-pad">
-      <PageHeader title="词库" subtitle={`共 ${words.length} 词 · 顽固 ${counts.hard} · 今日待复习 ${counts.due}`} />
+      <PageHeader title="我的单词" subtitle={`共 ${words.length} 词 · 顽固 ${counts.hard} · 今日待复习 ${counts.due}`} />
       <div className="space-y-4 px-4 pt-1">
         <div className="relative">
           <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
@@ -177,7 +177,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
         <Card className="p-4">
           <p className="mb-3 text-xs text-ink-soft"><a className="underline" href="./licenses/NOTICE.txt" target="_blank" rel="noreferrer">数据来源与第三方许可</a></p>
           <SectionTitle right={<Database size={14} className="text-ink-faint" />}>数据备份与恢复</SectionTitle>
-          <p className="mb-3 text-[11px] font-semibold leading-relaxed text-ink-soft">所有数据只存在这台设备的浏览器里，换手机、清缓存都会丢。建议每周导出一次 JSON 存到 iCloud / 微信文件助手。</p>
+          <p className="mb-3 text-[11px] font-semibold leading-relaxed text-ink-soft">单词、词书进度和复习记录都只存在这台设备的浏览器里，换手机、清缓存都会丢。建议每周导出一次 JSON 存到 iCloud / 微信文件助手。</p>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" className={softBtn} onClick={download}><Download size={15} /> 下载 JSON 备份</button>
             <button type="button" className={softBtn} onClick={copy}><Copy size={15} /> 复制备份 JSON</button>
@@ -202,11 +202,11 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
             <button type="button" className={`${ghostBtn} text-xs`} onClick={onResetSeed}><RotateCcw size={14} /> 恢复示例数据</button>
             {confirmClear ? (
               <button type="button" className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-rose-500 px-4 py-2.5 text-xs font-bold text-white" onClick={() => { onClearAll(); setConfirmClear(false); }}>
-                <Eraser size={14} /> 确认清空全部？
+                <Eraser size={14} /> 确认清空单词和进度？
               </button>
             ) : (
               <button type="button" className={`${ghostBtn} text-xs text-rose-400`} onClick={() => { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 4000); }}>
-                <Eraser size={14} /> 清空词库
+                <Eraser size={14} /> 清空单词和进度
               </button>
             )}
           </div>
