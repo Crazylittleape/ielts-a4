@@ -1,6 +1,8 @@
 # 雅思词汇艾宾浩斯电子 A4 纸工作台
 
-纯静态 PWA，无后端。本仓库内所有文件直接发布到 GitHub Pages 即可使用。
+纯静态 PWA，无后端。仓库根目录保留已发布版本；`app/` 是恢复并继续开发的 v3 源码。开发与交接见 [docs/CONTINUE.md](docs/CONTINUE.md)。
+
+v3 先在 `app/` 执行 `npm ci && npm test && npm run build`，预览通过后发布 `app/dist/` 的全部文件。不要把源码目录直接当成新版本部署包。
 
 ## 部署到 GitHub Pages（一次性，约 3 分钟）
 
@@ -15,4 +17,4 @@
 
 ## 以后更新
 
-把新的 `index.html` 重新上传覆盖即可，Pages 自动重新发布。数据存在手机 Safari 本地，与文件更新无关；请定期在「词库」页下载 JSON 备份。
+新版本需发布构建产物的全部文件（包括 `sw.js`、图标、manifest 和许可声明），保留 `.nojekyll`，并为每次发布更新缓存版本。请先在「词库」页下载 JSON 备份；v3 会把旧数据迁移到 IndexedDB，详情见交接文档。
