@@ -129,13 +129,14 @@ describe('IndexedDB migration', () => {
   });
   it('refuses an invalid save and preserves the prior snapshot', async () => {
     const first = await openWorkspace(day);
-    const broken = { ...first.state, words: [{ ...first.state.words[0], meaning: '' }] };
+    const broken = { ...first.state, words: [{ ...makeState().words[0], meaning: '' }] };
     await expect(persistWorkspace(broken)).rejects.toThrow();
     expect((await openWorkspace(day)).state).toEqual(first.state);
   });
   it('does not hide a corrupted card table on reopen', async () => {
-    const first = await openWorkspace(day);
-    await db.cards.delete(first.state.words[0].id);
+    await openWorkspace(day);
+    await persistWorkspace(makeState());
+    await db.cards.clear();
     await expect(openWorkspace(day)).rejects.toThrow();
   });
   it('rejects stale-tab writes rather than overwriting an external save', async () => {

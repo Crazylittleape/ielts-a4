@@ -15,7 +15,7 @@ export default {
       },
       fontFamily: {
         ui: ['Calibri', 'Carlito', '-apple-system', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'sans-serif'],
-        serif: ['"Times New Roman"', 'Times', '"Liberation Serif"', '"Songti SC"', 'STSong', 'serif']
+        serif: ['"Times New Roman"', 'Times', '"Liberation Serif"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif']
       },
       boxShadow: {
         card: '0 2px 14px rgba(122, 86, 104, 0.08)',

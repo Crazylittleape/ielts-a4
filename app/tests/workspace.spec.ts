@@ -208,3 +208,75 @@ test('a failed spelling save preserves the answer and retry feedback',async({pag
   await expect(page.getByText('拼写有误，稍后重练',{exact:true})).toBeVisible();
   expect(await snapshot(page)).toEqual(before);
 });
+
+
+test('fresh workspace has zero calendar history and no demo words', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-10-22T12:00:00+08:00') });
+  await page.goto('/');
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await expect(page.getByTestId('today-learning')).toHaveText('0 组 / 0 词');
+  await expect(page.getByRole('button', { name: '今日 A4 攻坚 · 0 词', exact: true })).toBeVisible();
+  expect((await snapshot(page)).words).toHaveLength(0);
+  await page.getByRole('button', { name: '从词书开始学习', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '词书库', exact: true })).toBeVisible();
+});
+
+for (const groups of [1, 2]) test(`calendar personal progress: ${groups} groups with matching future A4 scope`, async ({ page }, info) => {
+  const focusCount = groups === 2 ? 2 : 0;
+  const words = fixture.words.map((word, index) => ({ ...word, nextReviewDate: '2026-10-23', ...(index < focusCount ? { focus: { active: true, addedAt: today, nextDate: '2026-10-23', reason: '词书薄弱词' }, tag: '雅思词汇真经 · 自然地理' } : {}) }));
+  const completed = Object.fromEntries(Array.from({ length: groups }, (_, i) => [`u01-g${String(i + 1).padStart(2, '0')}`, today]));
+  await start(page, { ...fixture, words, bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed } });
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await expect(page.getByTestId('today-learning')).toHaveText(`${groups} 组 / ${groups * 25} 词`);
+  await page.getByRole('button', { name: '选择日期 2026-10-23', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /^A4 攻坚 ·/ })).toHaveText(`A4 攻坚 · ${focusCount} 词（预计）`);
+  if (!focusCount) return;
+  await page.getByRole('button', { name: '打开 A4 攻坚 · 2 词', exact: true }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: '忘记', exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: `/Users/crazyape/Documents/Codex/2026-10-22/hi/outputs/A4-paper-${info.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部 FSRS 到期', exact: true }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(4);
+});
+
+test('today dashboard opens the exact all/focus counts and preserves focus review history', async ({ page }) => {
+  const words = fixture.words.map((word, index) => ({ ...word, ...(index < 2 ? { focus: { active: true, addedAt: '2026-10-21', nextDate: today } } : {}) }));
+  await start(page, { ...fixture, words });
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await page.getByRole('button', { name: '今日全部复习 · 4 词', exact: true }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(4);
+  await page.getByRole('button', { name: '当前：全部 FSRS 到期 · 切换重点攻坚', exact: true }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(2);
+  await page.getByRole('button', { name: '记住', exact: true }).first().click();
+  await expect(page.getByRole('listitem')).toHaveCount(2);
+  await expect(page.getByRole('button', { name: '记住', exact: true })).toHaveCount(1);
+  await page.reload();
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await expect(page.getByText(/A4 攻坚：已完成 1 词/)).toBeVisible();
+  const saved = await snapshot(page);
+  expect(saved.revlog).toHaveLength(1);
+});
+
+
+test('readable paper paginates without losing cards or grading other pages', async ({ page }, info) => {
+  const words = Array.from({ length: 9 }, (_, i) => ({ ...fixture.words[0], id: `page-word-${i}`, word: i === 0 ? 'electroencephalographically' : `vocabulary${i}`, meaning: '很长的中文释义用于确认手机屏幕上的换行与可读性', phonetic: '/ˌɪˌlɛktroʊ.ɛnˌsɛfəloʊˈɡræfɪkli/', tag: '雅思词汇真经 · 自然地理 · 第 1 组', focus: { active: true, addedAt: '2026-10-21', nextDate: today } }));
+  await start(page, { ...fixture, words });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(8);
+  await expect(page.getByText('今日复习 · 本页 8 词 · 第 1 / 2 页', { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(await page.getByText('electroencephalographically', { exact: true }).evaluate(element => element.getBoundingClientRect().right <= element.closest('button')!.getBoundingClientRect().right)).toBe(true);
+  await page.getByRole('listitem').first().screenshot({ path: `/Users/crazyape/Documents/Codex/2026-10-22/hi/outputs/A4-longword-${info.project.name}.png` });
+  await page.getByRole('button', { name: /只看中/ }).click();
+  await expect(page.getByRole('listitem').first().locator('.masked')).toHaveCount(1);
+  await page.getByRole('button', { name: /全显/ }).click();
+  await page.screenshot({ path: `/Users/crazyape/Documents/Codex/2026-10-22/hi/outputs/A4-study-${info.project.name}.png`, fullPage: true });
+  await page.getByRole('button', { name: '下一张', exact: true }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(1);
+  await page.getByRole('button', { name: /完成本页复习打卡 · 1 词/ }).click();
+  await page.getByRole('button', { name: '好的', exact: true }).click();
+  expect((await snapshot(page)).revlog).toHaveLength(1);
+  await page.getByRole('button', { name: '上一张', exact: true }).click();
+  await expect(page.getByRole('button', { name: '忘记', exact: true })).toHaveCount(8);
+});

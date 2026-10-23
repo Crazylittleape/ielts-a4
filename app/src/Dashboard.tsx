@@ -1,19 +1,20 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, Flame, ArrowRight, Volume2 } from 'lucide-react';
-import type { DaySchedule, WordItem } from './lib';
+import { ChevronLeft, ChevronRight, ArrowRight, Volume2 } from 'lucide-react';
+import type { WordItem } from './lib';
 import { addDays, formatDate, parseDate, weekdayCN, diffDays } from './lib';
-import { Card, PageHeader, Segmented, StageChip, primaryBtn, Empty } from './ui';
+import { emptyDay, reviewIds, type PersonalCalendar, type ReviewScope } from './calendar';
+import { Card, PageHeader, Segmented, primaryBtn, Empty } from './ui';
 
 interface Props {
   words: WordItem[];
   today: string;
-  schedule: Record<string, DaySchedule>;
+  calendar: PersonalCalendar;
   selectedDay: string;
   onSelectDay: (d: string) => void;
-  onOpenA4: (d: string) => void;
+  onOpenA4: (d: string, scope: ReviewScope) => void;
+  onOpenBook: () => void;
   onSpeak: (w: string) => void;
 }
-
 type CalMode = 'month' | 'week';
 
 function monthGrid(anchor: Date): (string | null)[] {
@@ -33,214 +34,87 @@ function weekGrid(anchor: string): string[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
-export function Dashboard({ words, today, schedule, selectedDay, onSelectDay, onOpenA4, onSpeak }: Props) {
+export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, onOpenA4, onOpenBook, onSpeak }: Props) {
   const [mode, setMode] = useState<CalMode>('month');
-  const [anchor, setAnchor] = useState<string>(today);
-
-  const stats = useMemo(() => {
-    const s = schedule[today] || { due: [], done: [], planned: [], added: [] };
-    const hard = words.filter((w) => w.isHard).length;
-    return { due: s.due.length, done: s.done.length, added: s.added.length, total: words.length, hard };
-  }, [schedule, today, words]);
-
-  const cells = useMemo(() => (mode === 'month' ? monthGrid(parseDate(anchor)) : weekGrid(anchor)), [mode, anchor]);
-
-  const shift = (n: number) => {
-    if (mode === 'month') {
-      const d = parseDate(anchor);
-      d.setDate(1);
-      d.setMonth(d.getMonth() + n);
-      setAnchor(formatDate(d));
-    } else setAnchor(addDays(anchor, 7 * n));
-  };
-
-  const anchorDate = parseDate(anchor);
-  const monthLabel = `${anchorDate.getFullYear()} 年 ${anchorDate.getMonth() + 1} 月`;
-  const sel = schedule[selectedDay] || { due: [], done: [], planned: [], added: [] };
-  const byId = useMemo(() => new Map(words.map((w) => [w.id, w])), [words]);
-
-  const preview = useMemo(() => {
-    const groups: { stage: number; items: WordItem[]; kind: 'due' | 'done' | 'planned' | 'added' }[] = [];
-    const push = (kind: 'due' | 'done' | 'planned' | 'added', stage: number, w: WordItem | undefined) => {
-      if (!w) return;
-      let g = groups.find((x) => x.kind === kind && x.stage === stage);
-      if (!g) {
-        g = { stage, items: [], kind };
-        groups.push(g);
-      }
-      g.items.push(w);
-    };
-    if (selectedDay === today) {
-      sel.due.forEach((d) => push('due', d.stage, byId.get(d.id)));
-      sel.done.forEach((id) => {
-        const w = byId.get(id);
-        if (w) push('done', Math.max(0, w.stage - 1), w);
-      });
-    } else if (selectedDay < today) {
-      sel.done.forEach((id) => {
-        const w = byId.get(id);
-        if (w) push('done', w.stage, w);
-      });
-    } else {
-      sel.planned.forEach((p) => push('planned', p.stage, byId.get(p.id)));
-    }
-    sel.added.forEach((id) => push('added', 0, byId.get(id)));
-    const order = { due: 0, planned: 1, done: 2, added: 3 };
-    return groups.sort((a, b) => order[a.kind] - order[b.kind] || a.stage - b.stage);
-  }, [sel, selectedDay, today, byId]);
-
-  const selDate = parseDate(selectedDay);
+  const [scope, setScope] = useState<ReviewScope>('focus');
+  const [anchor, setAnchor] = useState(today);
+  const schedule = calendar[scope];
+  const current = calendar.focus[today] ?? emptyDay();
+  const all = calendar.all[today] ?? emptyDay();
+  const learned = calendar.learning[today];
+  const cells = useMemo(() => mode === 'month' ? monthGrid(parseDate(anchor)) : weekGrid(anchor), [mode, anchor]);
+  const byId = useMemo(() => new Map(words.map(w => [w.id, w])), [words]);
+  const selected = schedule[selectedDay] ?? emptyDay();
+  const ids = reviewIds(schedule, selectedDay, today);
+  const selectedLearning = calendar.learning[selectedDay];
+  const selectedFocus = calendar.focus[selectedDay] ?? emptyDay();
   const rel = diffDays(selectedDay, today);
   const relLabel = rel === 0 ? '今天' : rel === 1 ? '明天' : rel === -1 ? '昨天' : rel > 0 ? `${rel} 天后` : `${-rel} 天前`;
-  const selCount = selectedDay === today ? sel.due.length + sel.done.length : selectedDay < today ? sel.done.length : sel.planned.length;
-
-  return (
-    <div className="safe-bottom-pad">
-      <PageHeader
-        title={
-          <>
-            Hello, <span className="italic text-rose-500">IELTS</span>
-          </>
-        }
-        subtitle={`${today} · 周${weekdayCN(parseDate(today))} · 艾宾浩斯 A4 工作台`}
-      />
-
-      <div className="space-y-4 px-4 pt-1">
-        <Card className="relative overflow-hidden p-5">
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-rose-100/70 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-12 -left-8 h-36 w-36 rounded-full bg-lilac-100/80 blur-2xl" />
-          <div className="relative">
-            <p className="text-xs font-extrabold tracking-[0.2em] text-rose-400">TODAY</p>
-            <div className="mt-1 flex items-end gap-2">
-              <span className="font-serif text-[56px] font-semibold leading-none text-ink">{stats.due}</span>
-              <span className="pb-2 text-sm font-bold text-ink-soft">词 待复习</span>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-bold">
-              <span className="rounded-full bg-sage-100 px-2.5 py-1 text-sage-500">已完成 {stats.done}</span>
-              <span className="rounded-full bg-lilac-100 px-2.5 py-1 text-lilac-500">今日新词 {stats.added}</span>
-              <span className="rounded-full bg-honey-100 px-2.5 py-1 text-honey-500">
-                <Flame size={11} className="-mt-0.5 mr-0.5 inline" />
-                顽固 {stats.hard}
-              </span>
-              <span className="rounded-full bg-stone-100 px-2.5 py-1 text-stone-500">词库 {stats.total}</span>
-            </div>
-            <button type="button" className={`${primaryBtn} mt-5 w-full text-[15px]`} onClick={() => onOpenA4(today)}>
-              <Sparkles size={18} />
-              {stats.due > 0 ? '立即开始今日 A4 纸刷词' : stats.done > 0 ? '今日已打卡 · 再翻一遍 A4 纸' : '今天没有任务 · 去录入新词'}
-            </button>
+  const shift = (n: number) => {
+    if (mode === 'week') return setAnchor(addDays(anchor, 7 * n));
+    const d = parseDate(anchor); d.setDate(1); d.setMonth(d.getMonth() + n); setAnchor(formatDate(d));
+  };
+  const anchorDate = parseDate(anchor);
+  const focusCount = reviewIds(calendar.focus, today, today).length;
+  const allCount = reviewIds(calendar.all, today, today).length;
+  return <div className="safe-bottom-pad">
+    <PageHeader title="我的学习日历" subtitle={`${today} · 周${weekdayCN(parseDate(today))} · 记录来自本机学习`} />
+    <div className="space-y-4 px-4 pt-1">
+      <Card className="p-5">
+        <p className="text-xs font-bold tracking-[0.2em] text-rose-500">TODAY / A4 攻坚</p>
+        <div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-[52px] leading-none">{current.due.length}</span><span className="text-sm text-ink-soft">词待攻坚</span></div>
+        <p className="mt-2 text-xs text-ink-soft">含逾期 {current.due.filter(w => w.overdue).length} 词 · 已完成 {current.done.length} 词 · 今日加入 {current.added.length} 词</p>
+        <div className="mt-4 grid grid-cols-2 gap-3 border-y border-stone-100 py-3 text-sm">
+          <div><p className="text-xs text-ink-soft">词书初学 · 已完成</p><p className="mt-1 font-bold" data-testid="today-learning">{learned?.groups ?? 0} 组 / {learned?.words ?? 0} 词</p></div>
+          <div><p className="text-xs text-ink-soft">全部长期复习（含 A4）</p><p className="mt-1 font-bold">待复习 {all.due.length} · 已完成 {all.done.length}</p></div>
+        </div>
+        <button type="button" className={`${primaryBtn} mt-4 w-full`} onClick={() => onOpenA4(today, 'focus')}>今日 A4 攻坚 · {focusCount} 词 <ArrowRight size={16} /></button>
+        <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-stone-200 text-sm font-bold" onClick={() => onOpenA4(today, 'all')}>今日全部复习 · {allCount} 词</button>
+        {!words.length && <button type="button" className="mt-3 min-h-11 w-full text-sm font-bold text-rose-600" onClick={onOpenBook}>从词书开始学习</button>}
+      </Card>
+      <Card className="p-4">
+        <Segmented options={[{ key: 'focus', label: 'A4 攻坚' }, { key: 'all', label: '全部复习' }]} value={scope} onChange={setScope} />
+        <div className="my-3 flex items-center justify-between">
+          <div className="flex items-center">
+            <button type="button" className="p-2 text-ink-soft" onClick={() => shift(-1)} aria-label="上一页"><ChevronLeft size={18} /></button>
+            <button type="button" className="text-sm font-bold" onClick={() => { setAnchor(today); onSelectDay(today); }}>{anchorDate.getFullYear()} 年 {anchorDate.getMonth() + 1} 月</button>
+            <button type="button" className="p-2 text-ink-soft" onClick={() => shift(1)} aria-label="下一页"><ChevronRight size={18} /></button>
           </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-1">
-              <button type="button" className="rounded-xl p-1.5 text-ink-soft active:bg-rose-50" onClick={() => shift(-1)} aria-label="上一页">
-                <ChevronLeft size={18} />
-              </button>
-              <button type="button" className="min-w-[112px] text-center text-sm font-extrabold text-ink" onClick={() => { setAnchor(today); onSelectDay(today); }}>
-                {monthLabel}
-              </button>
-              <button type="button" className="rounded-xl p-1.5 text-ink-soft active:bg-rose-50" onClick={() => shift(1)} aria-label="下一页">
-                <ChevronRight size={18} />
-              </button>
-            </div>
-            <div className="w-[120px]">
-              <Segmented size="sm" options={[{ key: 'month', label: '月' }, { key: 'week', label: '周' }]} value={mode} onChange={setMode} />
-            </div>
-          </div>
-          <div className="grid grid-cols-7 gap-y-1 text-center">
-            {['日', '一', '二', '三', '四', '五', '六'].map((d) => (
-              <div key={d} className="pb-1 text-[10px] font-extrabold text-ink-faint">
-                {d}
-              </div>
-            ))}
-            {cells.map((day, i) => {
-              if (!day) return <div key={`e${i}`} />;
-              const s = schedule[day];
-              const isToday = day === today;
-              const isSel = day === selectedDay;
-              const due = s ? s.due.length : 0;
-              const done = s ? s.done.length : 0;
-              const planned = s ? s.planned.length : 0;
-              const added = s ? s.added.length : 0;
-              const num = parseDate(day).getDate();
-              return (
-                <button key={day} type="button" onClick={() => onSelectDay(day)} className="flex flex-col items-center py-0.5">
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-bold transition ${
-                      isSel ? 'bg-gradient-to-br from-rose-400 to-lilac-400 text-white shadow-md shadow-rose-200' : isToday ? 'bg-rose-100 text-rose-600' : day < today ? 'text-ink-faint' : 'text-ink'
-                    }`}
-                  >
-                    {num}
-                  </span>
-                  <span className="mt-0.5 flex h-4 items-center gap-0.5 text-[9px] font-extrabold leading-none">
-                    {due > 0 && <span className="rounded-full bg-rose-500 px-1 py-0.5 text-white">{due}</span>}
-                    {done > 0 && <span className="rounded-full bg-sage-100 px-1 py-0.5 text-sage-500">✓{done}</span>}
-                    {planned > 0 && day > today && <span className="rounded-full bg-stone-100 px-1 py-0.5 text-stone-400">{planned}</span>}
-                    {added > 0 && due === 0 && done === 0 && !(planned > 0 && day > today) && <span className="h-1.5 w-1.5 rounded-full bg-lilac-300" />}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          <div className="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[10px] font-bold text-ink-faint">
-            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-rose-500" />待复习</span>
-            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-sage-300" />已完成</span>
-            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-stone-300" />未来预测</span>
-            <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-lilac-300" />录入</span>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-extrabold tracking-wide text-ink-soft">{relLabel} · 周{weekdayCN(selDate)}</p>
-              <h3 className="font-serif text-lg font-semibold text-ink">
-                {selDate.getMonth() + 1} 月 {selDate.getDate()} 日 · {selCount} 词
-              </h3>
-            </div>
-            {selCount > 0 && (
-              <button type="button" className="inline-flex items-center gap-1 rounded-2xl bg-rose-50 px-3 py-2 text-xs font-extrabold text-rose-600" onClick={() => onOpenA4(selectedDay)}>
-                进入该日 A4 纸 <ArrowRight size={14} />
-              </button>
-            )}
-          </div>
-          {preview.length === 0 ? (
-            <Empty emoji="🍃" title="这一天没有安排" desc={selectedDay < today ? '那天没有复习记录' : '录入新词后会自动排期'} />
-          ) : (
-            <div className="space-y-3">
-              {preview.map((g) => (
-                <div key={`${g.kind}-${g.stage}`}>
-                  <div className="mb-1.5 flex items-center gap-2">
-                    <StageChip word={g.items[0]} stage={g.stage} />
-                    <span className="text-[11px] font-bold text-ink-faint">
-                      {g.kind === 'due' ? '待复习' : g.kind === 'done' ? '已完成' : g.kind === 'planned' ? '预计复习' : '当日录入'} · {g.items.length} 词
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {g.items.map((w) => (
-                      <button
-                        key={`${g.kind}-${w.id}`}
-                        type="button"
-                        onClick={() => onSpeak(w.word)}
-                        className={`inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 font-serif text-[14px] ${
-                          g.kind === 'done' ? 'border-sage-100 bg-sage-50 text-sage-500 line-through decoration-sage-300' : 'border-rose-100 bg-white text-ink'
-                        }`}
-                        title={w.meaning}
-                      >
-                        {w.word}
-                        {w.isHard && <Flame size={11} className="text-honey-500" />}
-                        <Volume2 size={11} className="text-ink-faint" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <p className="pt-1 text-[10px] font-semibold text-ink-faint">FSRS 根据每次评分调整间隔；日历仅显示当前下一次到期预测。</p>
-            </div>
-          )}
-        </Card>
-      </div>
+          <div className="w-24"><Segmented size="sm" options={[{ key: 'month', label: '月' }, { key: 'week', label: '周' }]} value={mode} onChange={setMode} /></div>
+        </div>
+        <div className="grid grid-cols-7 gap-y-1 text-center">
+          {['日', '一', '二', '三', '四', '五', '六'].map(d => <div key={d} className="pb-1 text-[11px] text-ink-soft">{d}</div>)}
+          {cells.map((day, i) => {
+            if (!day) return <div key={`empty-${i}`} />;
+            const item = schedule[day] ?? emptyDay();
+            const activity = item.done.length + (calendar.learning[day]?.words ?? 0);
+            const count = day > today ? item.planned.length : day === today && item.due.length ? item.due.length : activity;
+            return <button type="button" key={day} aria-label={`选择日期 ${day}`} onClick={() => onSelectDay(day)} className="flex min-h-14 min-w-0 flex-col items-center py-1">
+              <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${day === selectedDay ? 'bg-rose-500 text-white' : day === today ? 'bg-rose-100 text-rose-600' : ''}`}>{parseDate(day).getDate()}</span>
+              <span className={`mt-1 text-[10px] leading-none ${day > today ? 'text-stone-500' : day === today && item.due.length ? 'text-rose-600' : 'text-sage-500'}`}>{count > 0 ? `${day > today ? '≈' : day === today && item.due.length ? '待' : '✓'}${count}` : item.added.length ? '+' : ''}</span>
+            </button>;
+          })}
+        </div>
+        <p className="mt-3 text-center text-[10px] text-ink-soft">✓ 已完成词数（初学 + 复习） · 待 到期含逾期 · ≈ 预计 · + 新增攻坚</p>
+      </Card>
+      <Card className="p-4">
+        <p className="text-xs font-bold text-ink-soft">{relLabel} · {selectedDay} · 周{weekdayCN(parseDate(selectedDay))}</p>
+        <h2 className="mt-1 text-lg font-bold">{scope === 'focus' ? 'A4 攻坚' : '全部复习'} · {ids.length} 词{selectedDay > today ? '（预计）' : ''}</h2>
+        {selectedDay <= today && <div className="mt-3 space-y-1 text-xs text-ink-soft">
+          <p>词书初学：{selectedLearning?.groups ?? 0} 组 / {selectedLearning?.words ?? 0} 词</p>
+          <p>全部复习：已完成 {calendar.all[selectedDay]?.done.length ?? 0} 词{selectedDay === today ? ` · 待复习 ${all.due.length} 词` : ''}</p>
+          <p>A4 攻坚：已完成 {selectedFocus.done.length} 词 · 新增 {selectedFocus.added.length} 词</p>
+        </div>}
+        {ids.length > 0 ? <>
+          <div className="mt-4 flex flex-wrap gap-2">{ids.map(id => {
+            const word = byId.get(id); if (!word) return null;
+            return <button type="button" key={id} title={word.meaning} onClick={() => onSpeak(word.word)} className="inline-flex items-center gap-1 rounded-lg border border-stone-200 px-2 py-1 font-serif text-base">{word.word}<Volume2 size={12} /></button>;
+          })}</div>
+          <button type="button" className="mt-4 min-h-11 w-full rounded-xl bg-rose-50 text-sm font-bold text-rose-600" onClick={() => onOpenA4(selectedDay, scope)}>打开{scope === 'focus' ? ' A4 攻坚' : '全部复习'} · {ids.length} 词 <ArrowRight size={14} className="inline" /></button>
+        </> : <Empty emoji="🍃" title={selectedDay > today ? '暂无预计复习' : '暂无此范围的复习记录'} desc={selectedDay > today ? '评分后，下次到期日会随记忆情况调整' : '完成词书学习后，挑选难词加入 A4，次日开始攻坚'} />}
+        <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">{selectedDay > today ? '预计仅包含每张卡片目前的下次到期日，实际安排会随评分变化。' : selectedDay < today ? '历史按当日唯一词卡计数。旧记录没有 A4 上下文时，仅归入全部复习。' : `本范围待复习 ${selected.due.length} 词，已完成 ${selected.done.length} 词；两者合并为此页清单。`}</p>
+      </Card>
+      <p className="px-1 text-[11px] leading-relaxed text-ink-soft">学习记录保存在当前浏览器。不同设备尚未同步，同一浏览器共用本机记录。A4 是全部复习中的重点词，两个数字不可相加。</p>
     </div>
-  );
+  </div>;
 }

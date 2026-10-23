@@ -7,7 +7,7 @@ export const INTERVALS = [1, 2, 4, 7, 15, 30];
 export const MAX_STAGE = INTERVALS.length - 1;
 export const STAGE_LABELS = ['迁移 S0', '迁移 S1', '迁移 S2', '迁移 S3', '迁移 S4', '迁移 S5'];
 export type SerializedCard = Omit<Card, 'due' | 'last_review'> & { due: string; last_review?: string };
-export interface ReviewEntry { id: string; wordId: string; day: string; rating: 0 | 1 | 2 | 3 | 4; log: Record<string, unknown> };
+export interface ReviewEntry { id: string; wordId: string; day: string; rating: 0 | 1 | 2 | 3 | 4; log: Record<string, unknown>; focus?: boolean };
 
 export interface WordItem {
   id: string;
@@ -26,6 +26,7 @@ export interface WordItem {
   isMastered?: boolean;
   favorite?: boolean;
   mastered?: boolean;
+  focusAddedDays?: string[];
   focus?: { active: boolean; addedAt: string; nextDate: string; reason?: string };
 }
 
@@ -137,14 +138,16 @@ function scheduleReview(w: WordItem, day: string, rating: 1 | 2 | 3 | 4): { word
 }
 
 export function addToFocus(w: WordItem, day: string, reason = '词书复习薄弱'): WordItem {
+  if (w.focus?.active) return w;
   const nextDate = addDays(day, 1);
-  const existing = w.focus;
-  const due = w.nextReviewDate > nextDate ? nextDate : w.nextReviewDate;
-  return { ...w, nextReviewDate: due, focus: { active: true, addedAt: existing?.addedAt ?? day, nextDate, reason: existing?.reason ?? reason } };
+  return { ...w, isMastered: false, mastered: false, nextReviewDate: nextDate,
+    card: { ...migrateCard(w), due: parseDate(nextDate).toISOString() },
+    focusAddedDays: uniqSorted([...(w.focusAddedDays ?? (w.focus ? [w.focus.addedAt] : [])), day]),
+    focus: { active: true, addedAt: day, nextDate, reason } };
 }
 
 export function isFocusDueOn(w: WordItem, day: string): boolean {
-  return Boolean(w.focus?.active && w.focus.nextDate <= day && !w.reviewHistory.includes(day));
+  return Boolean(w.focus?.active && isDueOn(w, day));
 }
 
 export function completeReview(w: WordItem, day: string): WordItem {
@@ -158,12 +161,12 @@ export function gradeWord(state: AppState, id: string, day: string, rating: 1 | 
   // and must not block a still-due local card. isDueOn also deduplicates grades.
   if (!word || !isDueOn(word, day)) return state;
   const next = scheduleReview(word, day, rating);
-  return { ...state, words: state.words.map((w) => w.id === id ? next.word : w), revlog: [...state.revlog, { id: uid(), wordId: id, day, rating, log: next.log }] };
+  return { ...state, words: state.words.map((w) => w.id === id ? next.word : w), revlog: [...state.revlog, { id: uid(), wordId: id, day, rating, log: next.log, focus: Boolean(word.focus?.active) }] };
 }
 
 export function hardReset(w: WordItem, day: string): WordItem {
   const due = addDays(day, 1);
-  return { ...w, isHard: true, stage: 0, nextReviewDate: due, card: serializeCard(createEmptyCard(parseDate(due))) };
+  return { ...w, isHard: true, stage: 0, nextReviewDate: due, ...(w.focus?.active ? { focus: { ...w.focus, nextDate: due } } : {}), card: serializeCard(createEmptyCard(parseDate(due))) };
 }
 
 export function resetWord(state: AppState, id: string, day: string): AppState {
@@ -221,6 +224,7 @@ export function normalizeWord(raw: unknown, fallbackDay: string): WordItem | nul
     card: r.card as SerializedCard | undefined,
     isFavorite: Boolean(r.isFavorite ?? r.favorite),
     isMastered: Boolean(r.isMastered ?? r.mastered),
+    ...(Array.isArray(r.focusAddedDays) ? { focusAddedDays: uniqSorted(r.focusAddedDays.filter(isValidDate)) } : {}),
     focus: isRecord(r.focus) && typeof r.focus.active === 'boolean' && isValidDate(r.focus.addedAt) && isValidDate(r.focus.nextDate)
       ? { active: r.focus.active, addedAt: r.focus.addedAt, nextDate: r.focus.nextDate, ...(typeof r.focus.reason === 'string' ? { reason: r.focus.reason } : {}) }
       : undefined
@@ -345,8 +349,8 @@ export function seedWords(today: string): WordItem[] {
 
 export const DEFAULT_SETTINGS = { dailyClaim: 30, lastClaimDate: '' };
 
-export function initialState(today: string): AppState {
-  return { words: seedWords(today).map((w) => ({ ...w, card: migrateCard(w) })), skipped: [], settings: { ...DEFAULT_SETTINGS }, revlog: [] };
+export function initialState(_today: string): AppState {
+  return { words: [], skipped: [], settings: { ...DEFAULT_SETTINGS }, revlog: [] };
 }
 
 export function loadState(today: string): { state: AppState; fresh: boolean } {
@@ -410,6 +414,7 @@ export function parseBackup(text: string, today: string): AppState {
   const ids = new Set<string>();
   const names = new Set<string>();
   const words = arr.map((raw, index) => {
+    if (strict && isRecord(raw) && raw.focusAddedDays !== undefined && (!Array.isArray(raw.focusAddedDays) || !raw.focusAddedDays.every(isValidDate))) throw new Error('A4 加入日期无效');
     const w = normalizeWord(raw, today);
     if (!w || !isRecord(raw)) throw new Error(`第 ${index + 1} 个单词无效，未导入任何数据`);
     if (strict && (typeof raw.id !== 'string' || !raw.id || !isValidDate(raw.createdAt) || !isValidDate(raw.nextReviewDate) || !Array.isArray(raw.reviewHistory) || !raw.reviewHistory.every(isValidDate) || typeof raw.isHard !== 'boolean' || typeof raw.stage !== 'number' || !Number.isInteger(raw.stage) || raw.stage < 0 || raw.stage > MAX_STAGE || ['phonetic', 'synonyms'].some((k) => typeof raw[k] !== 'string') || (raw.tag !== undefined && typeof raw.tag !== 'string') || (raw.card !== undefined && !validCard(raw.card)) || ['isFavorite', 'isMastered', 'favorite', 'mastered'].some((k) => raw[k] !== undefined && typeof raw[k] !== 'boolean'))) throw new Error(`第 ${index + 1} 个单词的日期或调度数据无效`);
@@ -436,6 +441,7 @@ export function parseBackup(text: string, today: string): AppState {
   const revlog: ReviewEntry[] = [];
   if (strict) for (const entry of obj.revlog as unknown[]) {
     if (!isRecord(entry) || typeof entry.id !== 'string' || !entry.id || logIds.has(entry.id) || typeof entry.wordId !== 'string' || !ids.has(entry.wordId) || !isValidDate(entry.day) || ![0, 1, 2, 3, 4].includes(Number(entry.rating)) || typeof entry.rating !== 'number' || !isRecord(entry.log)) throw new Error('复习日志无效');
+    if (entry.focus !== undefined && typeof entry.focus !== 'boolean') throw new Error('A4 复习上下文无效');
     const log = entry.log;
     if (entry.rating === 0 ? log.action !== 'reset' : !isTimestamp(log.review) || !isTimestamp(log.due) || log.rating !== entry.rating || typeof log.state !== 'number' || ![0, 1, 2, 3].includes(log.state) || ['stability', 'difficulty', 'elapsed_days', 'last_elapsed_days', 'scheduled_days', 'learning_steps'].some((key) => typeof log[key] !== 'number' || !Number.isFinite(log[key]) || Number(log[key]) < 0)) throw new Error('复习日志内容无效');
     logIds.add(entry.id); revlog.push(entry as unknown as ReviewEntry);
@@ -469,6 +475,13 @@ export function mergeStates(current: AppState, incoming: AppState): AppState {
     const existing = byName.get(word.word.toLowerCase());
     if (existing) {
       mapped.set(word.id, existing.id);
+      // Preserve focus evidence without replacing the authoritative local card.
+      const focusDays = uniqSorted([...(existing.focusAddedDays ?? (existing.focus ? [existing.focus.addedAt] : [])), ...(word.focusAddedDays ?? (word.focus ? [word.focus.addedAt] : []))]);
+      if (focusDays.length) {
+        const merged = { ...existing, focusAddedDays: focusDays, ...(!existing.focus && word.focus ? { focus: { ...word.focus, nextDate: existing.nextReviewDate } } : {}) };
+        words[words.findIndex(item => item.id === existing.id)] = merged;
+        byName.set(word.word.toLowerCase(), merged);
+      }
       // Keep the current card, due date and history as one coherent schedule.
       // Incoming raw logs remain available for audit/backup, without rescheduling.
       continue;
@@ -478,11 +491,11 @@ export function mergeStates(current: AppState, incoming: AppState): AppState {
   }
   const revlog = current.revlog.slice();
   const seen = new Set(revlog.map((l) => l.id));
-  const signatures = new Set(revlog.map((l) => `${l.wordId}|${l.day}|${l.rating}|${JSON.stringify(l.log)}`));
+  const signatures = new Set(revlog.map((l) => `${l.wordId}|${l.day}|${l.rating}|${l.focus ?? 'unknown'}|${JSON.stringify(l.log)}`));
   for (const entry of incoming.revlog) {
     const wordId = mapped.get(entry.wordId);
     if (!wordId) continue;
-    const signature = `${wordId}|${entry.day}|${entry.rating}|${JSON.stringify(entry.log)}`;
+    const signature = `${wordId}|${entry.day}|${entry.rating}|${entry.focus ?? 'unknown'}|${JSON.stringify(entry.log)}`;
     if (signatures.has(signature)) continue;
     revlog.push({ ...entry, wordId, id: seen.has(entry.id) ? uid() : entry.id });
     seen.add(revlog[revlog.length - 1].id); signatures.add(signature);

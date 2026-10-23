@@ -64,3 +64,15 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - 加入后安排到明天；重复点击幂等。A4 成功评分会退出当前攻坚清单但保留长期 FSRS 到期日；困难/忘记会继续保留并按 FSRS 重新排期。每个词每天最多评分一次。
 - 词书回忆卡提供“加入 A4 攻坚 · 明天复习”，不点击就不会加入；A4 页可切换“重点攻坚 / 全部 FSRS 到期”，底部角标只统计当日攻坚到期词。
 - 本次本地验证：`npm test` 36 项、`npm run build` 通过、移动 Chromium/WebKit E2E 20/20。新增核心测试覆盖同 ID、明日到期、重复加入、失败保留和成功退出。
+
+
+## Personal calendar and paper (2026-10-23)
+
+- Fresh workspaces contain no demo words/history. Existing local records, including indistinguishable old demo data, remain untouched. Accounts and cloud synchronization remain outside scope.
+- `calendar.ts` projects AppState into all/focus calendars plus real completed book groups and actual word counts. Early-created focus cards do not count as completed initial study. Unique word/day counts come from real nonzero review logs, with legacy reviewHistory fallback; resets are excluded. Future entries show only the current next due prediction.
+- Optional `ReviewEntry.focus` records focus membership at review time. Legacy logs without context are not retroactively classified as A4. Optional `WordItem.focusAddedDays` retains actual focus additions/re-additions. Both survive IndexedDB and v3 backups; invalid new fields reject import. Duplicate merges retain local schedule and focus metadata while preserving incoming historical evidence.
+- Dashboard/date detail and A4 use shared date/scope selectors: today due plus done, past actual done, future predicted. Dashboard labels include completed cards in the opened page count; pending and completed counts are shown separately. Focus is a subset of all review and cannot be summed with it.
+- Active focus additions are idempotent across days. A new addition synchronizes the shared card due date and focus date to tomorrow; reset synchronizes both. Successful review deactivates focus but preserves historical membership and long-term FSRS.
+- Warm-white paper uses subtle procedural grain, neutral desk, fine edge, soft shadow, date/source/count heading and footer. Each page holds at most eight cards without reducing mobile font sizes. Submission only grades due cards on the displayed page; English long words wrap within their own column. Chinese fallback uses sans fonts, headwords retain Times New Roman.
+- Verification: 42 Vitest tests, production TypeScript/Vite build, and 30 mobile Chromium/WebKit checks passed. Inspected full-page paper and long-word screenshots; verified no horizontal overflow, focus/all navigation, persistence, pagination, scope masking and offline reload. Actual iPhone hardware remains unverified.
+- Release cache: `ielts-a4-v3-20261023-personal-paper-1`. Existing sessions finish before the new worker takes over; close all site/PWA windows and reopen to activate it.

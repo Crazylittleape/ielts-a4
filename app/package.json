@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run src/core.test.ts src/content.test.ts src/book.test.ts",
+    "test": "vitest run src/core.test.ts src/content.test.ts src/book.test.ts src/calendar.test.ts",
     "test:e2e": "playwright test"
   },
   "dependencies": {
