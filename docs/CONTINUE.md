@@ -146,5 +146,12 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
   - 点了之后才发 `SKIP_WAITING`；`controllerchange` 只在用户点过更新后才刷新页面，首次安装的 `clients.claim()` 不会触发刷新。
   - 缓存名改为 `ielts-a4-v3-20261024-update-prompt-1`，发布时照旧要改。
 - 跨标签：`persistWorkspace` 成功后通过 `BroadcastChannel('ielts-a4-workspace')` 广播新的 revision。其他标签收到的 revision 和自己读到的不一致时，顶部显示“其他标签页已更新学习记录 · 刷新学习记录”。保存时的 revision 检查照旧保留，作为最后一道防线。
-- 验证：`npm test` 70 项（新增 `pwa.test.ts` 6 项，`db.test.ts` 新增 2 项）、`npm run build`、移动 Chromium/WebKit E2E 52/52（新增跨标签提醒 1 项）、`git diff --check` 通过。
-- 未验证：service worker 更新的整条流程只有单元测试（直接执行 `sw.js` 加模拟 registration），没有在浏览器里真的装一个新版本 worker 再切换过去。iPhone 主屏幕 App 的更新提示、iOS 对 BroadcastChannel 的支持（iOS 15.4 起才有）都没在真机上测过。
+- 验证：`npm test` 71 项（新增 `pwa.test.ts` 7 项，`db.test.ts` 新增 2 项）、`npm run build`、移动 Chromium/WebKit E2E 54/54（新增跨标签提醒、service worker 真实更新各 1 项）、`git diff --check` 通过。
+- 补充（同日）：
+  - `watchServiceWorker` 改为在新 worker 安装完成时才判断有没有控制者。这样第一次安装后一直没关闭的页面，后面再遇到更新也能弹出提示。
+  - 新增真实浏览器 E2E（移动 Chromium/WebKit 都跑）：
+    - 把 `dist` 复制到独立子路径并注册 service worker，然后改写 `sw.js` 缓存名，调用 `registration.update()`。
+    - 断言更新提示出现；点“立即更新”之前，旧缓存还在、新缓存已建好。
+    - 点击后页面刷新，只剩新缓存，IndexedDB 里的 4 个词还在，断网刷新仍能打开。
+  - 这个用例在运行时创建、结束时删除 `dist/__sw-update-*__/`，不影响构建产物。
+- 未验证：这条更新流程只在 Playwright 的 Chromium/WebKit 里跑过，没在 iOS Safari 或主屏幕 App 上跑过。iPhone 主屏幕 App 的更新提示、iOS 对 BroadcastChannel 的支持（iOS 15.4 起才有）都没在真机上测过。

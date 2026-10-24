@@ -1,14 +1,13 @@
 type WorkerLike = Pick<ServiceWorker, 'state' | 'postMessage' | 'addEventListener'>;
 type RegistrationLike = Pick<ServiceWorkerRegistration, 'waiting' | 'installing' | 'addEventListener'>;
 
-/** Calls onReady when a new build is installed and waiting; never on the first install. */
-export function watchServiceWorker(reg: RegistrationLike, hasController: boolean, onReady: (worker: WorkerLike) => void): void {
-  if (!hasController) return;
-  if (reg.waiting) onReady(reg.waiting);
+/** Calls onReady when a new build is installed and waiting; never on the first install (no controller yet). */
+export function watchServiceWorker(reg: RegistrationLike, hasController: () => boolean, onReady: (worker: WorkerLike) => void): void {
+  if (reg.waiting && hasController()) onReady(reg.waiting);
   reg.addEventListener('updatefound', () => {
     const worker = reg.installing;
     if (!worker) return;
-    worker.addEventListener('statechange', () => { if (worker.state === 'installed') onReady(worker); });
+    worker.addEventListener('statechange', () => { if (worker.state === 'installed' && hasController()) onReady(worker); });
   });
 }
 

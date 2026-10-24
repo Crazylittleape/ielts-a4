@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 const sequence: string[] = JSON.parse(readFileSync(new URL('../src/data/book-sequence.json', import.meta.url), 'utf8'));
 const today = '2026-10-22';
 const fixture = {words:[['alpha','第一个'],['beta','第二个'],['gamma','第三个'],['delta','第四个']].map(([word,meaning],i)=>({id:`word-${i}`,word,meaning,phonetic:'',synonyms:'',createdAt:'2026-10-20',stage:1,nextReviewDate:today,reviewHistory:['2026-10-20'],isHard:false})), skipped:[],settings:{dailyClaim:30,lastClaimDate:''}};
@@ -532,4 +532,38 @@ test('a save in another tab warns this tab before it can act on stale records', 
   await other.getByRole('button', { name: '刷新学习记录', exact: true }).click();
   await expect(other.getByRole('alert')).toHaveCount(0);
   expect(await other.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('a newly deployed service worker prompts first, then switches caches and keeps records and offline use', async ({ page, context }, testInfo) => {
+  const dir = `__sw-update-${testInfo.project.name}__`;
+  const dist = new URL('../dist/', import.meta.url);
+  const root = new URL(`${dir}/`, dist);
+  mkdirSync(root, { recursive: true });
+  for (const f of ['index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png']) copyFileSync(new URL(f, dist), new URL(f, root));
+  const sw = readFileSync(new URL('sw.js', dist), 'utf8');
+  const oldCache = sw.match(/const CACHE = '([^']+)'/)![1];
+  writeFileSync(new URL('sw.js', root), sw);
+  try {
+    await page.addInitScript(data => { if (!localStorage.getItem('fixture')) { localStorage.setItem('ielts_a4_workspace_v2', JSON.stringify(data)); localStorage.setItem('fixture', '1'); } }, fixture);
+    await page.goto(`/${dir}/`);
+    await expect(page.getByRole('button', { name: '学习统计', exact: true })).toBeVisible();
+    await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+    await expect(page.getByText('新版本已下载，学习记录不受影响。')).toHaveCount(0);
+    expect((await snapshot(page)).words).toHaveLength(4);
+    writeFileSync(new URL('sw.js', root), sw.replace(oldCache, `${oldCache}-next`));
+    await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration())!.update(); });
+    await expect(page.getByText('新版本已下载，学习记录不受影响。')).toBeVisible();
+    expect((await page.evaluate(() => caches.keys())).sort()).toEqual([oldCache, `${oldCache}-next`].sort());
+    await Promise.all([page.waitForEvent('load'), page.getByRole('button', { name: '立即更新', exact: true }).click()]);
+    await expect(page.getByRole('button', { name: '学习统计', exact: true })).toBeVisible();
+    await expect.poll(() => page.evaluate(() => caches.keys())).toEqual([`${oldCache}-next`]);
+    await expect(page.getByText('新版本已下载，学习记录不受影响。')).toHaveCount(0);
+    expect((await snapshot(page)).words).toHaveLength(4);
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.getByRole('button', { name: '学习统计', exact: true })).toBeVisible();
+    await context.setOffline(false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });

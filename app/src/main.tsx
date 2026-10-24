@@ -10,7 +10,7 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   // Reload only after the user chose to update; the first install's claim() must not reload.
   navigator.serviceWorker.addEventListener('controllerchange', () => { if (updating) { updating = false; location.reload(); } });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').then(reg => watchServiceWorker(reg, Boolean(navigator.serviceWorker.controller), worker => {
+    navigator.serviceWorker.register('sw.js').then(reg => watchServiceWorker(reg, () => Boolean(navigator.serviceWorker.controller), worker => {
       window.dispatchEvent(new CustomEvent(SW_UPDATE_EVENT, { detail: worker }));
     })).catch(() => undefined);
   });

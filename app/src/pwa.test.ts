@@ -45,23 +45,34 @@ function fakeRegistration(waiting: unknown = null) {
 }
 
 describe('update prompt detection', () => {
+  it('a session that started on the first install still gets prompted for a later update', () => {
+    const onReady = vi.fn();
+    let controlled = false;
+    const reg = fakeRegistration();
+    watchServiceWorker(reg as never, () => controlled, onReady);
+    const first = fakeWorker(); reg.found(first); first.fire('installed');
+    expect(onReady).not.toHaveBeenCalled();
+    controlled = true;
+    const next = fakeWorker(); reg.found(next); next.fire('installed');
+    expect(onReady).toHaveBeenCalledWith(next);
+  });
   it('offers an update already waiting from an earlier visit', () => {
     const waiting = fakeWorker('installed');
     const onReady = vi.fn();
-    watchServiceWorker(fakeRegistration(waiting) as never, true, onReady);
+    watchServiceWorker(fakeRegistration(waiting) as never, () => true, onReady);
     expect(onReady).toHaveBeenCalledWith(waiting);
   });
   it('does not prompt on the very first install (nothing to update from)', () => {
     const onReady = vi.fn();
     const reg = fakeRegistration(fakeWorker('installed'));
-    watchServiceWorker(reg as never, false, onReady);
+    watchServiceWorker(reg as never, () => false, onReady);
     const w = fakeWorker(); reg.found(w); w.fire('installed');
     expect(onReady).not.toHaveBeenCalled();
   });
   it('prompts once a newly found worker finishes installing, and applyUpdate asks it to take over', () => {
     const onReady = vi.fn();
     const reg = fakeRegistration();
-    watchServiceWorker(reg as never, true, onReady);
+    watchServiceWorker(reg as never, () => true, onReady);
     const w = fakeWorker(); reg.found(w);
     expect(onReady).not.toHaveBeenCalled();
     w.fire('installed');
