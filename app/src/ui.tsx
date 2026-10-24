@@ -63,7 +63,7 @@ export function PageHeader({ title, subtitle, left, right }: { title: ReactNode;
 
 const STAGE_STYLE = [
   'bg-rose-100 text-rose-600',
-  'bg-honey-100 text-honey-500',
+  'bg-honey-100 text-honey-700',
   'bg-lilac-100 text-lilac-500',
   'bg-sage-100 text-sage-500',
   'bg-sky-100 text-sky-600',
@@ -110,7 +110,7 @@ export function Segmented<T extends string>({ options, value, onChange, size = '
 }
 
 export function Toast({ message, tone }: { message: string; tone: 'ok' | 'warn' | 'info' }) {
-  const cls = tone === 'ok' ? 'bg-sage-500' : tone === 'warn' ? 'bg-honey-500' : 'bg-ink';
+  const cls = tone === 'ok' ? 'bg-sage-500' : tone === 'warn' ? 'bg-honey-600' : 'bg-ink';
   return (
     <div className={`toast-in fixed left-1/2 z-[70] max-w-[88vw] rounded-2xl px-4 py-2.5 text-center text-[13px] font-bold text-white shadow-lg ${cls}`} style={{ bottom: 'calc(96px + env(safe-area-inset-bottom))' }}>
       {message}
@@ -131,7 +131,10 @@ export function DoneStamp({ title, subtitle, onClose }: { title: string; subtitl
         <div data-testid="done-stamp" aria-hidden="true" className="stamp-in mx-auto flex h-24 w-24 items-center justify-center rounded-full border-[5px] border-double border-sage-500 font-serif text-lg font-bold tracking-widest text-sage-500">已复习</div>
         <h3 id="done-title" className="mt-4 font-serif text-2xl font-semibold text-ink">{title}</h3>
         <p id="done-desc" className="mt-2 text-sm font-semibold text-ink-soft">{subtitle}</p>
-        <button type="button" autoFocus className={`${primaryBtn} mt-5 w-full`} onClick={onClose}>
+        <button type="button" autoFocus className={`${primaryBtn} mt-5 w-full`} onClick={onClose} onKeyDown={event => {
+          // This dialog has one focusable control; keep Tab and Shift+Tab inside it.
+          if (event.key === 'Tab') event.preventDefault();
+        }}>
           好的
         </button>
       </div>

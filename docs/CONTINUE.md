@@ -195,3 +195,4 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - 数据：没有修改 WordItem、FSRS、revlog、Dexie 表结构或备份格式。
 - 验证：Vitest 88 项（新增 `coach.test.ts` 4 项），移动 Chromium/WebKit E2E 86 项（新增 10 项）。在 320px 宽度下，200% 根字号时首页、A4、看板、挑战页均无横向溢出；reduced-motion 下动画时长为 0.01ms。主要文字对比度：ink 13.1:1、ink-soft 5.7:1、主按钮白字 6.3:1、挑战舞台白字 16.5:1。
 - 仍未验证：iPhone 真机 Safari 和主屏幕 App 的实际观感、VoiceOver 播报、系统“减少动态效果”开关。
+- Codex 接收：完整补丁 SHA-256 `3621aaef0770f48a523268b103f2ad348ecf6e644330086e1c7e4be89d991402`，应用后 tree `74507f9bdaf6c05e2adbaed0802d2132286255e0` 与 Devin 一致。本机复核 88 单测、86 移动 E2E、构建和 diff 检查通过；32 张隔离测试截图覆盖 320/375/390/1280px，未发现横向溢出或页面脚本异常。另复现并修复印章弹窗 Tab/Shift+Tab 逃逸，补入现有 E2E；调深黄色阶段标签和警告提示的文字对比度（6.17:1、5.20:1），缩小词书封面字以避免末字单独换行。

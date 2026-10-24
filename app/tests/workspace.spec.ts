@@ -847,6 +847,12 @@ test('reduced motion: the A4 done stamp is a labelled dialog without animation',
   await page.getByRole('button', { name: '提交已勾选 1 词 · 按「记住」评分', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: '今日打卡完成' });
   await expect(dialog).toBeVisible();
+  const close = dialog.getByRole('button', { name: '好的', exact: true });
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(close).toBeFocused();
   const duration = await page.getByTestId('done-stamp').evaluate(el => parseFloat(getComputedStyle(el).animationDuration));
   expect(duration).toBeLessThan(0.05);
   await dialog.getByRole('button', { name: '好的', exact: true }).click();

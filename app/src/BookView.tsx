@@ -102,7 +102,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
       </Card></div>}
       <Card className="overflow-hidden">
         <div className="flex items-start gap-4 bg-cream p-5">
-          <div aria-hidden="true" className="flex h-28 w-20 shrink-0 flex-col justify-between rounded-r-xl border-l-[6px] border-honey-300 bg-rose-600 p-3 text-honey-100 shadow-[3px_4px_0_rgba(39,42,61,0.18)]"><BookOpen size={21} /><span className="font-serif text-sm font-bold leading-snug">雅思<br />词汇真经</span></div>
+          <div aria-hidden="true" className="flex h-28 w-20 shrink-0 flex-col justify-between rounded-r-xl border-l-[6px] border-honey-300 bg-rose-600 p-3 text-honey-100 shadow-[3px_4px_0_rgba(39,42,61,0.18)]"><BookOpen size={21} /><span className="font-serif text-xs font-bold leading-snug">雅思<br />词汇真经</span></div>
           <div className="min-w-0 flex-1 pt-1"><p className="text-xs font-bold text-lilac-500">我的词书 · 第 {stats.completedGroups + (stats.current ? 1 : 0)} / {BOOK_GROUPS.length} 组</p><h2 className="mt-2 font-serif text-xl font-semibold">{BOOK.title}</h2><p className="mt-2 text-xs text-ink-soft">{BOOK.edition} · 22 单元</p><p className="mt-1 text-xs text-ink-soft">共 {stats.total} 词 · 每组 25 词</p></div>
         </div>
         <div className="space-y-3 p-5">
