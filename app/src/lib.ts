@@ -146,6 +146,15 @@ export function addToFocus(w: WordItem, day: string, reason = '词书复习薄�
     focus: { active: true, addedAt: day, nextDate, reason } };
 }
 
+/** Takes a word out of the current A4 list; the shared FSRS card is untouched. */
+export function removeFromFocus(w: WordItem, day: string): WordItem {
+  if (!w.focus?.active) return w;
+  // A same-day removal is an undo of a mistaken add, so it leaves no A4 history.
+  const days = (w.focusAddedDays ?? [w.focus.addedAt]).filter(d => !(w.focus!.addedAt === day && d === day));
+  if (!days.length) { const { focus: _focus, focusAddedDays: _days, ...rest } = w; return rest; }
+  return { ...w, focusAddedDays: days, focus: { ...w.focus, active: false } };
+}
+
 export function isFocusDueOn(w: WordItem, day: string): boolean {
   return Boolean(w.focus?.active && isDueOn(w, day));
 }

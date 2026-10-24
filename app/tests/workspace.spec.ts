@@ -301,7 +301,7 @@ test('group completion picks only chosen weak words, and tomorrow A4 shows exact
   await expect(page.getByRole('listitem').first()).toContainText('本次出错');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.getByRole('button', { name: `加入 A4：${sequence[23]}`, exact: true }).click();
-  await expect(page.getByRole('button', { name: `已加入 A4：${sequence[23]}`, exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: `移出 A4：${sequence[23]}`, exact: true })).toBeVisible();
   await expect(page.getByText('已选 1 词加入 A4 · 明天只复习这些', { exact: true })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('book-focus-picker.png'), fullPage: true });
   const saved = await snapshot(page);
@@ -310,7 +310,7 @@ test('group completion picks only chosen weak words, and tomorrow A4 shows exact
   await page.getByRole('button', { name: '返回词书', exact: true }).click();
   await page.getByRole('button', { name: /第 1 单元 自然地理/ }).click();
   await page.getByRole('button', { name: /第 1 组 · 25 词/ }).click();
-  await expect(page.getByRole('button', { name: `已加入 A4：${sequence[23]}`, exact: true })).toBeDisabled();
+  await expect(page.getByRole('button', { name: `移出 A4：${sequence[23]}`, exact: true })).toBeVisible();
   await expect(page.getByRole('listitem')).toHaveCount(25);
   await page.clock.setSystemTime(new Date('2026-10-23T09:00:00+08:00'));
   await page.reload();
@@ -332,4 +332,36 @@ test('an app left open overnight moves today’s A4 and dashboard to the new day
   await expect(page.getByText(/^今日任务/)).toBeVisible();
   await page.getByRole('button', { name: '看板', exact: true }).click();
   await expect(page.getByText(/^今天 · 2026-10-23/)).toBeVisible();
+});
+test('a mistaken A4 pick can be undone in the picker and in My Words, without demo-data reset', async ({ page }, testInfo) => {
+  await start(page, { ...fixture, bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: { 'u01-g01': today } } });
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await page.getByRole('button', { name: /第 1 单元 自然地理/ }).click();
+  await page.getByRole('button', { name: /第 1 组 · 25 词/ }).click();
+  for (const word of sequence.slice(0, 2)) await page.getByRole('button', { name: `加入 A4：${word}`, exact: true }).click();
+  await expect(page.getByText('已选 2 词加入 A4 · 明天只复习这些', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: `移出 A4：${sequence[1]}`, exact: true }).click();
+  await expect(page.getByText('已选 1 词加入 A4 · 明天只复习这些', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: `加入 A4：${sequence[1]}`, exact: true })).toBeVisible();
+  const active = async () => ((await snapshot(page)).words as { word: string; focus?: { active: boolean } }[]).filter(w => w.focus?.active).map(w => w.word);
+  expect(await active()).toEqual([sequence[0]]);
+
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  await expect(page.getByRole('button', { name: '恢复示例数据' })).toHaveCount(0);
+  await page.getByRole('button', { name: /^A4 攻坚 1$/ }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(1);
+  const row = page.getByRole('listitem').first();
+  await expect(row).toContainText(sequence[0]);
+  await expect(row).toContainText('A4 攻坚 · 2026-10-23 到期');
+  await page.screenshot({ path: testInfo.outputPath('bank-focus-filter.png') });
+  await row.getByRole('button', { name: '移出 A4', exact: true }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^A4 攻坚 0$/ })).toBeVisible();
+  expect(await active()).toEqual([]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await page.clock.setSystemTime(new Date('2026-10-23T09:00:00+08:00'));
+  await page.reload();
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByText('今天没有待复习的单词', { exact: true })).toBeVisible();
 });

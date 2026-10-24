@@ -13,9 +13,10 @@ interface Props {
   onSetDailyGroups: (count: number) => void;
   onSpeak: (word: string) => void;
   onFocus: (word: string, reason?: string) => Promise<boolean>;
+  onUnfocus: (word: string) => Promise<boolean>;
 }
 
-function FocusPicker({ group, state, missed, onFocus, onSpeak }: { group: BookGroup; state: AppState; missed: string[]; onFocus: Props['onFocus']; onSpeak: Props['onSpeak'] }) {
+function FocusPicker({ group, state, missed, onFocus, onUnfocus, onSpeak }: { group: BookGroup; state: AppState; missed: string[]; onFocus: Props['onFocus']; onUnfocus: Props['onUnfocus']; onSpeak: Props['onSpeak'] }) {
   const focused = new Set(state.words.filter(word => word.focus?.active).map(word => word.word.toLowerCase()));
   const missedSet = new Set(missed.map(word => word.toLowerCase()));
   const ordered = [...group.words.filter(word => missedSet.has(word.toLowerCase())), ...group.words.filter(word => !missedSet.has(word.toLowerCase()))];
@@ -32,13 +33,13 @@ function FocusPicker({ group, state, missed, onFocus, onSpeak }: { group: BookGr
           <span className="flex flex-wrap items-baseline gap-x-2"><span className="break-words font-serif text-lg font-semibold leading-tight">{name}</span>{isMissed && <span className="rounded bg-rose-50 px-1.5 text-[10px] font-bold text-rose-600">本次出错</span>}</span>
           <span className="mt-0.5 line-clamp-2 block break-words text-xs text-ink-soft">{getBookWord(name).meaning}</span>
         </button>
-        <button type="button" aria-label={`${isFocused ? '已加入' : '加入'} A4：${name}`} disabled={isFocused} onClick={() => void onFocus(name, isMissed ? '词书回忆出错' : '词书自选薄弱')} className={`min-h-11 shrink-0 rounded-xl border px-3 text-xs font-bold ${isFocused ? 'border-sage-200 bg-sage-50 text-sage-500' : 'border-honey-300 bg-honey-50 text-ink'}`}>{isFocused ? '已加入 ✓' : '加入 A4'}</button>
+        <button type="button" aria-label={`${isFocused ? '移出' : '加入'} A4：${name}`} onClick={() => void (isFocused ? onUnfocus(name) : onFocus(name, isMissed ? '词书回忆出错' : '词书自选薄弱'))} className={`min-h-11 shrink-0 rounded-xl border px-3 text-xs font-bold ${isFocused ? 'border-sage-200 bg-sage-50 text-sage-500' : 'border-honey-300 bg-honey-50 text-ink'}`}>{isFocused ? <>已加入 ✓<span className="block text-[10px] font-normal">点按撤销</span></> : '加入 A4'}</button>
       </li>;
     })}</ul>
   </Card>;
 }
 
-export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onFocus }: Props) {
+export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onFocus, onUnfocus }: Props) {
   const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study' | 'review'>('library');
   const [missed, setMissed] = useState<Record<string, string[]>>({});
   const [finishedId, setFinishedId] = useState<string | null>(null);
@@ -100,7 +101,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   if (screen === 'study') {
     if (!active || !activeGroup || !question) {
       const finished = BOOK_GROUPS.find(group => group.id === finishedId && progress.completed[group.id]);
-      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><Check className="mx-auto text-sage-500" size={36} /><h2 className="text-2xl font-bold">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始长期复习。</p></Card>{finished && <FocusPicker group={finished} state={state} missed={missed[finished.id] ?? []} onFocus={onFocus} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
+      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><Check className="mx-auto text-sage-500" size={36} /><h2 className="text-2xl font-bold">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始长期复习。</p></Card>{finished && <FocusPicker group={finished} state={state} missed={missed[finished.id] ?? []} onFocus={onFocus} onUnfocus={onUnfocus} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
     }
     const { word, kind, round } = question;
     const mode = ['英文回忆中文', '音标回忆中文', '中文拼写英文'][round];
@@ -136,7 +137,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   const reviewGroup = BOOK_GROUPS.find(group => group.id === reviewId && progress.completed[group.id]);
   if (screen === 'review' && reviewGroup) return <div className="safe-bottom-pad">
     <PageHeader title={`${reviewGroup.unitTitle} · 第 ${reviewGroup.index} 组`} subtitle={`已完成 ${progress.completed[reviewGroup.id]} · 选词加入 A4`} left={back('unit')} />
-    <div className="px-4"><FocusPicker group={reviewGroup} state={state} missed={missed[reviewGroup.id] ?? []} onFocus={onFocus} onSpeak={onSpeak} /></div>
+    <div className="px-4"><FocusPicker group={reviewGroup} state={state} missed={missed[reviewGroup.id] ?? []} onFocus={onFocus} onUnfocus={onUnfocus} onSpeak={onSpeak} /></div>
   </div>;
 
   if (screen === 'unit') return <div className="safe-bottom-pad">

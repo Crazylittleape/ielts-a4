@@ -1,10 +1,10 @@
 import { useMemo, useRef, useState } from 'react';
-import { Search, Volume2, Flame, Pencil, Trash2, Download, Copy, Upload, ClipboardPaste, RotateCcw, Eraser, Database } from 'lucide-react';
+import { Search, Volume2, Flame, Pencil, Trash2, Download, Copy, Upload, ClipboardPaste, Eraser, Database } from 'lucide-react';
 import type { AppState, WordItem } from './lib';
 import { isDueOn, backupJson } from './lib';
 import { Card, PageHeader, StageChip, inputCls, softBtn, ghostBtn, SectionTitle, Empty } from './ui';
 
-type Filter = 'all' | 'due' | 'hard' | 'favorite' | 'mastered' | 's0' | 's1' | 's2' | 's3' | 's4' | 's5';
+type Filter = 'all' | 'focus' | 'due' | 'hard' | 'favorite' | 'mastered' | 's0' | 's1' | 's2' | 's3' | 's4' | 's5';
 
 interface Props {
   state: AppState;
@@ -16,12 +16,12 @@ interface Props {
   onToggleHard: (id: string) => void;
   onSpeak: (w: string) => void;
   onImport: (text: string, mode: 'merge' | 'replace') => Promise<boolean>;
-  onResetSeed: () => void;
+  onUnfocus: (word: string) => Promise<boolean>;
   onClearAll: () => void;
   toast: (msg: string, tone?: 'ok' | 'warn' | 'info') => void;
 }
 
-export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggleFavorite, onToggleMastered, onSpeak, onImport, onResetSeed, onClearAll, toast }: Props) {
+export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggleFavorite, onToggleMastered, onSpeak, onImport, onUnfocus, onClearAll, toast }: Props) {
   const { words } = state;
   const mistakes = useMemo(() => new Set(state.revlog.filter(log => log.rating === 1).map(log => log.wordId)), [state.revlog]);
   const [filter, setFilter] = useState<Filter>('all');
@@ -39,6 +39,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
     const k = q.trim().toLowerCase();
     return words
       .filter((w) => {
+        if (filter === 'focus') return Boolean(w.focus?.active);
         if (filter === 'due') return isDueOn(w, today);
         if (filter === 'hard') return w.isHard || mistakes.has(w.id);
         if (filter === 'favorite') return w.isFavorite;
@@ -52,8 +53,9 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
   }, [words, filter, q, tag, today, mistakes]);
 
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { all: words.length, due: 0, hard: 0, favorite: 0, mastered: 0, s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0 };
+    const c: Record<Filter, number> = { all: words.length, focus: 0, due: 0, hard: 0, favorite: 0, mastered: 0, s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0 };
     words.forEach((w) => {
+      if (w.focus?.active) c.focus++;
       if (isDueOn(w, today)) c.due++;
       if (w.isHard || mistakes.has(w.id)) c.hard++;
       if (w.isFavorite) c.favorite++;
@@ -65,6 +67,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
 
   const filters: { key: Filter; label: string }[] = [
     { key: 'all', label: '全部' },
+    { key: 'focus', label: 'A4 攻坚' },
     { key: 'due', label: '今日待复习' },
     { key: 'hard', label: '🔥 错词 / 顽固' },
     { key: 'favorite', label: '★ 收藏' },
@@ -159,6 +162,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
                       {w.synonyms && <span className="italic text-lilac-500">≈ {w.synonyms} · </span>}
                       {w.isMastered ? "已掌握 · 暂停排期" : `下次 ${w.nextReviewDate}`} · 复习 {w.reviewHistory.length - 1} 次{w.tag ? ` · ${w.tag}` : ''}
                     </p>
+                    {w.focus?.active && <div className="mt-1 flex flex-wrap items-center gap-2 text-[10.5px] font-bold"><span className="rounded bg-honey-50 px-1.5 py-0.5 text-honey-700">A4 攻坚 · {w.focus.nextDate} 到期</span><button type="button" className="min-h-8 rounded-lg border border-stone-200 px-2 text-ink-soft" onClick={() => void onUnfocus(w.word)}>移出 A4</button></div>}
                   </div>
                   <div className="flex max-w-[104px] shrink-0 flex-wrap items-center justify-end">
                     <button type="button" className="rounded-xl p-1.5 text-xs text-rose-500" onClick={() => onToggleFavorite(w.id)} aria-label={w.isFavorite ? "取消收藏" : "收藏"}>{w.isFavorite ? "★" : "☆"}</button>
@@ -198,8 +202,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
               </button>
             </div>
           )}
-          <div className="mt-4 grid grid-cols-2 gap-2 border-t border-rose-50 pt-3">
-            <button type="button" className={`${ghostBtn} text-xs`} onClick={onResetSeed}><RotateCcw size={14} /> 恢复示例数据</button>
+          <div className="mt-4 grid grid-cols-1 gap-2 border-t border-rose-50 pt-3">
             {confirmClear ? (
               <button type="button" className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-rose-500 px-4 py-2.5 text-xs font-bold text-white" onClick={() => { onClearAll(); setConfirmClear(false); }}>
                 <Eraser size={14} /> 确认清空单词和进度？

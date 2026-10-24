@@ -86,3 +86,12 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - v3 备份中 `focus` 字段格式非法（`active` 非布尔、日期无效、`reason` 非字符串等）时拒绝整份导入（“A4 攻坚状态无效”），v1/v2 旧备份仍宽松忽略。
 - App 跨午夜仍打开时：`today` 每 30 秒/回到前台刷新，A4 与看板若停在“昨天=当时的今天”会跟随切到新的一天；用户手动选的其他日期不变。
 - 验证：`npm test` 46 项、`npm run build`、移动 Chromium/WebKit E2E 34/34 通过；检查了完成页选择器截图，iPhone 13 视口无横向溢出。注意 E2E 用 `vite preview` 读取 `dist/`，改代码后必须先 `npm run build` 再跑 E2E。真机 iPhone（Safari 语音、主屏幕 standalone、原生键盘、长期存储、真实跨午夜唤醒）仍未验证。
+
+## 撤销误加 A4、我的单词 A4 筛选（2026-10-24 第二轮）
+
+- 新增 `removeFromFocus(word, day)`：只关闭当前攻坚，不改 FSRS card、`nextReviewDate` 和 revlog。当天加入又当天移出视为误点撤销，同时去掉当天的 `focusAddedDays`，日历“新增攻坚”不再计数；以前真实加入过的日期保留。之后可以重新加入。
+- 已知取舍：加入 A4 时已把共享卡片的到期日提前到明天，撤销后不会恢复原来的更晚到期日，这个词明天仍出现在“全部复习”（不出现在 A4）。恢复原到期日需要新增数据字段，本轮没有做。
+- 完成页/已完成组选择器里，已加入的词显示“已加入 ✓ 点按撤销”（`移出 A4：词`）。
+- 我的单词新增“A4 攻坚 N”筛选，行内显示“A4 攻坚 · 日期 到期”和“移出 A4”按钮，可以集中查看、清理当前攻坚清单。
+- 删除了“恢复示例数据”按钮：它会用示例词覆盖全部词库、进度和日志，和“不重新引入默认示例词、已有记录不能误删”冲突。`seedWords` 仍保留在 `lib.ts`，但界面上不再调用。“清空单词和进度”仍需二次确认。
+- 新增 `src/focus.test.ts` 并加入 `npm test`。验证：`npm test` 48 项、`npm run build`、移动 Chromium/WebKit E2E 36/36 通过。
