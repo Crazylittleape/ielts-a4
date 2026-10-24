@@ -4,7 +4,7 @@ import { loadState, parseBackup, todayStr, type AppState, type ReviewEntry, type
 interface MetaRow { key: string; value: unknown }
 interface CardRow { id: string; card: SerializedCard }
 export interface BackupRow { key: string; day: string; json: string; reason?: 'import' | 'clear'; createdAt?: string; summary?: StateSummary }
-export type WorkspaceEvent = 'blocked' | 'replaced';
+export type WorkspaceEvent = 'blocked' | 'replaced' | 'changed';
 export const MAX_AUTO_BACKUPS = 5;
 const listeners = new Set<(event: WorkspaceEvent) => void>();
 const emit = (event: WorkspaceEvent) => listeners.forEach(fn => fn(event));
@@ -13,6 +13,8 @@ export function onWorkspaceEvent(fn: (event: WorkspaceEvent) => void): () => voi
   return () => { listeners.delete(fn); };
 }
 let replacedElsewhere = false;
+const channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel('ielts-a4-workspace');
+if (channel) channel.onmessage = event => { if (event.data?.type === 'changed' && event.data.revision !== loadedRevision) emit('changed'); };
 
 class WorkspaceDatabase extends Dexie {
   words!: Table<Omit<WordItem, 'card'>, string>;
@@ -30,7 +32,7 @@ class WorkspaceDatabase extends Dexie {
     this.on('blocked', () => emit('blocked'));
     // A newer build opened elsewhere: close so its upgrade can run; refuse later writes here.
     this.on('versionchange', () => { replacedElsewhere = true; this.close(); emit('replaced'); return false; });
-    this.on('ready', () => { replacedElsewhere = false; });
+    this.on('ready', () => { replacedElsewhere = false; }, true);
   }
 }
 
@@ -63,6 +65,7 @@ export async function persistWorkspace(state: AppState): Promise<void> {
     await writeSnapshot(valid, savedRevision);
   });
   loadedRevision = savedRevision;
+  channel?.postMessage({ type: 'changed', revision: savedRevision });
 }
 
 export async function openWorkspace(today: string): Promise<{ state: AppState; fresh: boolean }> {

@@ -132,3 +132,19 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - 打开后先调用 `navigator.storage.persisted()`，未持久化时再调用 `persist()`。备份区显示结果；未获持久保存时提示 iPhone 从 Safari 添加到主屏幕并定期导出。
 - 验证：`npm test` 62 项（新增 `db.test.ts` 5 项，已加入 `npm test`）、`npm run build`、移动 Chromium/WebKit E2E 50/50、`git diff --check` 通过。
 - 未验证：iOS Safari 上 `persist()` 的实际返回和逐出策略、主屏幕 App 与 Safari 标签同时打开时的升级阻塞、真机旧数据升级。
+
+## Service worker 更新提示、跨标签即时提醒、写入回滚（2026-10-24 第六轮）
+
+- 审查结论：
+  - service worker 安装后不会 `skipWaiting`，新版本要等所有窗口都关掉才生效。iPhone 主屏幕 App 常驻后台，可能一直停在旧版本。
+  - 跨标签冲突原来只在保存那一刻才拦下：旧标签上做完一次评分，点保存才报错，这次评分没存上。
+  - 覆盖导入写入本来就在同一个 Dexie 事务里。新增测试模拟中途写入失败（`revlog.bulkPut` 抛 QuotaExceededError）：旧词、日志、revision 全部保留，之后的保存仍然正常。
+  - 上一轮的 `db.on('ready')` 没加 sticky 参数，只在第一次打开时触发，数据库重新打开后不会清除“已被新版本接管”的标记。已改为 `on('ready', fn, true)`。
+- 更新提示：
+  - `src/pwa.ts` 的 `watchServiceWorker` 只在已有控制者（不是首次安装）且新 worker 进入 `installed` 后才提示。
+  - 顶部显示“新版本已下载，学习记录不受影响 · 立即更新”，保存中不能点。
+  - 点了之后才发 `SKIP_WAITING`；`controllerchange` 只在用户点过更新后才刷新页面，首次安装的 `clients.claim()` 不会触发刷新。
+  - 缓存名改为 `ielts-a4-v3-20261024-update-prompt-1`，发布时照旧要改。
+- 跨标签：`persistWorkspace` 成功后通过 `BroadcastChannel('ielts-a4-workspace')` 广播新的 revision。其他标签收到的 revision 和自己读到的不一致时，顶部显示“其他标签页已更新学习记录 · 刷新学习记录”。保存时的 revision 检查照旧保留，作为最后一道防线。
+- 验证：`npm test` 70 项（新增 `pwa.test.ts` 6 项，`db.test.ts` 新增 2 项）、`npm run build`、移动 Chromium/WebKit E2E 52/52（新增跨标签提醒 1 项）、`git diff --check` 通过。
+- 未验证：service worker 更新的整条流程只有单元测试（直接执行 `sw.js` 加模拟 registration），没有在浏览器里真的装一个新版本 worker 再切换过去。iPhone 主屏幕 App 的更新提示、iOS 对 BroadcastChannel 的支持（iOS 15.4 起才有）都没在真机上测过。

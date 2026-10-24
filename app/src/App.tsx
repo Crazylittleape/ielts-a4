@@ -3,6 +3,7 @@ import { Home, BookOpenText, Library, X } from 'lucide-react';
 import type { AppState, StateSummary, WordFields, WordItem } from './lib';
 import { backupJson, createWord, focusSummary, gradeWord, removeFromFocus, resetWord, parseBackup, mergeBackup, speak, stateSummary, todayStr } from './lib';
 import { buildCalendar, type ReviewScope } from './calendar';
+import { applyUpdate, SW_UPDATE_EVENT } from './pwa';
 import { listAutoBackups, onWorkspaceEvent, openWorkspace, persistWorkspace, saveAutoBackup, type BackupRow } from './db';
 import { MatchingGame, Statistics } from './Practice';
 import { Dashboard } from './Dashboard';
@@ -129,9 +130,17 @@ export default function App() {
   const refreshBackups = useCallback(() => listAutoBackups().then(setAutoBackups).catch(() => undefined), []);
   useEffect(() => { void refreshBackups(); }, [refreshBackups]);
   const [blocked, setBlocked] = useState(false);
+  const [staleElsewhere, setStaleElsewhere] = useState(false);
+  const [update, setUpdate] = useState<ServiceWorker | null>(null);
+  useEffect(() => {
+    const onUpdate = (e: Event) => setUpdate((e as CustomEvent<ServiceWorker>).detail);
+    window.addEventListener(SW_UPDATE_EVENT, onUpdate);
+    return () => window.removeEventListener(SW_UPDATE_EVENT, onUpdate);
+  }, []);
   const [storagePersisted, setStoragePersisted] = useState<boolean | null>(null);
   useEffect(() => onWorkspaceEvent(event => {
     if (event === 'blocked') setBlocked(true);
+    else if (event === 'changed') setStaleElsewhere(true);
     else setSaveError('新版本已在其他窗口打开。请刷新本页后再操作，当前页面不会再写入学习记录。');
   }), []);
   const toastTimer = useRef<number | null>(null);
@@ -299,6 +308,8 @@ export default function App() {
 
   if (!state) return <main className="mx-auto max-w-[480px] space-y-4 p-6"><h1 className="text-xl font-bold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : blocked ? '另一个窗口仍在使用旧版本的学习记录。请关闭其他打开的本站页面或主屏幕 App，读取会自动继续。' : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
   return <div className="mx-auto min-h-screen max-w-[480px] font-ui text-ink">
+    {staleElsewhere && !saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>其他标签页已更新学习记录。请刷新后继续，避免在旧页面上操作。</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>刷新学习记录</button></div>}
+    {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 bg-sage-100 p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
     {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
       {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><BookView state={state} today={today} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onFocus={onFocus} onUnfocus={onUnfocus} /></>}

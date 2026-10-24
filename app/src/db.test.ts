@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import Dexie from 'dexie';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BOOK, BOOK_GROUPS } from './bookCatalog';
 import { addToFocus, createWord, gradeWord, initialState, STORAGE_KEY, type AppState } from './lib';
 import { db, listAutoBackups, MAX_AUTO_BACKUPS, onWorkspaceEvent, openWorkspace, persistWorkspace, saveAutoBackup, type WorkspaceEvent } from './db';
@@ -118,5 +118,43 @@ describe('automatic backups before destructive actions', () => {
     await db.backups.put({ key: 'before-import', day: '2026-10-23', json: '{"legacy":true}' });
     await saveAutoBackup('{"n":1}', day, 'import', { words: 1, focus: 0, logs: 0, groups: 0 });
     expect((await listAutoBackups()).map(r => r.json)).toEqual(['{"n":1}', '{"legacy":true}']);
+  });
+});
+
+describe('atomic writes and cross-tab notice', () => {
+  it('a failed replace write rolls back completely and later saves still work', async () => {
+    await db.open();
+    await openWorkspace(day);
+    const original = realState();
+    await persistWorkspace(original);
+    const revision = (await db.meta.get('revision'))?.value;
+    const spy = vi.spyOn(db.revlog, 'bulkPut').mockImplementationOnce(() => { throw new Error('QuotaExceededError'); });
+    const incoming = { ...initialState(day), words: [createWord({ word: 'gamma', meaning: '第三个' }, day)] };
+    await expect(persistWorkspace(incoming)).rejects.toThrow('QuotaExceededError');
+    spy.mockRestore();
+    const { state } = await openWorkspace(day);
+    expect(state.words.map(w => w.word).sort()).toEqual(['alpha', 'beta']);
+    expect(state.revlog).toEqual(original.revlog);
+    expect((await db.meta.get('revision'))?.value).toBe(revision);
+    await persistWorkspace(incoming);
+    expect((await db.meta.get('revision'))?.value).toBe(Number(revision) + 1);
+  });
+
+  it('tells other tabs right after a save, and reacts to saves from other tabs', async () => {
+    const events: WorkspaceEvent[] = [];
+    const off = onWorkspaceEvent(e => events.push(e));
+    const otherTab = new BroadcastChannel('ielts-a4-workspace');
+    const received: unknown[] = [];
+    otherTab.onmessage = e => received.push(e.data);
+    await db.open();
+    const { state } = await openWorkspace(day);
+    await persistWorkspace({ ...state, words: realState().words });
+    await until(() => received.length > 0);
+    expect(received[0]).toMatchObject({ type: 'changed', revision: 1 });
+    otherTab.postMessage({ type: 'changed', revision: 2 });
+    await until(() => events.includes('changed'));
+    expect(events).toContain('changed');
+    otherTab.close();
+    off();
   });
 });

@@ -518,3 +518,18 @@ test('a newer database version opened in another tab makes this tab stop writing
   await page.evaluate(() => new Promise<void>((resolve, reject) => { const r = indexedDB.open('ielts-a4-v3', 30); r.onsuccess = () => { r.result.close(); resolve(); }; r.onerror = () => reject(r.error); r.onblocked = () => reject(new Error('blocked')); }));
   await expect(other.getByRole('alert')).toContainText('新版本已在其他窗口打开');
 });
+
+test('a save in another tab warns this tab before it can act on stale records', async ({ page, context }) => {
+  await start(page);
+  const other = await context.newPage();
+  await other.goto('/');
+  await expect(other.getByRole('button', { name: '学习统计', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  await page.getByRole('button', { name: '清空单词和进度', exact: true }).click();
+  await page.getByRole('button', { name: '确认清空单词和进度？', exact: true }).click();
+  await expect(other.getByRole('alert')).toContainText('其他标签页已更新学习记录');
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await other.getByRole('button', { name: '刷新学习记录', exact: true }).click();
+  await expect(other.getByRole('alert')).toHaveCount(0);
+  expect(await other.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});

@@ -1,11 +1,13 @@
 // Bump this name with every published build. Only this app's caches are cleaned.
-const CACHE = 'ielts-a4-v3-20261023-personal-paper-1';
+const CACHE = 'ielts-a4-v3-20261024-update-prompt-1';
 const ROOT = new URL('./', self.location.href);
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
   // Let an existing app session finish before activating an update.
 });
+// The page posts SKIP_WAITING only after the user taps “更新”.
+self.addEventListener('message', event => { if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting(); });
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('ielts-a4-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
