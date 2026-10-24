@@ -95,3 +95,14 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - 我的单词新增“A4 攻坚 N”筛选，行内显示“A4 攻坚 · 日期 到期”和“移出 A4”按钮，可以集中查看、清理当前攻坚清单。
 - 删除了“恢复示例数据”按钮：它会用示例词覆盖全部词库、进度和日志，和“不重新引入默认示例词、已有记录不能误删”冲突。`seedWords` 仍保留在 `lib.ts`，但界面上不再调用。“清空单词和进度”仍需二次确认。
 - 新增 `src/focus.test.ts` 并加入 `npm test`。验证：`npm test` 48 项、`npm run build`、移动 Chromium/WebKit E2E 36/36 通过。
+
+## A4 只提交明确评分、撤销恢复排期、攻坚生命周期（2026-10-24 第三轮）
+
+- A4 页不再有“完成本页复习打卡”把未评分词默认按「记住」提交。只有两种方式会写 FSRS：逐词点“忘记/困难/记住/轻松”，或勾选圆圈后点“提交已勾选 N 词 · 按「记住」评分”（勾选本身就是用户明确表示记住）。页面显示“本页已评分 X / Y”；未评分词保留在今日待复习，可点“稍后处理”离开，排期不变。
+- `addToFocus` 在 `focus.before` 里保存加入前的 `nextReviewDate`、card 和掌握标记。`scheduleReview`（评分）和 `hardReset`（重置）都会丢掉这份快照，所以 `removeFromFocus` 只在加入后没有新评分/重置时恢复原排期；已有新评分时保留最新 FSRS 结果。合并导入时不会把别处的快照套到本机卡片上。v3 备份里非法的 `before` 会拒绝导入（“A4 攻坚状态无效”）。没有快照的旧数据撤销时保持当前排期。
+- `focusStatus(word, today, revlog)` 给出生命周期：攻坚中 · 某日到期 / 攻坚中 · 今日待复习 / 今日已完成 · 继续攻坚 / 今日已完成 · 已退出攻坚 / 已退出攻坚 · 历史加入 N 次。“今日已完成”只认 `ReviewEntry.focus === true` 的真实评分。`focusSummary` 汇总这些数字：A4 重点页顶部显示“今日待复习 · 今日已完成 · 未到期 · 已退出”；页面为空时提示“另有 N 词攻坚中，最早某日到期”。我的单词新增“攻坚记录”筛选，每行显示状态。
+- 覆盖导入前，弹窗对比备份和当前的词数、A4 词数、复习日志数（不含重置）、词书完成组数；确认后先把当前记录存进 Dexie `backups` 表（数据库 version 2，不在快照表里，覆盖时不会被清掉），存储失败就取消覆盖。之后“我的单词”出现“下载覆盖前的自动备份”。合并导入后提示新增词数、保留本机排期的同名词数和新增日志数。严格校验没有放松。
+- 新用户（无单词、无完成组）在词书库看到只读的“第一次使用 · 三步上手”，不写入任何数据。
+- A4 评分按钮的 aria-label 带单词（如“记住：alpha”），勾选圆圈是“勾选记住：词”并带 aria-pressed。朗读出错（`SpeechSynthesisUtterance.onerror`，排除 interrupted/canceled）时提示检查静音开关、音量或系统英语语音。
+- 验证：`npm test` 54 项、`npm run build`、移动 Chromium/WebKit E2E 44/44、`git diff --check` 通过；看过 A4 评分进度截图，iPhone 13 视口无横向溢出。
+- 未验证：真机 iPhone Safari 静音模式下 `onerror` 是否真的触发（iOS 可能静默失败、不报错）、主屏幕 standalone、原生键盘、长期存储、真实锁屏跨午夜。看板/日历的“待复习/已完成/新增/预计”区分本轮没有改。

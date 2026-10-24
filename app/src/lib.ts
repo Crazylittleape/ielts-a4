@@ -27,7 +27,16 @@ export interface WordItem {
   favorite?: boolean;
   mastered?: boolean;
   focusAddedDays?: string[];
-  focus?: { active: boolean; addedAt: string; nextDate: string; reason?: string };
+  focus?: FocusState;
+}
+
+/** Schedule before an A4 add; only kept while no newer review/reset has touched the card. */
+export interface FocusSnapshot { nextReviewDate: string; card: SerializedCard; isMastered?: boolean; mastered?: boolean }
+export interface FocusState { active: boolean; addedAt: string; nextDate: string; reason?: string; before?: FocusSnapshot }
+
+function withoutSnapshot(focus: FocusState): FocusState {
+  const { before: _before, ...rest } = focus;
+  return rest;
 }
 
 export interface WordFields {
@@ -130,7 +139,7 @@ function scheduleReview(w: WordItem, day: string, rating: 1 | 2 | 3 | 4): { word
   // A4 is a daily worksheet: even Again is reviewed on the next local day.
   const dueDay = formatDate(result.card.due) > day ? formatDate(result.card.due) : addDays(day, 1);
   result.card.due = parseDate(dueDay);
-  const focus = w.focus?.active ? { ...w.focus, active: rating <= 2, nextDate: dueDay } : w.focus;
+  const focus = w.focus ? withoutSnapshot(w.focus.active ? { ...w.focus, active: rating <= 2, nextDate: dueDay } : w.focus) : undefined;
   return {
     word: { ...w, card: serializeCard(result.card), nextReviewDate: dueDay, reviewHistory: uniqSorted([...w.reviewHistory, day]), isHard: w.isHard || result.card.lapses >= 4, ...(focus ? { focus } : {}) },
     log: JSON.parse(JSON.stringify(result.log)) as Record<string, unknown>
@@ -140,19 +149,68 @@ function scheduleReview(w: WordItem, day: string, rating: 1 | 2 | 3 | 4): { word
 export function addToFocus(w: WordItem, day: string, reason = '词书复习薄弱'): WordItem {
   if (w.focus?.active) return w;
   const nextDate = addDays(day, 1);
+  const card = migrateCard(w);
+  const before: FocusSnapshot = { nextReviewDate: w.nextReviewDate, card, ...(w.isMastered !== undefined ? { isMastered: w.isMastered } : {}), ...(w.mastered !== undefined ? { mastered: w.mastered } : {}) };
   return { ...w, isMastered: false, mastered: false, nextReviewDate: nextDate,
-    card: { ...migrateCard(w), due: parseDate(nextDate).toISOString() },
+    card: { ...card, due: parseDate(nextDate).toISOString() },
     focusAddedDays: uniqSorted([...(w.focusAddedDays ?? (w.focus ? [w.focus.addedAt] : [])), day]),
-    focus: { active: true, addedAt: day, nextDate, reason } };
+    focus: { active: true, addedAt: day, nextDate, reason, before } };
 }
 
-/** Takes a word out of the current A4 list; the shared FSRS card is untouched. */
+/**
+ * Takes a word out of the current A4 list. If the card has not been reviewed or
+ * reset since it was added, its pre-add schedule is restored; otherwise the
+ * newest FSRS result is kept.
+ */
 export function removeFromFocus(w: WordItem, day: string): WordItem {
   if (!w.focus?.active) return w;
+  const { before } = w.focus;
+  const restored: WordItem = before ? { ...w, nextReviewDate: before.nextReviewDate, card: before.card, isMastered: before.isMastered ?? false, mastered: before.mastered ?? false } : w;
+  if (before && before.isMastered === undefined) delete restored.isMastered;
+  if (before && before.mastered === undefined) delete restored.mastered;
   // A same-day removal is an undo of a mistaken add, so it leaves no A4 history.
   const days = (w.focusAddedDays ?? [w.focus.addedAt]).filter(d => !(w.focus!.addedAt === day && d === day));
-  if (!days.length) { const { focus: _focus, focusAddedDays: _days, ...rest } = w; return rest; }
-  return { ...w, focusAddedDays: days, focus: { ...w.focus, active: false } };
+  if (!days.length) { const { focus: _focus, focusAddedDays: _days, ...rest } = restored; return rest; }
+  return { ...restored, focusAddedDays: days, focus: { ...withoutSnapshot(w.focus), active: false } };
+}
+
+export type FocusStatusKey = 'none' | 'waiting' | 'due' | 'doneStay' | 'doneExit' | 'exited';
+
+/** Where a word stands in A4 today, from its own state and real focus review logs. */
+export function focusStatus(w: WordItem, today: string, revlog: ReviewEntry[]): { key: FocusStatusKey; label: string } {
+  const added = w.focusAddedDays ?? (w.focus ? [w.focus.addedAt] : []);
+  if (!w.focus && !added.length) return { key: 'none', label: '' };
+  const doneToday = revlog.some(l => l.wordId === w.id && l.day === today && l.rating > 0 && l.focus === true);
+  if (w.focus?.active) {
+    if (doneToday) return { key: 'doneStay', label: `今日已完成 · 继续攻坚，${w.focus.nextDate} 再复习` };
+    if (isDueOn(w, today)) return { key: 'due', label: '攻坚中 · 今日待复习' };
+    return { key: 'waiting', label: `攻坚中 · ${w.focus.nextDate} 到期` };
+  }
+  if (doneToday) return { key: 'doneExit', label: '今日已完成 · 已退出攻坚' };
+  return { key: 'exited', label: `已退出攻坚 · 历史加入 ${added.length} 次` };
+}
+
+export interface FocusSummary { due: number; done: number; waiting: number; exited: number; nextDate?: string }
+
+export function focusSummary(state: AppState, today: string): FocusSummary {
+  const summary: FocusSummary = { due: 0, done: 0, waiting: 0, exited: 0 };
+  for (const w of state.words) {
+    const { key } = focusStatus(w, today, state.revlog);
+    if (key === 'due') summary.due++;
+    else if (key === 'doneStay' || key === 'doneExit') summary.done++;
+    else if (key === 'exited') summary.exited++;
+    else if (key === 'waiting') {
+      summary.waiting++;
+      if (w.focus && (!summary.nextDate || w.focus.nextDate < summary.nextDate)) summary.nextDate = w.focus.nextDate;
+    }
+  }
+  return summary;
+}
+
+export interface StateSummary { words: number; focus: number; logs: number; groups: number }
+
+export function stateSummary(state: AppState): StateSummary {
+  return { words: state.words.length, focus: state.words.filter(w => w.focus?.active).length, logs: state.revlog.filter(l => l.rating > 0).length, groups: Object.keys(state.bookLearning?.completed ?? {}).length };
 }
 
 export function isFocusDueOn(w: WordItem, day: string): boolean {
@@ -175,7 +233,7 @@ export function gradeWord(state: AppState, id: string, day: string, rating: 1 | 
 
 export function hardReset(w: WordItem, day: string): WordItem {
   const due = addDays(day, 1);
-  return { ...w, isHard: true, stage: 0, nextReviewDate: due, ...(w.focus?.active ? { focus: { ...w.focus, nextDate: due } } : {}), card: serializeCard(createEmptyCard(parseDate(due))) };
+  return { ...w, isHard: true, stage: 0, nextReviewDate: due, ...(w.focus ? { focus: withoutSnapshot(w.focus.active ? { ...w.focus, nextDate: due } : w.focus) } : {}), card: serializeCard(createEmptyCard(parseDate(due))) };
 }
 
 export function resetWord(state: AppState, id: string, day: string): AppState {
@@ -235,7 +293,7 @@ export function normalizeWord(raw: unknown, fallbackDay: string): WordItem | nul
     isMastered: Boolean(r.isMastered ?? r.mastered),
     ...(Array.isArray(r.focusAddedDays) ? { focusAddedDays: uniqSorted(r.focusAddedDays.filter(isValidDate)) } : {}),
     focus: isRecord(r.focus) && typeof r.focus.active === 'boolean' && isValidDate(r.focus.addedAt) && isValidDate(r.focus.nextDate)
-      ? { active: r.focus.active, addedAt: r.focus.addedAt, nextDate: r.focus.nextDate, ...(typeof r.focus.reason === 'string' ? { reason: r.focus.reason } : {}) }
+      ? { active: r.focus.active, addedAt: r.focus.addedAt, nextDate: r.focus.nextDate, ...(typeof r.focus.reason === 'string' ? { reason: r.focus.reason } : {}), ...(r.focus.active && validSnapshot(r.focus.before) ? { before: r.focus.before } : {}) }
       : undefined
   };
 }
@@ -385,6 +443,10 @@ function validCard(value: unknown): value is SerializedCard {
   return fields.every((key) => typeof value[key] === 'number' && Number.isFinite(value[key]) && Number(value[key]) >= 0) && typeof value.state === 'number' && [0, 1, 2, 3].includes(value.state) && Number(value.difficulty) <= 10 && (Number(value.reps) === 0 || isTimestamp(value.last_review)) && ['reps', 'lapses', 'scheduled_days', 'learning_steps'].every((key) => Number.isInteger(Number(value[key])));
 }
 
+function validSnapshot(value: unknown): value is FocusSnapshot {
+  return isRecord(value) && isValidDate(value.nextReviewDate) && validCard(value.card) && ['isMastered', 'mastered'].every(key => value[key] === undefined || typeof value[key] === 'boolean');
+}
+
 function parseBookLearning(value: unknown): BookLearning {
   if (!isRecord(value) || value.bookId !== BOOK.id || typeof value.dailyGroups !== 'number' || !Number.isInteger(value.dailyGroups) || value.dailyGroups < 1 || value.dailyGroups > 10 || !isRecord(value.completed)) throw new Error('词书学习设置无效');
   const completed: Record<string, string> = {};
@@ -423,7 +485,7 @@ export function parseBackup(text: string, today: string): AppState {
   const ids = new Set<string>();
   const names = new Set<string>();
   const words = arr.map((raw, index) => {
-    if (strict && isRecord(raw) && raw.focus !== undefined && !(isRecord(raw.focus) && typeof raw.focus.active === 'boolean' && isValidDate(raw.focus.addedAt) && isValidDate(raw.focus.nextDate) && (raw.focus.reason === undefined || typeof raw.focus.reason === 'string'))) throw new Error('A4 攻坚状态无效');
+    if (strict && isRecord(raw) && raw.focus !== undefined && !(isRecord(raw.focus) && typeof raw.focus.active === 'boolean' && isValidDate(raw.focus.addedAt) && isValidDate(raw.focus.nextDate) && (raw.focus.reason === undefined || typeof raw.focus.reason === 'string') && (raw.focus.before === undefined || validSnapshot(raw.focus.before)))) throw new Error('A4 攻坚状态无效');
     if (strict && isRecord(raw) && raw.focusAddedDays !== undefined && (!Array.isArray(raw.focusAddedDays) || !raw.focusAddedDays.every(isValidDate))) throw new Error('A4 加入日期无效');
     const w = normalizeWord(raw, today);
     if (!w || !isRecord(raw)) throw new Error(`第 ${index + 1} 个单词无效，未导入任何数据`);
@@ -488,7 +550,7 @@ export function mergeStates(current: AppState, incoming: AppState): AppState {
       // Preserve focus evidence without replacing the authoritative local card.
       const focusDays = uniqSorted([...(existing.focusAddedDays ?? (existing.focus ? [existing.focus.addedAt] : [])), ...(word.focusAddedDays ?? (word.focus ? [word.focus.addedAt] : []))]);
       if (focusDays.length) {
-        const merged = { ...existing, focusAddedDays: focusDays, ...(!existing.focus && word.focus ? { focus: { ...word.focus, nextDate: existing.nextReviewDate } } : {}) };
+        const merged = { ...existing, focusAddedDays: focusDays, ...(!existing.focus && word.focus ? { focus: { ...withoutSnapshot(word.focus), nextDate: existing.nextReviewDate } } : {}) };
         words[words.findIndex(item => item.id === existing.id)] = merged;
         byName.set(word.word.toLowerCase(), merged);
       }
@@ -527,7 +589,7 @@ function pickVoice(): SpeechSynthesisVoice | null {
   return voiceCache;
 }
 
-export function speak(text: string): boolean {
+export function speak(text: string, onError?: () => void): boolean {
   if (typeof window === 'undefined' || !('speechSynthesis' in window)) return false;
   try {
     window.speechSynthesis.cancel();
@@ -537,6 +599,7 @@ export function speak(text: string): boolean {
     u.pitch = 1;
     const v = pickVoice();
     if (v) u.voice = v;
+    u.onerror = (event) => { if (event.error !== 'interrupted' && event.error !== 'canceled') onError?.(); };
     window.speechSynthesis.speak(u);
     return true;
   } catch {

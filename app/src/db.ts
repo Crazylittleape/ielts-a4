@@ -3,16 +3,20 @@ import { loadState, parseBackup, todayStr, type AppState, type ReviewEntry, type
 
 interface MetaRow { key: string; value: unknown }
 interface CardRow { id: string; card: SerializedCard }
+export interface BackupRow { key: string; day: string; json: string }
 
 class WorkspaceDatabase extends Dexie {
   words!: Table<Omit<WordItem, 'card'>, string>;
   cards!: Table<CardRow, string>;
   revlog!: Table<ReviewEntry, string>;
   meta!: Table<MetaRow, string>;
+  backups!: Table<BackupRow, string>;
 
   constructor() {
     super('ielts-a4-v3');
     this.version(1).stores({ words: 'id,word,nextReviewDate', cards: 'id', revlog: 'id,wordId,day', meta: 'key' });
+    // Kept outside the snapshot tables so a replace import never clears it.
+    this.version(2).stores({ backups: 'key' });
   }
 }
 
@@ -73,6 +77,14 @@ async function readSnapshot(today: string): Promise<AppState> {
     if (words.some((w) => !byId.has(w.id)) || cards.some((c) => !wordIds.has(c.id))) throw new Error('数据库中的单词和复习卡不匹配，请先保留备份');
     return parseBackup(JSON.stringify({ version: 3, words: words.map((w) => ({ ...w, card: byId.get(w.id) })), revlog, settings: settings?.value, skipped: skipped?.value, bookLearning: bookLearning?.value }), today);
   });
+}
+
+export async function saveImportBackup(json: string, day: string): Promise<void> {
+  await db.backups.put({ key: 'before-import', day, json });
+}
+
+export async function loadImportBackup(): Promise<BackupRow | undefined> {
+  return db.backups.get('before-import');
 }
 
 export const loadDatabase = openWorkspace;

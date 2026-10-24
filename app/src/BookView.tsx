@@ -82,6 +82,15 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   if (screen === 'library') return <div className="safe-bottom-pad">
     <PageHeader title="词书库" subtitle="选一本书，按单元慢慢学完" />
     <div className="space-y-4 px-4">
+      {!state.words.length && !Object.keys(progress.completed).length && <div data-testid="first-run-guide"><Card className="p-4">
+        <h2 className="text-sm font-extrabold text-ink">第一次使用 · 三步上手</h2>
+        <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-ink-soft">
+          <li>打开词书，按顺序学一组：先教学，再回忆检查，最后拼写强化。</li>
+          <li>学完一组，只把没记牢的词点“加入 A4”，记得的词不用管。</li>
+          <li>第二天打开“A4 刷词”，只复习你挑的词；逐词评分后自动安排下次复习。</li>
+        </ol>
+        <p className="mt-2 text-[11px] text-ink-faint">这里没有示例词，词库从你学的第一组开始。</p>
+      </Card></div>}
       <Card className="overflow-hidden">
         <div className="flex items-start gap-4 bg-lilac-50/60 p-5">
           <div className="flex h-28 w-20 shrink-0 flex-col justify-between rounded-r-xl border-l-4 border-rose-300 bg-rose-100 p-3 text-rose-600"><BookOpen size={21} /><span className="font-serif text-sm font-bold">雅思<br />词汇真经</span></div>

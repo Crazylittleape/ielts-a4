@@ -16,21 +16,22 @@ async function snapshot(page: Page) {
     const result={words:await read('words'),cards:await read('cards'),revlog:await read('revlog'),meta:await read('meta')};db.close();return result;
   });
 }
-test('migrate, grade once, bulk remainder and persist after reload',async({page})=>{
+test('migrate, grade once, submit explicitly ticked words and persist after reload',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await start(page);
   await page.getByRole('button',{name:/A4 刷词/}).click();
   await page.getByRole('button',{name:'当前：重点攻坚 · 切换全部 FSRS 到期'}).click();
-  await page.getByRole('button',{name:'忘记',exact:true}).first().click();
-  await expect(page.getByRole('button',{name:'忘记',exact:true})).toHaveCount(3);
-  await page.getByRole('button',{name:/完成本页复习打卡/}).click();
+  await page.getByRole('button',{name:/^忘记：/}).first().click();
+  await expect(page.getByRole('button',{name:/^忘记：/})).toHaveCount(3);
+  for (const word of ['beta','gamma','delta']) await page.getByRole('button',{name:`勾选记住：${word}`,exact:true}).click();
+  await page.getByRole('button',{name:/提交已勾选 3 词/}).click();
   await expect(page.getByText('已保存 3 个词的复习评分，排期已更新')).toBeVisible();
   await page.getByRole('button',{name:'好的',exact:true}).click();
   expect((await snapshot(page)).revlog).toHaveLength(4);
   await page.reload();await expect(page.getByRole('button',{name:'学习统计',exact:true})).toBeVisible();
   expect((await snapshot(page)).revlog).toHaveLength(4);
   await page.getByRole('button',{name:/A4 刷词/}).click();
-  await expect(page.getByRole('button',{name:/完成本页复习打卡/})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/提交已勾选/})).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 test('new word form completes, favorites/mastered are reversible and durable',async({page})=>{
@@ -233,7 +234,7 @@ for (const groups of [1, 2]) test(`calendar personal progress: ${groups} groups 
   if (!focusCount) return;
   await page.getByRole('button', { name: '打开 A4 攻坚 · 2 词', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(2);
-  await expect(page.getByRole('button', { name: '忘记', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^忘记：/ })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('A4-paper.png'), fullPage: true });
   await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部 FSRS 到期', exact: true }).click();
@@ -248,9 +249,9 @@ test('today dashboard opens the exact all/focus counts and preserves focus revie
   await expect(page.getByRole('listitem')).toHaveCount(4);
   await page.getByRole('button', { name: '当前：全部 FSRS 到期 · 切换重点攻坚', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(2);
-  await page.getByRole('button', { name: '记住', exact: true }).first().click();
+  await page.getByRole('button', { name: /^记住：/ }).first().click();
   await expect(page.getByRole('listitem')).toHaveCount(2);
-  await expect(page.getByRole('button', { name: '记住', exact: true })).toHaveCount(1);
+  await expect(page.getByRole('button', { name: /^记住：/ })).toHaveCount(1);
   await page.reload();
   await page.getByRole('button', { name: '看板', exact: true }).click();
   await expect(page.getByText(/A4 攻坚：已完成 1 词/)).toBeVisible();
@@ -274,11 +275,12 @@ test('readable paper paginates without losing cards or grading other pages', asy
   await page.screenshot({ path: info.outputPath('A4-study.png'), fullPage: true });
   await page.getByRole('button', { name: '下一张', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(1);
-  await page.getByRole('button', { name: /完成本页复习打卡 · 1 词/ }).click();
+  await page.getByRole('button', { name: '勾选记住：vocabulary8', exact: true }).click();
+  await page.getByRole('button', { name: /提交已勾选 1 词/ }).click();
   await page.getByRole('button', { name: '好的', exact: true }).click();
   expect((await snapshot(page)).revlog).toHaveLength(1);
   await page.getByRole('button', { name: '上一张', exact: true }).click();
-  await expect(page.getByRole('button', { name: '忘记', exact: true })).toHaveCount(8);
+  await expect(page.getByRole('button', { name: /^忘记：/ })).toHaveCount(8);
 });
 
 test('group completion picks only chosen weak words, and tomorrow A4 shows exactly those', async ({ page }, testInfo) => {
@@ -352,7 +354,7 @@ test('a mistaken A4 pick can be undone in the picker and in My Words, without de
   await expect(page.getByRole('listitem')).toHaveCount(1);
   const row = page.getByRole('listitem').first();
   await expect(row).toContainText(sequence[0]);
-  await expect(row).toContainText('A4 攻坚 · 2026-10-23 到期');
+  await expect(row).toContainText('攻坚中 · 2026-10-23 到期');
   await page.screenshot({ path: testInfo.outputPath('bank-focus-filter.png') });
   await row.getByRole('button', { name: '移出 A4', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(0);
@@ -364,4 +366,88 @@ test('a mistaken A4 pick can be undone in the picker and in My Words, without de
   await page.reload();
   await page.getByRole('button', { name: /A4 刷词/ }).click();
   await expect(page.getByText('今天没有待复习的单词', { exact: true })).toBeVisible();
+});
+
+test('A4 never grades unrated words: progress shows rated/total and unrated words stay for later', async ({ page }, testInfo) => {
+  const words = fixture.words.slice(0, 3).map(word => ({ ...word, focus: { active: true, addedAt: '2026-10-21', nextDate: today } }));
+  await start(page, { ...fixture, words });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByText('本页已评分 0 / 3', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /完成本页复习打卡/ })).toHaveCount(0);
+  await page.getByRole('button', { name: '记住：alpha', exact: true }).click();
+  await expect(page.getByText('本页已评分 1 / 3', { exact: true })).toBeVisible();
+  await expect(page.getByText(/未评分的 2 词保留在今日待复习/)).toBeVisible();
+  await expect(page.getByText('今日待复习 2 · 今日已完成 1', { exact: false })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('A4-rated-progress.png'), fullPage: true });
+  await page.getByRole('button', { name: '稍后处理', exact: true }).click();
+  const saved = await snapshot(page);
+  expect(saved.revlog).toHaveLength(1);
+  const focused = (saved.words as { word: string; nextReviewDate: string; focus?: { active: boolean } }[]).filter(w => w.focus?.active);
+  expect(focused.map(w => w.word).sort()).toEqual(['beta', 'gamma']);
+  expect(focused.every(w => w.nextReviewDate === today)).toBe(true);
+  await page.reload();
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByText('本页已评分 1 / 3', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '勾选记住：beta', exact: true }).click();
+  await page.getByRole('button', { name: '提交已勾选 1 词 · 按「记住」评分', exact: true }).click();
+  await page.getByRole('button', { name: '好的', exact: true }).click();
+  expect((await snapshot(page)).revlog).toHaveLength(2);
+  await expect(page.getByRole('button', { name: '记住：gamma', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('A4 lifecycle explains words that are not on today’s page', async ({ page }) => {
+  const words = fixture.words.map((word, index) => ({
+    ...word,
+    ...(index === 0 ? { nextReviewDate: '2026-10-23', focus: { active: true, addedAt: today, nextDate: '2026-10-23' }, focusAddedDays: [today] } : {}),
+    ...(index === 1 ? { focus: { active: false, addedAt: '2026-10-20', nextDate: '2026-10-21' }, focusAddedDays: ['2026-10-20'] } : {})
+  }));
+  await start(page, { ...fixture, words });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByText('今天没有待复习的单词', { exact: true })).toBeVisible();
+  await expect(page.getByText('另有 1 词攻坚中，最早 2026-10-23 到期', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  await page.getByRole('button', { name: /^A4 攻坚 1$/ }).click();
+  await expect(page.getByRole('listitem').first()).toContainText('攻坚中 · 2026-10-23 到期');
+  await page.getByRole('button', { name: /^攻坚记录 2$/ }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(2);
+  await expect(page.getByRole('listitem').filter({ hasText: 'beta' })).toContainText('已退出攻坚 · 历史加入 1 次');
+});
+
+test('replace import previews both sides and keeps an automatic pre-import backup; merge reports a summary', async ({ page }) => {
+  await start(page);
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  await page.getByRole('button', { name: '粘贴 JSON 恢复', exact: true }).click();
+  const input = page.getByPlaceholder('{"words":[...]}');
+  const extra = { ...fixture, words: [...fixture.words, { ...fixture.words[0], id: 'word-x', word: 'epsilon', meaning: '第五个' }] };
+  await input.fill(JSON.stringify(extra));
+  await page.getByRole('button', { name: '合并导入', exact: true }).click();
+  await expect(page.getByText('合并完成：新增 1 词 · 已有 4 词保留本机排期 · 新增 0 条日志', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '粘贴 JSON 恢复', exact: true }).click();
+  await input.fill(JSON.stringify(fixture));
+  await page.getByRole('button', { name: '覆盖', exact: true }).click();
+  let message = '';
+  page.once('dialog', dialog => { message = dialog.message(); void dialog.accept(); });
+  await page.getByRole('button', { name: '覆盖恢复', exact: true }).click();
+  await expect(page.getByRole('button', { name: '下载覆盖前的自动备份', exact: true })).toBeVisible();
+  expect(message).toContain('备份：4 词 · A4 0 词 · 复习日志 0 条 · 词书 0 组');
+  expect(message).toContain('当前：5 词 · A4 0 词 · 复习日志 0 条 · 词书 0 组');
+  expect((await snapshot(page)).words).toHaveLength(4);
+  await page.reload();
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: '下载覆盖前的自动备份', exact: true }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toContain('before-import');
+  const text = readFileSync(await file.path(), 'utf8');
+  expect(JSON.parse(text).words).toHaveLength(5);
+});
+
+test('a fresh workspace shows a read-only first-run guide and stores no demo words', async ({ page }) => {
+  await start(page, { words: [], skipped: [], settings: { dailyClaim: 30, lastClaimDate: '' } });
+  await expect(page.getByTestId('first-run-guide')).toContainText('第一次使用 · 三步上手');
+  expect((await snapshot(page)).words).toHaveLength(0);
+  await page.reload();
+  await expect(page.getByTestId('first-run-guide')).toBeVisible();
+  expect((await snapshot(page)).words).toHaveLength(0);
 });
