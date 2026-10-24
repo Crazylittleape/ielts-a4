@@ -118,3 +118,17 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - 格子按标记分行显示（最多 3–4 行，10px 加粗），日期按钮的读屏名称包含完整说明，例如“选择日期 2026-10-22：待复习 1 词，已完成 1 词，新增攻坚 1 词”。图例改为彩色符号 + 文字，并说明“过去真实记录、未来预计”。
 - 日期详情新增 `day-breakdown` 行：“今天/真实记录/预计：…”，与格子同一数据。词条按钮标出状态（读屏名“词（已完成/待复习/预计）”；已完成为绿色带 ✓，预计为虚线框）。过去日期在 A4 范围列出“当日新增攻坚”的词。今日卡“今日加入”改为“今日新增攻坚”。
 - 验证：`npm test` 57 项、`npm run build`、移动 Chromium/WebKit E2E 46/46、`git diff --check` 通过；看过 iPhone 视口日历截图，无横向溢出。真机 iPhone 上的字号/格子高度观感未验证。
+
+## Dexie 升级保护、多份自动备份、存储持久化（2026-10-24 第五轮）
+
+- 审查结论：
+  - 构建是 `vite-plugin-singlefile`，JS/CSS 全部内联在 `index.html`，`sw.js` 安装时已缓存它，所以首次访问后离线可用，这部分没改。
+  - Dexie v1→v2 只新增 `backups` 表，原有数据不动。`src/db.test.ts` 用原始 IndexedDB API 按旧版的 version 10 结构写入真实数据（词、FSRS 卡、A4 focus、revlog、词书进度、revision），再用当前代码打开：数据全部保留、revision 继续递增、不会重新读 localStorage。
+  - 风险点：只保留 1 份自动备份，第二次覆盖导入就会把第一次的备份冲掉；“清空单词和进度”没有任何自动备份。
+- 自动备份：`saveAutoBackup(json, day, reason, summary)` 每次新建一条（`auto-时间-序号`），不覆盖旧备份，保留最近 `MAX_AUTO_BACKUPS = 5` 份（上一版留下的 `before-import` 也会列出，算作最旧的一份）。覆盖导入和清空（有数据时）都会先备份，备份失败就取消操作。“我的单词 › 数据备份与恢复”列出每份备份（原因、时间、词数、A4 词数、日志数），可分别下载，文件名为 `ielts-a4-before-import|clear-日期.json`。
+- 多窗口升级：
+  - 旧窗口不让出连接时，Dexie 的 `blocked` 事件让读取页显示“请关闭其他打开的本站页面或主屏幕 App，读取会自动继续”，不报错、不新建空库。
+  - 别的窗口打开了更新的数据库版本时，本页关闭连接，顶部提示刷新，之后的保存都会被拒绝（“请刷新本页”），不会写入旧结构。
+- 打开后先调用 `navigator.storage.persisted()`，未持久化时再调用 `persist()`。备份区显示结果；未获持久保存时提示 iPhone 从 Safari 添加到主屏幕并定期导出。
+- 验证：`npm test` 62 项（新增 `db.test.ts` 5 项，已加入 `npm test`）、`npm run build`、移动 Chromium/WebKit E2E 50/50、`git diff --check` 通过。
+- 未验证：iOS Safari 上 `persist()` 的实际返回和逐出策略、主屏幕 App 与 Safari 标签同时打开时的升级阻塞、真机旧数据升级。

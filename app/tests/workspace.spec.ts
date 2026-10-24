@@ -429,14 +429,14 @@ test('replace import previews both sides and keeps an automatic pre-import backu
   let message = '';
   page.once('dialog', dialog => { message = dialog.message(); void dialog.accept(); });
   await page.getByRole('button', { name: '覆盖恢复', exact: true }).click();
-  await expect(page.getByRole('button', { name: '下载覆盖前的自动备份', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^下载覆盖导入前的自动备份/ })).toBeVisible();
   expect(message).toContain('备份：4 词 · A4 0 词 · 复习日志 0 条 · 词书 0 组');
   expect(message).toContain('当前：5 词 · A4 0 词 · 复习日志 0 条 · 词书 0 组');
   expect((await snapshot(page)).words).toHaveLength(4);
   await page.reload();
   await page.getByRole('button', { name: '我的单词', exact: true }).click();
   const download = page.waitForEvent('download');
-  await page.getByRole('button', { name: '下载覆盖前的自动备份', exact: true }).click();
+  await page.getByRole('button', { name: /^下载覆盖导入前的自动备份/ }).click();
   const file = await download;
   expect(file.suggestedFilename()).toContain('before-import');
   const text = readFileSync(await file.path(), 'utf8');
@@ -475,4 +475,46 @@ test('calendar cells and day detail separate pending, done, new A4 and predicted
   await page.getByRole('button', { name: '全部复习', exact: true }).click();
   await expect(page.getByRole('button', { name: '选择日期 2026-10-21：词书初学 25 词', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '选择日期 2026-10-22：待复习 2 词，已完成 1 词', exact: true })).toBeVisible();
+});
+
+test('clearing and repeated replace imports each keep their own automatic backup', async ({ page }, testInfo) => {
+  await start(page);
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  await page.getByRole('button', { name: '清空单词和进度', exact: true }).click();
+  await page.getByRole('button', { name: '确认清空单词和进度？', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^下载清空前的自动备份/ })).toHaveCount(1);
+  expect((await snapshot(page)).words).toHaveLength(0);
+  const replace = async (data: unknown) => {
+    await page.getByRole('button', { name: '粘贴 JSON 恢复', exact: true }).click();
+    await page.getByPlaceholder('{"words":[...]}').fill(JSON.stringify(data));
+    await page.getByRole('button', { name: '覆盖', exact: true }).click();
+    page.once('dialog', dialog => void dialog.accept());
+    await page.getByRole('button', { name: '覆盖恢复', exact: true }).click();
+  };
+  await replace(fixture);
+  await expect(page.getByRole('button', { name: /^下载覆盖导入前的自动备份/ })).toHaveCount(1);
+  await replace({ ...fixture, words: fixture.words.slice(0, 1) });
+  await expect(page.getByRole('button', { name: /^下载覆盖导入前的自动备份/ })).toHaveCount(2);
+  expect((await snapshot(page)).words).toHaveLength(1);
+  await page.reload();
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  await expect(page.getByText(/^清空前 · .* · 4 词 · A4 0 词 · 日志 0 条$/)).toBeVisible();
+  await expect(page.getByTestId('storage-status')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('auto-backups.png'), fullPage: true });
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: /^下载清空前的自动备份/ }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toContain('before-clear');
+  expect(JSON.parse(readFileSync(await file.path(), 'utf8')).words).toHaveLength(4);
+});
+
+test('a newer database version opened in another tab makes this tab stop writing and ask for a refresh', async ({ page, context }) => {
+  await start(page);
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  const other = await context.newPage();
+  await other.goto('/');
+  await expect(other.getByRole('button', { name: '学习统计', exact: true })).toBeVisible();
+  await page.evaluate(() => new Promise<void>((resolve, reject) => { const r = indexedDB.open('ielts-a4-v3', 30); r.onsuccess = () => { r.result.close(); resolve(); }; r.onerror = () => reject(r.error); r.onblocked = () => reject(new Error('blocked')); }));
+  await expect(other.getByRole('alert')).toContainText('新版本已在其他窗口打开');
 });

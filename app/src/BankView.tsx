@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Search, Volume2, Flame, Pencil, Trash2, Download, Copy, Upload, ClipboardPaste, Eraser, Database } from 'lucide-react';
 import type { AppState, WordItem } from './lib';
 import { isDueOn, backupJson, focusStatus } from './lib';
+import { MAX_AUTO_BACKUPS, type BackupRow } from './db';
 import { Card, PageHeader, StageChip, inputCls, softBtn, ghostBtn, SectionTitle, Empty } from './ui';
 
 type Filter = 'all' | 'focus' | 'history' | 'due' | 'hard' | 'favorite' | 'mastered' | 's0' | 's1' | 's2' | 's3' | 's4' | 's5';
@@ -17,13 +18,14 @@ interface Props {
   onSpeak: (w: string) => void;
   onImport: (text: string, mode: 'merge' | 'replace') => Promise<boolean>;
   onUnfocus: (word: string) => Promise<boolean>;
-  hasImportBackup: boolean;
-  onDownloadImportBackup: () => void;
+  autoBackups: BackupRow[];
+  onDownloadBackup: (key: string) => void;
+  storagePersisted: boolean | null;
   onClearAll: () => void;
   toast: (msg: string, tone?: 'ok' | 'warn' | 'info') => void;
 }
 
-export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggleFavorite, onToggleMastered, onSpeak, onImport, onUnfocus, hasImportBackup, onDownloadImportBackup, onClearAll, toast }: Props) {
+export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggleFavorite, onToggleMastered, onSpeak, onImport, onUnfocus, autoBackups, onDownloadBackup, storagePersisted, onClearAll, toast }: Props) {
   const { words } = state;
   const mistakes = useMemo(() => new Set(state.revlog.filter(log => log.rating === 1).map(log => log.wordId)), [state.revlog]);
   const [filter, setFilter] = useState<Filter>('all');
@@ -193,7 +195,19 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
             <button type="button" className={ghostBtn} onClick={() => fileRef.current?.click()}><Upload size={15} /> 选择文件恢复</button>
             <button type="button" className={ghostBtn} onClick={() => setPasteOpen((v) => !v)}><ClipboardPaste size={15} /> 粘贴 JSON 恢复</button>
           </div>
-          {hasImportBackup && <button type="button" className={`${ghostBtn} mt-2 w-full text-xs`} onClick={onDownloadImportBackup}><Download size={14} /> 下载覆盖前的自动备份</button>}
+          {storagePersisted !== null && <p data-testid="storage-status" className="mt-2 text-[11px] font-semibold leading-relaxed text-ink-soft">{storagePersisted ? '浏览器已允许持久保存本机记录。' : '浏览器未承诺持久保存：iPhone 请用 Safari「添加到主屏幕」后从主屏幕打开，并定期导出备份。'}</p>}
+          {autoBackups.length > 0 && <div className="mt-3 rounded-xl bg-stone-50 p-3">
+            <p className="text-[11px] font-extrabold text-ink-soft">自动备份 · 覆盖导入或清空前保存，保留最近 {MAX_AUTO_BACKUPS} 份，只存在本机</p>
+            <ul className="mt-2 space-y-1.5">{autoBackups.map(b => {
+              const label = b.reason === 'clear' ? '清空前' : '覆盖导入前';
+              const d = b.createdAt ? new Date(b.createdAt) : null;
+              const when = d ? `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : b.day;
+              return <li key={b.key} className="flex items-center justify-between gap-2 text-[12px]">
+                <span className="min-w-0 break-words">{label} · {when}{b.summary ? ` · ${b.summary.words} 词 · A4 ${b.summary.focus} 词 · 日志 ${b.summary.logs} 条` : ''}</span>
+                <button type="button" className="min-h-9 shrink-0 rounded-lg border border-stone-200 bg-white px-2.5 text-xs font-bold" aria-label={`下载${label}的自动备份 ${when}`} onClick={() => onDownloadBackup(b.key)}><Download size={12} className="inline" /> 下载</button>
+              </li>;
+            })}</ul>
+          </div>}
           <input ref={fileRef} type="file" accept="application/json,.json,text/plain" className="hidden" onChange={onFile} />
           <div className="mt-3 flex items-center gap-2 text-[11px] font-extrabold text-ink-soft">
             恢复方式：

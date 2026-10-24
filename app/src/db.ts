@@ -1,9 +1,18 @@
 import Dexie, { type Table } from 'dexie';
-import { loadState, parseBackup, todayStr, type AppState, type ReviewEntry, type SerializedCard, type WordItem } from './lib';
+import { loadState, parseBackup, todayStr, type AppState, type ReviewEntry, type SerializedCard, type StateSummary, type WordItem } from './lib';
 
 interface MetaRow { key: string; value: unknown }
 interface CardRow { id: string; card: SerializedCard }
-export interface BackupRow { key: string; day: string; json: string }
+export interface BackupRow { key: string; day: string; json: string; reason?: 'import' | 'clear'; createdAt?: string; summary?: StateSummary }
+export type WorkspaceEvent = 'blocked' | 'replaced';
+export const MAX_AUTO_BACKUPS = 5;
+const listeners = new Set<(event: WorkspaceEvent) => void>();
+const emit = (event: WorkspaceEvent) => listeners.forEach(fn => fn(event));
+export function onWorkspaceEvent(fn: (event: WorkspaceEvent) => void): () => void {
+  listeners.add(fn);
+  return () => { listeners.delete(fn); };
+}
+let replacedElsewhere = false;
 
 class WorkspaceDatabase extends Dexie {
   words!: Table<Omit<WordItem, 'card'>, string>;
@@ -17,6 +26,11 @@ class WorkspaceDatabase extends Dexie {
     this.version(1).stores({ words: 'id,word,nextReviewDate', cards: 'id', revlog: 'id,wordId,day', meta: 'key' });
     // Kept outside the snapshot tables so a replace import never clears it.
     this.version(2).stores({ backups: 'key' });
+    // An old tab that never yields keeps the upgrade waiting; tell the user instead of failing.
+    this.on('blocked', () => emit('blocked'));
+    // A newer build opened elsewhere: close so its upgrade can run; refuse later writes here.
+    this.on('versionchange', () => { replacedElsewhere = true; this.close(); emit('replaced'); return false; });
+    this.on('ready', () => { replacedElsewhere = false; });
   }
 }
 
@@ -39,6 +53,7 @@ async function writeSnapshot(state: AppState, revision: number): Promise<void> {
 
 export async function persistWorkspace(state: AppState): Promise<void> {
   // Validate before opening a destructive transaction; no partial imports or writes.
+  if (replacedElsewhere) throw new Error('学习记录已在新版本窗口中打开，请刷新本页后再操作，当前操作尚未保存。');
   const valid = parseBackup(JSON.stringify({ ...state, version: 3 }), todayStr());
   let savedRevision = 0;
   await db.transaction('rw', db.words, db.cards, db.revlog, db.meta, async () => {
@@ -79,12 +94,22 @@ async function readSnapshot(today: string): Promise<AppState> {
   });
 }
 
-export async function saveImportBackup(json: string, day: string): Promise<void> {
-  await db.backups.put({ key: 'before-import', day, json });
+let backupSeq = 0;
+const newestFirst = (a: BackupRow, b: BackupRow) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || b.key.localeCompare(a.key);
+
+/** Never overwrites an earlier automatic backup; keeps the newest MAX_AUTO_BACKUPS (a legacy row counts as oldest). */
+export async function saveAutoBackup(json: string, day: string, reason: 'import' | 'clear', summary: StateSummary): Promise<void> {
+  const now = Date.now();
+  const key = `auto-${String(now).padStart(15, '0')}-${String(backupSeq++).padStart(6, '0')}`;
+  await db.transaction('rw', db.backups, async () => {
+    await db.backups.put({ key, day, json, reason, createdAt: new Date(now).toISOString(), summary });
+    const stale = (await db.backups.toArray()).sort(newestFirst).slice(MAX_AUTO_BACKUPS);
+    if (stale.length) await db.backups.bulkDelete(stale.map(row => row.key));
+  });
 }
 
-export async function loadImportBackup(): Promise<BackupRow | undefined> {
-  return db.backups.get('before-import');
+export async function listAutoBackups(): Promise<BackupRow[]> {
+  return (await db.backups.toArray()).sort(newestFirst);
 }
 
 export const loadDatabase = openWorkspace;

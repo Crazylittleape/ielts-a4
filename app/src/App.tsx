@@ -3,7 +3,7 @@ import { Home, BookOpenText, Library, X } from 'lucide-react';
 import type { AppState, StateSummary, WordFields, WordItem } from './lib';
 import { backupJson, createWord, focusSummary, gradeWord, removeFromFocus, resetWord, parseBackup, mergeBackup, speak, stateSummary, todayStr } from './lib';
 import { buildCalendar, type ReviewScope } from './calendar';
-import { loadImportBackup, openWorkspace, persistWorkspace, saveImportBackup } from './db';
+import { listAutoBackups, onWorkspaceEvent, openWorkspace, persistWorkspace, saveAutoBackup, type BackupRow } from './db';
 import { MatchingGame, Statistics } from './Practice';
 import { Dashboard } from './Dashboard';
 import { A4View } from './A4View';
@@ -125,8 +125,15 @@ export default function App() {
   const [toast, setToast] = useState<{ msg: string; tone: ToastTone } | null>(null);
   const [confetti, setConfetti] = useState<{ title: string; subtitle: string } | null>(null);
   const [editing, setEditing] = useState<WordItem | null>(null);
-  const [hasImportBackup, setHasImportBackup] = useState(false);
-  useEffect(() => { loadImportBackup().then(row => setHasImportBackup(Boolean(row))).catch(() => undefined); }, []);
+  const [autoBackups, setAutoBackups] = useState<BackupRow[]>([]);
+  const refreshBackups = useCallback(() => listAutoBackups().then(setAutoBackups).catch(() => undefined), []);
+  useEffect(() => { void refreshBackups(); }, [refreshBackups]);
+  const [blocked, setBlocked] = useState(false);
+  const [storagePersisted, setStoragePersisted] = useState<boolean | null>(null);
+  useEffect(() => onWorkspaceEvent(event => {
+    if (event === 'blocked') setBlocked(true);
+    else setSaveError('新版本已在其他窗口打开。请刷新本页后再操作，当前页面不会再写入学习记录。');
+  }), []);
   const toastTimer = useRef<number | null>(null);
   const showToast = useCallback((msg: string, tone: ToastTone = 'info') => {
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
@@ -140,6 +147,10 @@ export default function App() {
       if (!active) return;
       current.current = result.state;
       setState(result.state);
+      setBlocked(false);
+      // iOS Safari may evict site data of unused web pages; ask for persistent storage where supported.
+      const storage = navigator.storage;
+      if (storage?.persist && storage.persisted) storage.persisted().then(p => p || storage.persist()).then(p => { if (active) setStoragePersisted(p); }).catch(() => setStoragePersisted(false));
       if (result.fresh) showToast('词书已就绪，日历将记录你的实际学习进度', 'info');
     }).catch(error => { if (active) setLoadError(String(error instanceof Error ? error.message : error)); });
     return () => { active = false; };
@@ -244,23 +255,32 @@ export default function App() {
       }
       const fmt = (x: StateSummary) => `${x.words} 词 · A4 ${x.focus} 词 · 复习日志 ${x.logs} 条 · 词书 ${x.groups} 组`;
       if (!window.confirm(`用备份覆盖当前记录？\n备份：${fmt(stateSummary(incoming))}\n当前：${fmt(stateSummary(s))}\n覆盖前会自动保存当前记录，可在“我的单词”下载。`)) return false;
-      try { await saveImportBackup(backupJson(s), today); } catch { showToast('自动备份失败，已取消覆盖，请先手动下载备份', 'warn'); return false; }
-      setHasImportBackup(true);
+      try { await saveAutoBackup(backupJson(s), today, 'import', stateSummary(s)); } catch { showToast('自动备份失败，已取消覆盖，请先手动下载备份', 'warn'); return false; }
+      void refreshBackups();
       const saved = await commit(incoming);
       if (saved) showToast(`已覆盖恢复 ${incoming.words.length} 词；覆盖前的记录已自动备份`, 'ok');
       return saved;
     } catch (error) { showToast(`导入失败：${error instanceof Error ? error.message : error}`, 'warn'); return false; }
   };
-  const onDownloadImportBackup = async () => {
-    const row = await loadImportBackup().catch(() => undefined);
-    if (!row) { showToast('没有找到覆盖前的自动备份', 'warn'); return; }
+  const onDownloadBackup = (key: string) => {
+    const row = autoBackups.find(b => b.key === key);
+    if (!row) { showToast('没有找到这份自动备份', 'warn'); return; }
     const url = URL.createObjectURL(new Blob([row.json], { type: 'application/json' }));
     const a = document.createElement('a');
-    a.href = url; a.download = `ielts-a4-before-import-${row.day}.json`;
+    a.href = url; a.download = `ielts-a4-before-${row.reason === 'clear' ? 'clear' : 'import'}-${row.day}.json`;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   };
-  const onClearAll = async () => { const s = current.current; if (s) await commit({...s, words:[], revlog:[], bookLearning:undefined}); };
+  const onClearAll = async () => {
+    const s = current.current;
+    if (!s) return;
+    const hasData = Boolean(s.words.length || s.revlog.length || s.bookLearning);
+    if (hasData) {
+      try { await saveAutoBackup(backupJson(s), today, 'clear', stateSummary(s)); } catch { showToast('自动备份失败，已取消清空，请先手动下载备份', 'warn'); return; }
+      void refreshBackups();
+    }
+    if (await commit({...s, words:[], revlog:[], bookLearning:undefined}) && hasData) showToast('已清空；清空前的记录已自动备份，可在“数据备份与恢复”下载', 'ok');
+  };
   const onBeginGroup = async (groupId: string) => {
     const s = current.current;
     if (!s) return false;
@@ -277,7 +297,7 @@ export default function App() {
   };
   const changeTab = (t: Tab) => { if (t === 'a4') { setA4Date(today); setA4Scope('focus'); } setTab(t); window.scrollTo({top:0}); };
 
-  if (!state) return <main className="mx-auto max-w-[480px] space-y-4 p-6"><h1 className="text-xl font-bold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
+  if (!state) return <main className="mx-auto max-w-[480px] space-y-4 p-6"><h1 className="text-xl font-bold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : blocked ? '另一个窗口仍在使用旧版本的学习记录。请关闭其他打开的本站页面或主屏幕 App，读取会自动继续。' : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
   return <div className="mx-auto min-h-screen max-w-[480px] font-ui text-ink">
     {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
@@ -285,7 +305,7 @@ export default function App() {
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} calendar={calendar} onOpenBook={() => changeTab('home')} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View words={state.words} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} schedule={calendar[a4Scope]} onBack={() => setTab('home')} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
-      {tab === 'bank' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('add')}>录入新词</button></div><BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onUnfocus={onUnfocus} hasImportBackup={hasImportBackup} onDownloadImportBackup={onDownloadImportBackup} onClearAll={onClearAll} toast={showToast} /></>}
+      {tab === 'bank' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('add')}>录入新词</button></div><BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onUnfocus={onUnfocus} autoBackups={autoBackups} onDownloadBackup={onDownloadBackup} storagePersisted={storagePersisted} onClearAll={onClearAll} toast={showToast} /></>}
       {tab === 'quiz' && <MatchingGame words={gameWords} scopeLabel={todayWords.length ? '今日新词与复习词' : '今天没有任务，使用全部词库加练'} onBack={() => setTab('home')} onSpeak={onSpeak} />}
       {tab === 'stats' && <Statistics state={state} today={today} onBack={() => setTab('home')} />}
       <TabBar tab={tab} onChange={changeTab} due={calendar.focus[today]?.due.length ?? 0} />
