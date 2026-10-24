@@ -107,9 +107,9 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
 
   return (
     <div className="paper-desk safe-bottom-pad">
-      <header className="safe-top sticky top-0 z-20 bg-cream/90 px-3 pb-2 backdrop-blur-md">
+      <header className="safe-top sticky top-0 z-20 border-b border-blush bg-cream/95 px-3 pb-2 shadow-card backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onBack} className="rounded-2xl bg-white p-2 text-ink shadow-card" aria-label="返回">
+          <button type="button" onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ink shadow-card" aria-label="返回">
             <ChevronLeft size={20} />
           </button>
           <div className="min-w-0 flex-1">
@@ -127,15 +127,15 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
               setOrder((o) => shuffle(o));
               setSeed((s) => s + 1);
             }}
-            className="inline-flex items-center gap-1 rounded-2xl bg-white px-3 py-2 text-xs font-extrabold text-ink shadow-card"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-2xl bg-white px-3 text-xs font-extrabold text-ink shadow-card"
           >
             <Shuffle size={14} /> 乱序
           </button>
         </div>
         <div className="mt-2">
           <Segmented options={MASK_MODES} value={mode} onChange={setMode} />
-          <p className="mt-1 text-center text-[10px] font-bold text-ink-faint">{hint}</p>
-            <button type="button" className="mt-2 w-full rounded-xl border border-rose-100 bg-white px-3 py-2 text-xs font-bold text-rose-500" onClick={() => onScopeChange(focusOnly ? 'all' : 'focus')}>{focusOnly ? '当前：重点攻坚 · 切换全部 FSRS 到期' : '当前：全部 FSRS 到期 · 切换重点攻坚'}</button>
+          <p className="mt-1 text-center text-[11px] font-bold text-ink-soft">{hint}</p>
+            <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-bold text-rose-600" onClick={() => onScopeChange(focusOnly ? 'all' : 'focus')}>{focusOnly ? '当前：重点攻坚 · 切换全部 FSRS 到期' : '当前：全部 FSRS 到期 · 切换重点攻坚'}</button>
         </div>
       </header>
 
@@ -166,7 +166,7 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
                 const enMasked = sideMasked(w, pageIndex, 'en');
                 const cnMasked = sideMasked(w, pageIndex, 'cn');
                 return (
-                  <li key={w.id} data-masked={enMasked ? 'en' : cnMasked ? 'cn' : 'none'} className={`relative flex flex-wrap items-stretch gap-1 px-1 py-4 transition ${isChecked ? 'opacity-45' : ''}`}>
+                  <li key={w.id} data-masked={enMasked ? 'en' : cnMasked ? 'cn' : 'none'} className={`relative flex flex-wrap items-stretch gap-1 px-1 py-4 transition ${done ? 'paper-row-done' : isChecked ? 'paper-row-ticked' : ''}`}>
                     <div className="flex w-6 shrink-0 flex-col items-center justify-center text-[10px] font-bold text-stone-400">
                       <span>{String(idx + 1).padStart(2, '0')}</span>
                       <StageChip word={w} stage={w.stage} compact />
@@ -194,19 +194,20 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
                       </button>
                     </div>
                     <ExampleBlock word={w} onSpeak={onSpeak} className="w-full pl-7" />
-                    <div className="flex w-full items-center justify-end gap-1 pt-2">
+                    <div className="flex w-full flex-wrap items-center justify-end gap-1 pt-2">
+                      {done && <span className="mr-auto pl-7 text-xs font-bold text-sage-500">✓ 今日已评分</span>}
                       {isToday && !practice.length && !done && <>
-                      {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className="min-h-10 rounded-lg border border-stone-200 bg-white/70 px-3 text-xs font-bold text-stone-700" onClick={() => onGrade(w.id, rating)}>{label}</button>)}
+                      {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className={`min-h-11 min-w-11 rounded-lg border bg-white/80 px-2.5 text-xs font-bold ${rating === 3 ? 'border-rose-300 text-rose-600' : rating === 4 ? 'border-sage-300 text-sage-500' : 'border-stone-300 text-stone-700'}`} onClick={() => onGrade(w.id, rating)}>{label}</button>)}
                     </>}
-                      <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} title={`顽固词重置：${w.word}`} className={`rounded-xl p-2 active:bg-honey-100 ${w.isHard ? 'text-honey-500' : 'text-ink-faint'}`} aria-label={`顽固词重置：${w.word}`}>
+                      <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} title={`顽固词重置：${w.word}`} className={`flex h-11 w-10 items-center justify-center rounded-xl active:bg-honey-100 disabled:opacity-40 ${w.isHard ? 'text-honey-500' : 'text-ink-soft'}`} aria-label={`顽固词重置：${w.word}`}>
                         <Flame size={16} />
                       </button>
                       <button
                         type="button"
                         disabled={done || !isToday}
                         onClick={() => !done && isToday && toggleCheck(w.id)}
-                        className={`ml-0.5 flex h-9 w-9 items-center justify-center rounded-full border-2 transition ${
-                          isChecked ? 'border-sage-400 bg-sage-400 text-white' : 'border-stone-300 bg-white text-transparent'
+                        className={`ml-0.5 flex h-11 w-11 items-center justify-center rounded-full border-2 transition ${
+                          isChecked ? 'border-sage-500 bg-sage-500 text-white' : 'border-stone-400 bg-white text-transparent'
                         }`}
                         aria-label={done ? `已评分：${w.word}` : `勾选记住：${w.word}`}
                         title={isToday ? undefined : '非今日只读，到当天再打卡'}
@@ -225,9 +226,9 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
         )}
 
         {pageCount > 1 && <div className="mt-4 flex items-center justify-between text-sm">
-          <button type="button" disabled={currentPage === 0} className="min-h-11 rounded-xl bg-white px-4 disabled:opacity-40" onClick={() => { setPage(currentPage - 1); window.scrollTo({ top: 0 }); }}>上一张</button>
+          <button type="button" disabled={currentPage === 0} className="min-h-11 rounded-xl bg-white px-4 font-bold shadow-card disabled:opacity-40" onClick={() => { setPage(currentPage - 1); window.scrollTo({ top: 0 }); }}>上一张</button>
           <span className="text-xs text-stone-600">{currentPage + 1} / {pageCount}</span>
-          <button type="button" disabled={currentPage === pageCount - 1} className="min-h-11 rounded-xl bg-white px-4 disabled:opacity-40" onClick={() => { setPage(currentPage + 1); window.scrollTo({ top: 0 }); }}>下一张</button>
+          <button type="button" disabled={currentPage === pageCount - 1} className="min-h-11 rounded-xl bg-white px-4 font-bold shadow-card disabled:opacity-40" onClick={() => { setPage(currentPage + 1); window.scrollTo({ top: 0 }); }}>下一张</button>
         </div>}
         {isToday && !practice.length && list.length > 0 && (
           <div className="mt-4">
@@ -241,7 +242,7 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
                 <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-stone-200 bg-white text-sm font-bold text-ink-soft" onClick={onLater}>稍后处理</button>
               </>
             ) : (
-              <div className="rounded-2xl bg-sage-50 px-4 py-3 text-center text-sm font-extrabold text-sage-500">本页已完成 ✓ 可以继续用遮挡模式再默一遍</div>
+              <div role="status" className="rounded-2xl border border-sage-200 bg-sage-50 px-4 py-3 text-center text-sm font-extrabold text-sage-500">本页已完成 ✓ 可以继续用遮挡模式再默一遍</div>
             )}
           </div>
         )}

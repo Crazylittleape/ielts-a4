@@ -672,8 +672,8 @@ test('60s challenge: rounds refill, wrong picks reset combo, double taps score o
   await start(page, { ...fixture, words });
   const before = await snapshot(page);
   await openQuiz(page);
-  await expect(page.getByRole('timer')).toHaveAttribute('aria-live', 'polite');
   await page.getByRole('button', { name: '开始 60 秒挑战', exact: true }).click();
+  await expect(page.getByRole('timer')).toHaveAttribute('aria-live', 'off');
   const en = page.getByRole('group', { name: '英文' }).getByRole('button');
   await expect(en).toHaveCount(4);
   const meaningOf = Object.fromEntries(words.map(w => [w.word, w.meaning]));
@@ -798,4 +798,74 @@ test('an empty A4 says how to add words and offers the all-FSRS scope and the bo
   await page.getByRole('button', { name: '去词书学习并加入 A4', exact: true }).click();
   await expect(page.getByRole('button', { name: '雅思词汇真经', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('home next step follows real due words into A4 and the daily report counts real reviews', async ({ page }) => {
+  await start(page, { ...fixture });
+  const step = page.getByTestId('next-step');
+  await expect(step).toContainText('全部到期复习 · 4 词');
+  await expect(page.getByTestId('daily-report')).toContainText('已复习0 词');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await step.getByRole('button', { name: '开始到期复习 · 4 词', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('全部 FSRS A4');
+  await expect(page.getByRole('listitem')).toHaveCount(4);
+  await page.getByRole('button', { name: '记住：alpha', exact: true }).click();
+  await expect(page.getByText(/评分已保存 · 下次复习 \d+ 月 \d+ 日/)).toBeVisible();
+  await page.getByRole('button', { name: '返回', exact: true }).click();
+  const report = page.getByTestId('daily-report');
+  await expect(report).toContainText('已复习1 词');
+  await expect(report).toContainText('其中记住1 词');
+  await expect(step).toContainText('全部到期复习 · 3 词');
+  expect((await snapshot(page)).revlog).toHaveLength(1);
+});
+
+test('home next step prefers A4 focus words over other due words', async ({ page }) => {
+  await start(page, { ...fixture, words: [...fixture.words, ...a4Words(2)] });
+  await page.getByTestId('next-step').getByRole('button', { name: '开始复习 A4 · 2 词', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('重点攻坚 A4');
+  await expect(page.getByRole('listitem')).toHaveCount(2);
+});
+
+test('a fresh user is pointed at book group 1 and nothing demo is written', async ({ page }) => {
+  await start(page, { ...fixture, words: [] });
+  await expect(page.getByTestId('daily-report')).toHaveCount(0);
+  const before = await snapshot(page);
+  expect(before.words).toHaveLength(0);
+  expect(before.revlog).toHaveLength(0);
+  const button = page.getByTestId('next-step').getByRole('button', { name: /^开始学习：.+第 1 组$/ });
+  await expect(button).toBeVisible();
+  await button.click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('第 1 组');
+  expect((await snapshot(page)).words).toHaveLength(0);
+});
+
+test('reduced motion: the A4 done stamp is a labelled dialog without animation', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await start(page, { ...fixture, words: a4Words(2) });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await page.getByRole('button', { name: '勾选记住：aword0', exact: true }).click();
+  await page.getByRole('button', { name: '提交已勾选 1 词 · 按「记住」评分', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '今日打卡完成' });
+  await expect(dialog).toBeVisible();
+  const duration = await page.getByTestId('done-stamp').evaluate(el => parseFloat(getComputedStyle(el).animationDuration));
+  expect(duration).toBeLessThan(0.05);
+  await dialog.getByRole('button', { name: '好的', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+});
+
+test('60s challenge announces the last 10 seconds once and the summary shows best combo', async ({ page }) => {
+  await start(page, { ...fixture });
+  await openQuiz(page);
+  await expect(page.getByText('先点左侧英文', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '开始 60 秒挑战', exact: true }).click();
+  await expect(page.getByRole('timer')).toHaveAttribute('aria-live', 'off');
+  const en = page.getByRole('group', { name: '英文' }).getByRole('button');
+  const meaningOf = Object.fromEntries(fixture.words.map(w => [w.word, w.meaning]));
+  for (const w of (await en.allTextContents()).slice(0, 2)) await matchPair(page, w, meaningOf[w]);
+  await expect(page.getByTestId('timer-announce')).toHaveText('');
+  await page.clock.fastForward(50500);
+  await expect(page.getByTestId('timer-announce')).toHaveText('还剩 10 秒');
+  await page.clock.fastForward(11000);
+  await expect(page.getByTestId('timer-announce')).toHaveText('时间到，本局结束');
+  await expect(page.getByRole('region', { name: '本局总结' })).toContainText('最高连击 2');
 });

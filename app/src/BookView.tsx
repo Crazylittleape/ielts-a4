@@ -4,6 +4,9 @@ import type { AppState } from './lib';
 import { BOOK, BOOK_GROUPS, type BookGroup } from './bookCatalog';
 import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, getBookWord, checkBookSpelling, type BookAnswer } from './book';
 import { Card, PageHeader, Field, inputCls, primaryBtn, ghostBtn, ExampleBlock } from './ui';
+import type { ReviewScope } from './calendar';
+import { nextStep, type DailyReport } from './coach';
+import { TodayCoach } from './Home';
 
 interface Props {
   state: AppState;
@@ -14,6 +17,9 @@ interface Props {
   onSpeak: (word: string) => void;
   onFocus: (word: string, reason?: string) => Promise<boolean>;
   onUnfocus: (word: string) => Promise<boolean>;
+  report?: DailyReport;
+  onOpenA4?: (scope: ReviewScope) => void;
+  onQuiz?: () => void;
 }
 
 function FocusPicker({ group, state, missed, onFocus, onUnfocus, onSpeak }: { group: BookGroup; state: AppState; missed: string[]; onFocus: Props['onFocus']; onUnfocus: Props['onUnfocus']; onSpeak: Props['onSpeak'] }) {
@@ -39,7 +45,7 @@ function FocusPicker({ group, state, missed, onFocus, onUnfocus, onSpeak }: { gr
   </Card>;
 }
 
-export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onFocus, onUnfocus }: Props) {
+export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onFocus, onUnfocus, report, onOpenA4, onQuiz }: Props) {
   const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study' | 'review'>('library');
   const [missed, setMissed] = useState<Record<string, string[]>>({});
   const [finishedId, setFinishedId] = useState<string | null>(null);
@@ -77,12 +83,15 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   };
   const back = (next: typeof screen) => <button type="button" className="rounded-xl p-2 text-ink-soft" aria-label="返回" onClick={() => go(next)}><ArrowLeft size={20} /></button>;
   const bar = <div role="progressbar" aria-label="词书学习进度" aria-valuemin={0} aria-valuemax={stats.total} aria-valuenow={stats.learned} className="h-2 overflow-hidden rounded-full bg-rose-50"><div className="h-full rounded-full bg-gradient-to-r from-rose-400 to-lilac-400" style={{ width: `${stats.percent}%` }} /></div>;
+  const firstRun = !state.words.length && !Object.keys(progress.completed).length;
+  const step = report ? nextStep(state, report, today) : null;
   const currentLabel = stats.current ? `${stats.current.unitTitle} · 第 ${stats.current.index} 组` : '全书初学完成';
 
   if (screen === 'library') return <div className="safe-bottom-pad">
     <PageHeader title="词书库" subtitle="选一本书，按单元慢慢学完" />
     <div className="space-y-4 px-4">
-      {!state.words.length && !Object.keys(progress.completed).length && <div data-testid="first-run-guide"><Card className="p-4">
+      {report && step && <TodayCoach today={today} report={report} step={step} plan={{ done: plan.completed, target: progress.dailyGroups }} firstRun={firstRun} onA4={scope => onOpenA4?.(scope)} onQuiz={() => onQuiz?.()} onBook={() => { const group = step.kind === 'book' ? BOOK_GROUPS.find(g => g.id === step.groupId) : undefined; if (group) void start(group); }} />}
+      {firstRun && <div data-testid="first-run-guide"><Card className="p-4">
         <h2 className="text-sm font-extrabold text-ink">第一次使用 · 三步上手</h2>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-ink-soft">
           <li>打开词书，按顺序学一组：先教学，再回忆检查，最后拼写强化。</li>
@@ -92,9 +101,9 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
         <p className="mt-2 text-[11px] text-ink-faint">这里没有示例词，词库从你学的第一组开始。</p>
       </Card></div>}
       <Card className="overflow-hidden">
-        <div className="flex items-start gap-4 bg-lilac-50/60 p-5">
-          <div className="flex h-28 w-20 shrink-0 flex-col justify-between rounded-r-xl border-l-4 border-rose-300 bg-rose-100 p-3 text-rose-600"><BookOpen size={21} /><span className="font-serif text-sm font-bold">雅思<br />词汇真经</span></div>
-          <div className="min-w-0 flex-1 pt-1"><p className="text-xs font-bold text-lilac-500">我的词书</p><h2 className="mt-2 font-serif text-xl font-semibold">{BOOK.title}</h2><p className="mt-2 text-xs text-ink-soft">{BOOK.edition} · 22 单元</p><p className="mt-1 text-xs text-ink-soft">共 {stats.total} 词 · 每组 25 词</p></div>
+        <div className="flex items-start gap-4 bg-cream p-5">
+          <div aria-hidden="true" className="flex h-28 w-20 shrink-0 flex-col justify-between rounded-r-xl border-l-[6px] border-honey-300 bg-rose-600 p-3 text-honey-100 shadow-[3px_4px_0_rgba(39,42,61,0.18)]"><BookOpen size={21} /><span className="font-serif text-sm font-bold leading-snug">雅思<br />词汇真经</span></div>
+          <div className="min-w-0 flex-1 pt-1"><p className="text-xs font-bold text-lilac-500">我的词书 · 第 {stats.completedGroups + (stats.current ? 1 : 0)} / {BOOK_GROUPS.length} 组</p><h2 className="mt-2 font-serif text-xl font-semibold">{BOOK.title}</h2><p className="mt-2 text-xs text-ink-soft">{BOOK.edition} · 22 单元</p><p className="mt-1 text-xs text-ink-soft">共 {stats.total} 词 · 每组 25 词</p></div>
         </div>
         <div className="space-y-3 p-5">
           <div className="flex justify-between text-xs font-bold"><span>已学 {stats.learned} / {stats.total} 词</span><span>{stats.percent.toFixed(1)}%</span></div>
@@ -110,7 +119,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   if (screen === 'study') {
     if (!active || !activeGroup || !question) {
       const finished = BOOK_GROUPS.find(group => group.id === finishedId && progress.completed[group.id]);
-      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><Check className="mx-auto text-sage-500" size={36} /><h2 className="text-2xl font-bold">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始长期复习。</p></Card>{finished && <FocusPicker group={finished} state={state} missed={missed[finished.id] ?? []} onFocus={onFocus} onUnfocus={onUnfocus} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
+      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><div aria-hidden="true" className="stamp-in mx-auto flex h-20 w-20 items-center justify-center rounded-full border-[5px] border-double border-sage-500 text-sage-500"><Check size={34} /></div><h2 className="text-2xl font-bold">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始长期复习。</p></Card>{finished && <FocusPicker group={finished} state={state} missed={missed[finished.id] ?? []} onFocus={onFocus} onUnfocus={onUnfocus} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
     }
     const { word, kind, round } = question;
     const mode = ['英文回忆中文', '音标回忆中文', '中文拼写英文'][round];
@@ -120,7 +129,10 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
       <PageHeader title={`${activeGroup.unitTitle} · 第 ${activeGroup.index} 组`} subtitle={question.inRetry ? `错题重练 · 剩余 ${question.pendingRetries} 题` : `本轮第 ${active.seen + 1} / ${activeGroup.words.length} 词`} left={back('book')} />
       <div className="space-y-4 px-4">
         <Card className="space-y-5 px-6 py-8 text-center">
-          <p className="text-xs font-bold text-lilac-500">第 {round + 1} / 3 轮 · {mode}</p>
+          <div>
+            <p className="text-xs font-bold text-lilac-500">第 {round + 1} / 3 轮 · {mode}</p>
+            <ol aria-hidden="true" className="mx-auto mt-2 flex max-w-[220px] gap-1.5">{['教学', '回忆', '拼写'].map((label, i) => <li key={label} className={`flex-1 rounded-full py-0.5 text-[10px] font-bold ${i < round ? 'bg-sage-100 text-sage-500' : i === round ? 'bg-rose-500 text-white' : 'bg-stone-100 text-ink-soft'}`}>{i < round ? '✓ ' : ''}{label}</li>)}</ol>
+          </div>
           {spellingMode ? <p className="whitespace-pre-line text-left text-lg leading-relaxed">{word.meaning}</p> : <>
             {showTarget && <h2 className="break-words font-serif text-4xl font-semibold">{word.word}</h2>}
             {word.phonetic && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft`}>{word.phonetic}</p>}

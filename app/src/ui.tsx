@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Volume2 } from 'lucide-react';
 import { STAGE_LABELS, type WordExample, type WordItem } from './lib';
 
@@ -6,13 +6,13 @@ export const inputCls =
   'w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-[16px] text-ink placeholder:text-ink-faint focus:border-rose-300 focus:outline-none focus:ring-4 focus:ring-rose-100/70 transition';
 
 export const primaryBtn =
-  'inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-400 to-lilac-400 px-5 py-3.5 font-bold text-white shadow-lg shadow-rose-200/60 active:scale-[0.98] transition disabled:opacity-40 disabled:shadow-none';
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-rose-500 px-5 py-3 font-bold text-white shadow-[0_3px_0_#3D4199] transition hover:bg-rose-600 active:translate-y-[2px] active:shadow-[0_1px_0_#3D4199] disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none';
 
 export const softBtn =
-  'inline-flex items-center justify-center gap-1.5 rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 active:scale-[0.98] transition disabled:opacity-40';
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 active:scale-[0.98] transition disabled:opacity-40';
 
 export const ghostBtn =
-  'inline-flex items-center justify-center gap-1.5 rounded-2xl border border-rose-100 bg-white px-4 py-2.5 text-sm font-bold text-ink-soft active:scale-[0.98] transition disabled:opacity-40';
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-blush bg-white px-4 py-2.5 text-sm font-bold text-ink active:scale-[0.98] transition disabled:opacity-40';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-3xl bg-white shadow-card ${className}`}>{children}</div>;
@@ -94,8 +94,9 @@ export function Segmented<T extends string>({ options, value, onChange, size = '
           <button
             key={o.key}
             type="button"
+            aria-pressed={active}
             onClick={() => onChange(o.key)}
-            className={`flex-1 rounded-xl py-1.5 font-bold transition ${size === 'sm' ? 'text-[11px]' : 'text-[12px]'} ${
+            className={`flex-1 rounded-xl py-1.5 font-bold transition ${size === 'sm' ? 'min-h-9 text-[11px]' : 'min-h-11 text-[12px]'} ${
               active ? 'bg-white text-rose-600 shadow-sm' : 'text-ink-soft'
             }`}
           >
@@ -117,33 +118,20 @@ export function Toast({ message, tone }: { message: string; tone: 'ok' | 'warn' 
   );
 }
 
-const CONFETTI_COLORS = ['#F4C6D3', '#DF8AA3', '#D8C9EE', '#A88CD0', '#BFDBC9', '#79AC8D', '#F2CF8E', '#FFFFFF'];
-
-export function Confetti({ title, subtitle, onClose }: { title: string; subtitle: string; onClose: () => void }) {
-  const pieces = Array.from({ length: 70 }, (_, i) => ({
-    left: `${(i * 137.5) % 100}%`,
-    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-    dx: `${((i * 53) % 120) - 60}px`,
-    dur: `${2.2 + ((i * 7) % 10) / 10}s`,
-    delay: `${((i * 11) % 12) / 10}s`,
-    rot: `${(i * 47) % 360}deg`
-  }));
+/** Completion stamp shown only after the grades were actually saved. */
+export function DoneStamp({ title, subtitle, onClose }: { title: string; subtitle: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {pieces.map((p, i) => (
-          <span
-            key={i}
-            className="confetti-piece"
-            style={{ left: p.left, background: p.color, transform: `rotate(${p.rot})`, ['--dx' as string]: p.dx, ['--dur' as string]: p.dur, ['--delay' as string]: p.delay }}
-          />
-        ))}
-      </div>
-      <div className="pop mx-8 rounded-[28px] bg-white px-8 py-8 text-center shadow-paper">
-        <div className="text-5xl">🌸</div>
-        <h3 className="mt-3 font-serif text-2xl font-semibold text-ink">{title}</h3>
-        <p className="mt-2 text-sm font-semibold text-ink-soft">{subtitle}</p>
-        <button type="button" className={`${primaryBtn} mt-5 w-full`} onClick={onClose}>
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-ink/40 p-6" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-labelledby="done-title" aria-describedby="done-desc" className="fade-in w-full max-w-sm rounded-[28px] bg-paper px-8 py-8 text-center shadow-paper" onClick={e => e.stopPropagation()}>
+        <div data-testid="done-stamp" aria-hidden="true" className="stamp-in mx-auto flex h-24 w-24 items-center justify-center rounded-full border-[5px] border-double border-sage-500 font-serif text-lg font-bold tracking-widest text-sage-500">已复习</div>
+        <h3 id="done-title" className="mt-4 font-serif text-2xl font-semibold text-ink">{title}</h3>
+        <p id="done-desc" className="mt-2 text-sm font-semibold text-ink-soft">{subtitle}</p>
+        <button type="button" autoFocus className={`${primaryBtn} mt-5 w-full`} onClick={onClose}>
           好的
         </button>
       </div>

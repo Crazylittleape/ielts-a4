@@ -180,3 +180,18 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - UI：`ui.tsx` 新增 `ExampleBlock`，默认折叠（`<details>`，标题“例句：词”），展开显示英文例句、中文翻译、来源和“朗读例句”按钮（读屏名“朗读例句：词”，复用 `speak` 和原有朗读失败提示）。没有带来源例句的词什么都不显示。词书学习卡在显示答案或拼写检查后显示；A4 卡在评分按钮上方显示（遮挡模式下例句默认折叠，展开会露出答案，由用户自行决定）。
 - 测试：新增 `src/examples.test.ts` 6 项（createWord 来源规则、v3/旧版备份往返与非法拒绝、IndexedDB 覆盖恢复后与 FSRS/A4/日志共存、合并导入补例句不动排期、词书数据只含来源完整的真实词头且当前为空、词书例句流入 `WordItem`）。移动 Chromium/WebKit E2E 新增 2 项：A4 折叠例句、来源、朗读调用（替换 `speechSynthesis` 记录文本）、无例句词不显示、评分后例句仍在 IndexedDB；词书学习卡不显示例句。例句均为标明 fixture 的测试数据，不随应用发布。
 - 未验证：真机 iOS Safari 朗读例句（静音开关、系统语音）；VoiceOver 对 `<details>` 的朗读。
+
+## 2026-10-24 · 学习 UI 改版（方向 B：游戏化学习 + 纸张 A4）
+
+依据 `docs/superpowers/specs/2026-10-24-learning-ui-design.md` 和 `docs/superpowers/plans/2026-10-24-learning-ui-plan.md` 实施；参考调研见 `docs/UI-REFERENCES-2026-10-24.md`。
+
+- 视觉系统：Tailwind 颜色 token 换成暖浅底、深靛主色、紫色辅助、青绿表示完成、琥珀表示挑战/连击（沿用原 class 名，没有新增依赖和远程字体）。主按钮为实色并带立体底边，可见焦点为 3px 描边；全局 `prefers-reduced-motion` 覆盖所有动画和过渡。撒花动画换成“已复习”印章对话框（`role=dialog`，只在评分保存成功后出现）。
+- 首页：新增 `TodayCoach`，只给出一个真实的下一步，优先级为 A4 到期 → 全部 FSRS 到期 → 继续本组 → 今日计划下一组 → 已完成。学习日报包括已复习、其中记住、新学、A4 待复习和词书今日组数，全部由 `coach.ts` 从 `revlog`、日历和词书进度计算；不显示连续天数、XP、积分或时长估计，也不写入任何数据。
+- 词书：封面重画，学习卡显示三轮分段进度，组完成时显示印章。答案揭示时机不变。
+- A4：工具栏和纸面分开；已评分行用青绿底色并附“✓ 今日已评分”文字，已勾选行用靛色底色（替代原来降低整行透明度的做法）；四档评分按钮至少 44px，“忘记/困难”为中性色；评分后的提示显示 FSRS 的下次复习日期。分页、遮挡、偷看、勾选和提交逻辑不变。
+- 60 秒挑战：深色舞台分开始、进行、结算三层。计时器 `aria-live=off`，只通过独立的 polite 区域播报“还剩 10 秒”和“时间到”；匹配成功显示 ✓ 图标并有短发光，配错有轻微抖动；结算新增本局最高连击（不保存）。计时、防连点和计分逻辑不变。
+- 看板：主卡、翻页按钮、颜色跟随新 token，日历含义不变。
+- Service Worker 缓存版本更新为 `ielts-a4-v3-20261024-learning-ui-1`。已安装的用户会收到更新提示；现有 E2E 已验证更新后 IndexedDB 记录保留、断网刷新可用。
+- 数据：没有修改 WordItem、FSRS、revlog、Dexie 表结构或备份格式。
+- 验证：Vitest 88 项（新增 `coach.test.ts` 4 项），移动 Chromium/WebKit E2E 86 项（新增 10 项）。在 320px 宽度下，200% 根字号时首页、A4、看板、挑战页均无横向溢出；reduced-motion 下动画时长为 0.01ms。主要文字对比度：ink 13.1:1、ink-soft 5.7:1、主按钮白字 6.3:1、挑战舞台白字 16.5:1。
+- 仍未验证：iPhone 真机 Safari 和主屏幕 App 的实际观感、VoiceOver 播报、系统“减少动态效果”开关。

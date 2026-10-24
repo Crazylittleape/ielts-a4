@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Home, BookOpenText, Library, X } from 'lucide-react';
+import { Home, BookOpenText, Library, X, Zap, BarChart3 } from 'lucide-react';
 import type { AppState, StateSummary, WordFields, WordItem } from './lib';
-import { backupJson, createWord, focusSummary, gradeWord, removeFromFocus, resetWord, parseBackup, mergeBackup, speak, stateSummary, todayStr } from './lib';
+import { backupJson, createWord, focusSummary, gradeWord, parseDate, removeFromFocus, resetWord, parseBackup, mergeBackup, speak, stateSummary, todayStr } from './lib';
+import { dailyReport } from './coach';
 import { buildCalendar, reviewIds, type ReviewScope } from './calendar';
 import { applyUpdate, SW_UPDATE_EVENT } from './pwa';
 import { listAutoBackups, onWorkspaceEvent, openWorkspace, persistWorkspace, saveAutoBackup, type BackupRow } from './db';
@@ -12,7 +13,7 @@ import { AddView } from './AddView';
 import { BookView } from './BookView';
 import { beginGroup, answerBookQuestion, focusBookWord, getBookProgress, type BookAnswer } from './book';
 import { BankView } from './BankView';
-import { Confetti, Field, Toast, inputCls, primaryBtn, ghostBtn } from './ui';
+import { DoneStamp, Field, Toast, inputCls, primaryBtn, ghostBtn } from './ui';
 
 type Tab = 'home' | 'dashboard' | 'a4' | 'add' | 'bank' | 'quiz' | 'stats';
 type ToastTone = 'ok' | 'warn' | 'info';
@@ -83,17 +84,17 @@ function TabBar({ tab, onChange, due }: { tab: Tab; onChange: (t: Tab) => void; 
     { key: 'bank', label: '我的单词', Icon: BookOpenText }
   ];
   return (
-    <nav className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-rose-100/70 bg-white/90 backdrop-blur-md">
+    <nav aria-label="主导航" className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-blush bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-[480px]">
         {items.map(({ key, label, Icon }) => {
           const active = tab === key;
           return (
-            <button key={key} type="button" onClick={() => onChange(key)} className="relative flex flex-1 flex-col items-center gap-0.5 pb-1 pt-2.5">
-              <span className={`relative rounded-2xl px-4 py-1 transition ${active ? 'bg-rose-50 text-rose-500' : 'text-ink-faint'}`}>
+            <button key={key} type="button" aria-current={active ? 'page' : undefined} onClick={() => onChange(key)} className="relative flex min-h-14 flex-1 flex-col items-center gap-0.5 pb-1 pt-2">
+              <span className={`relative rounded-2xl px-4 py-1 transition ${active ? 'bg-rose-100 text-rose-600' : 'text-ink-soft'}`}>
                 <Icon size={22} strokeWidth={active ? 2.4 : 2} />
                 {key === 'a4' && due > 0 && <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-rose-500 px-1 text-center text-[10px] font-extrabold leading-[18px] text-white">{due}</span>}
               </span>
-              <span className={`text-[10px] font-extrabold ${active ? 'text-rose-500' : 'text-ink-faint'}`}>{label}</span>
+              <span className={`text-[11px] font-extrabold ${active ? 'text-rose-600' : 'text-ink-soft'}`}>{label}</span>
             </button>
           );
         })}
@@ -125,7 +126,7 @@ export default function App() {
     setSelectedDay(day => day === previous ? today : day);
   }, [today]);
   const [toast, setToast] = useState<{ msg: string; tone: ToastTone } | null>(null);
-  const [confetti, setConfetti] = useState<{ title: string; subtitle: string } | null>(null);
+  const [stamp, setStamp] = useState<{ title: string; subtitle: string } | null>(null);
   const [editing, setEditing] = useState<WordItem | null>(null);
   const [autoBackups, setAutoBackups] = useState<BackupRow[]>([]);
   const refreshBackups = useCallback(() => listAutoBackups().then(setAutoBackups).catch(() => undefined), []);
@@ -188,8 +189,9 @@ export default function App() {
   const calendar = useMemo(() => buildCalendar(state ?? { words: [], revlog: [], skipped: [], settings: { dailyClaim: 30, lastClaimDate: '' } }, today), [state, today]);
   const todayWords = state?.words.filter(w => w.createdAt === today || (!w.isMastered && w.nextReviewDate <= today) || w.reviewHistory.includes(today)) || [];
   const gameWords = todayWords.length ? todayWords : state?.words || [];
+  const report = useMemo(() => state ? dailyReport(state, calendar, today) : null, [state, calendar, today]);
   const onSpeak = useCallback((word: string) => { if (!speak(word, () => showToast('朗读失败：请检查静音开关、音量或系统英语语音', 'warn'))) showToast('当前浏览器不支持语音朗读', 'warn'); }, [showToast]);
-  const openA4 = (day: string, scope: ReviewScope = 'focus') => { setA4Back('dashboard'); setA4Scope(scope); setA4Date(day); setTab('a4'); window.scrollTo({top:0}); };
+  const openA4 = (day: string, scope: ReviewScope = 'focus', from: Tab = 'dashboard') => { setA4Back(from); setA4Scope(scope); setA4Date(day); setTab('a4'); window.scrollTo({top:0}); };
   const addWords = async (items: WordFields[]): Promise<number> => {
     const s = current.current;
     if (!s || busy.current) return 0;
@@ -206,7 +208,12 @@ export default function App() {
   };
   const onGrade = async (id: string, rating: 1 | 2 | 3 | 4) => {
     const s = current.current;
-    if (s && await commit(gradeWord(s, id, today, rating))) showToast('评分已保存，FSRS 排期已更新', 'ok');
+    if (!s) return;
+    const next = gradeWord(s, id, today, rating);
+    if (!await commit(next)) return;
+    const due = next.words.find(w => w.id === id)?.nextReviewDate;
+    const when = !due ? '' : due <= today ? '今天稍后' : `${parseDate(due).getMonth() + 1} 月 ${parseDate(due).getDate()} 日`;
+    showToast(when ? `评分已保存 · 下次复习 ${when}` : '评分已保存，FSRS 排期已更新', 'ok');
   };
   const onHardReset = async (id: string) => {
     const s = current.current;
@@ -238,7 +245,7 @@ export default function App() {
     const next = ids.reduce((result, id) => gradeWord(result, id, today, 3), s);
     const count = next.revlog.length - s.revlog.length;
     if (await commit(next)) {
-      setConfetti({title:'今日打卡完成', subtitle:`已保存 ${count} 个词的复习评分，排期已更新`});
+      setStamp({title:'今日打卡完成', subtitle:`已保存 ${count} 个词的复习评分，排期已更新`});
     }
   };
   const onSaveEdit = async (word: WordItem) => {
@@ -313,7 +320,7 @@ export default function App() {
     {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 bg-sage-100 p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
     {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><BookView state={state} today={today} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onFocus={onFocus} onUnfocus={onUnfocus} /></>}
+      {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={`${ghostBtn} border-honey-300 bg-honey-50`} onClick={() => changeTab('quiz')}><Zap size={16} className="text-honey-600" />60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}><BarChart3 size={16} className="text-rose-500" />学习统计</button></div><BookView state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onFocus={onFocus} onUnfocus={onUnfocus} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} calendar={calendar} onOpenBook={() => changeTab('home')} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View words={state.words} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} allDueCount={reviewIds(calendar.all, today, today).length} onOpenBook={() => changeTab('home')} schedule={calendar[a4Scope]} onBack={() => { setTab(a4Back); window.scrollTo({ top: 0 }); }} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
@@ -324,7 +331,7 @@ export default function App() {
       {editing && <EditSheet word={editing} onSave={onSaveEdit} onClose={() => setEditing(null)} />}
     </fieldset>
     {saving && <p role="status" className="fixed left-1/2 top-2 z-[80] -translate-x-1/2 rounded-full bg-white px-4 py-2 text-sm shadow-card">正在保存…</p>}
-    {confetti && <Confetti title={confetti.title} subtitle={confetti.subtitle} onClose={() => setConfetti(null)} />}
+    {stamp && <DoneStamp title={stamp.title} subtitle={stamp.subtitle} onClose={() => setStamp(null)} />}
     {toast && <Toast message={toast.msg} tone={toast.tone} />}
   </div>;
 }

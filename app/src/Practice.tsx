@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Check } from 'lucide-react';
 import type { AppState, WordItem } from './lib';
 import { addDays, buildSchedule, shuffle } from './lib';
-import { Card, PageHeader, primaryBtn, ghostBtn } from './ui';
+import { Card, PageHeader, ghostBtn } from './ui';
 
 export const GAME_SECONDS = 60;
 
@@ -23,7 +24,9 @@ export function matchRound(words: WordItem[], previous: string[] = [], random: (
 }
 
 type Phase = 'idle' | 'playing' | 'over';
-const emptyStats = { matches: 0, attempts: 0, rounds: 0 };
+const emptyStats = { matches: 0, attempts: 0, rounds: 0, bestCombo: 0 };
+const stageBtn = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-amber-300 px-5 py-3 font-extrabold text-[#1E1B3A] shadow-[0_4px_0_#B45309] transition active:translate-y-[2px] active:shadow-[0_2px_0_#B45309] disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none';
+const tileBtn = 'w-full min-h-12 break-words rounded-2xl border-2 p-3 text-left transition';
 
 export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: WordItem[]; scopeLabel: string; onBack: () => void; onSpeak: (s: string) => void }) {
   const [phase, setPhase] = useState<Phase>('idle');
@@ -37,9 +40,19 @@ export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: Wo
   const [roundNo, setRoundNo] = useState(1);
   const [stats, setStats] = useState(emptyStats);
   const [feedback, setFeedback] = useState('');
+  const [announce, setAnnounce] = useState('');
+  const [flash, setFlash] = useState<{ id: string; ok: boolean } | null>(null);
+  const flashTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(flashTimer.current), []);
+  const showFlash = (id: string, ok: boolean) => {
+    window.clearTimeout(flashTimer.current);
+    setFlash({ id, ok });
+    flashTimer.current = window.setTimeout(() => setFlash(null), 240);
+  };
   // Refs hold the authoritative game state so rapid taps between renders cannot double count.
   const game = useRef({ deadline: 0, items: [] as WordItem[], matched: new Set<string>(), selected: '', combo: 0, over: true });
-  const canStart = distinctMeanings(words) >= 2;
+  const meaningCount = distinctMeanings(words);
+  const canStart = meaningCount >= 2;
 
   const finish = () => {
     if (game.current.over) return;
@@ -47,6 +60,7 @@ export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: Wo
     game.current.selected = '';
     setSelected('');
     setRemaining(0);
+    setAnnounce('时间到，本局结束');
     setPhase('over');
   };
   const deal = (previous: string[]) => {
@@ -68,6 +82,8 @@ export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: Wo
     setRoundNo(1);
     setStats(emptyStats);
     setFeedback('');
+    setAnnounce('');
+    setFlash(null);
     setRemaining(GAME_SECONDS);
     setPhase('playing');
   };
@@ -77,6 +93,8 @@ export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: Wo
     const tick = () => {
       const n = Math.max(0, Math.ceil((game.current.deadline - Date.now()) / 1000));
       setRemaining(n);
+      // Announce once when the final 10 seconds start instead of reading every second.
+      if (n > 0 && n <= 10) setAnnounce(a => a || `还剩 ${n} 秒`);
       if (!n) finish();
     };
     tick();
@@ -112,6 +130,7 @@ export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: Wo
       setCombo(0);
       setStats(s => ({ ...s, attempts: s.attempts + 1 }));
       setFeedback('再想一想，连击已重置');
+      showFlash(id, false);
       return;
     }
     const word = g.items.find(w => w.id === id);
@@ -122,10 +141,12 @@ export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: Wo
     onSpeak(word.word);
     setScore(s => s + 10 + bonus);
     setCombo(g.combo);
-    setFeedback('配对正确');
+    setFeedback(bonus ? `配对正确 +${10 + bonus}（连击加分）` : '配对正确 +10');
+    showFlash(id, true);
     setMatched([...g.matched]);
     const complete = g.matched.size === g.items.length;
-    setStats(s => ({ matches: s.matches + 1, attempts: s.attempts + 1, rounds: s.rounds + (complete ? 1 : 0) }));
+    const best = g.combo;
+    setStats(s => ({ matches: s.matches + 1, attempts: s.attempts + 1, rounds: s.rounds + (complete ? 1 : 0), bestCombo: Math.max(s.bestCombo, best) }));
     if (complete) {
       setRoundNo(n => n + 1);
       setFeedback('本轮完成，已换下一轮');
@@ -133,51 +154,70 @@ export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: Wo
     }
   };
   const accuracy = stats.attempts ? `${Math.round((stats.matches / stats.attempts) * 100)}%` : '—';
+  const urgent = phase === 'playing' && remaining <= 10;
+  const tileState = (id: string, isSelected: boolean) => matched.includes(id)
+    ? 'border-teal-300/50 bg-teal-400/15 text-teal-100'
+    : flash?.id === id && !flash.ok ? 'nudge border-orange-300 bg-orange-400/20 text-white'
+    : isSelected ? 'border-amber-300 bg-amber-300/20 text-white' : 'border-white/15 bg-white/10 text-white';
 
   return <div className="safe-bottom-pad">
     <PageHeader title="60 秒英汉配对" subtitle={`${scopeLabel} · 答对朗读 · 只练习，不改排期`} />
     <div className="space-y-4 px-4">
       <button type="button" className={ghostBtn} onClick={onBack}>返回首页</button>
-      <Card className="min-w-0 space-y-4 p-4">
-        <div className="flex flex-wrap justify-between gap-x-3 gap-y-1 font-bold">
-          <span role="timer" aria-live="polite" aria-atomic="true">剩余 {remaining} 秒</span>
-          <span>得分 {score}</span>
-          <span>连击 {combo}</span>
-          {phase === 'playing' && <span>第 {roundNo} 轮</span>}
-        </div>
-        {phase === 'idle' && <>
-          <p>随时练一局。先选左侧英文，再选右侧中文；每轮最多 4 对，完成后自动换下一轮。</p>
-          <button type="button" className={primaryBtn} disabled={!canStart} aria-describedby={canStart ? undefined : 'match-reason'} onClick={begin}>开始 60 秒挑战</button>
-          {!canStart && <p id="match-reason" className="text-sm text-ink-soft">至少需要 2 个释义不同的词才能开始。请先在词书学习或录入新词。</p>}
-        </>}
-        {phase === 'over' && <section aria-label="本局总结" className="space-y-3">
-          <h2 className="text-lg font-bold">时间到 · 本局总结</h2>
-          <ul className="grid grid-cols-2 gap-2 text-sm">
-            <li>总分 {score}</li>
-            <li>匹配 {stats.matches} 对</li>
-            <li>正确率 {accuracy}</li>
-            <li>完成 {stats.rounds} 轮</li>
-          </ul>
-          <p className="text-xs text-ink-soft">练习结果不保存，也不会改动复习排期。</p>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" className={primaryBtn} disabled={!canStart} onClick={begin}>再来一局</button>
-            <button type="button" className={ghostBtn} onClick={onBack}>返回</button>
+      <section className="stage min-w-0 rounded-3xl bg-[#1E1B3A] p-4 text-white shadow-paper sm:p-6">
+        <p data-testid="timer-announce" aria-live="polite" className="sr-only">{announce}</p>
+        {phase === 'idle' && <div className="space-y-4">
+          <p className="text-xs font-extrabold tracking-[0.2em] text-amber-300">60 秒挑战 · 只练习，不改排期</p>
+          <h2 className="text-2xl font-extrabold">准备好就开始</h2>
+          <ol className="space-y-2 text-sm leading-relaxed text-white/85">
+            <li>① 先点左侧英文，再点右侧对应的中文</li>
+            <li>② 每轮最多 4 对，配完自动换下一轮</li>
+            <li>③ 连续答对有连击加分，答错连击清零</li>
+          </ol>
+          <p className="text-xs text-white/75">词源：{scopeLabel} · {words.length} 词 · {meaningCount} 个不同释义</p>
+          <button type="button" className={`${stageBtn} w-full`} disabled={!canStart} aria-describedby={canStart ? undefined : 'match-reason'} onClick={begin}>开始 60 秒挑战</button>
+          {!canStart && <p id="match-reason" className="text-sm text-white/85">至少需要 2 个释义不同的词才能开始。请先在词书学习或录入新词。</p>}
+        </div>}
+        {phase === 'playing' && <div className="space-y-3">
+          <div className="flex flex-wrap items-end justify-between gap-2">
+            <span role="timer" aria-live="off" className={`flex items-baseline gap-1 ${urgent ? 'text-amber-300' : ''}`}><span className="text-xs font-bold">剩余 </span><span className="text-4xl font-extrabold tabular-nums">{remaining}</span><span className="text-sm font-bold"> 秒</span></span>
+            <div className="flex flex-wrap justify-end gap-1.5 text-sm font-bold">
+              <span className="rounded-full bg-white/10 px-2.5 py-1">得分 {score}</span>
+              <span className={`rounded-full px-2.5 py-1 ${combo >= 2 ? 'bg-amber-300 text-[#1E1B3A]' : 'bg-white/10'}`}>连击 {combo}</span>
+              <span className="rounded-full bg-white/10 px-2.5 py-1">第 {roundNo} 轮</span>
+            </div>
           </div>
-        </section>}
-        {phase === 'playing' && <div className="grid grid-cols-2 gap-3">
-          <div role="group" aria-label="英文" className="min-w-0 space-y-2">
-            {items.map(w =>
-              <button key={w.id} type="button" disabled={matched.includes(w.id)} aria-pressed={selected === w.id} className={`w-full break-words rounded-2xl border p-3 text-left font-serif ${selected === w.id ? 'border-rose-400 bg-rose-50' : 'border-rose-100 bg-white'} disabled:opacity-20`} onClick={() => pick(w.id)}>{w.word}</button>
-            )}
-          </div>
-          <div role="group" aria-label="中文" className="min-w-0 space-y-2">
-            {choices.map(w =>
-              <button key={w.id} type="button" disabled={matched.includes(w.id)} className="w-full break-words rounded-2xl border border-lilac-100 bg-white p-3 text-left text-sm disabled:opacity-20" onClick={() => match(w.id)}>{w.meaning}</button>
-            )}
+          <div aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-white/10"><div className={`h-full rounded-full transition-[width] duration-200 ${urgent ? 'bg-amber-300' : 'bg-teal-300'}`} style={{ width: `${(remaining / GAME_SECONDS) * 100}%` }} /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div role="group" aria-label="英文" className="min-w-0 space-y-2">
+              {items.map(w =>
+                <button key={w.id} type="button" disabled={matched.includes(w.id)} aria-pressed={selected === w.id} className={`${tileBtn} font-serif text-[17px] ${tileState(w.id, selected === w.id)}`} onClick={() => pick(w.id)}>{matched.includes(w.id) && <Check size={14} strokeWidth={3} aria-hidden="true" className="mr-1 inline align-[-2px]" />}{w.word}</button>
+              )}
+            </div>
+            <div role="group" aria-label="中文" className="min-w-0 space-y-2">
+              {choices.map(w =>
+                <button key={w.id} type="button" disabled={matched.includes(w.id)} className={`${tileBtn} text-sm ${tileState(w.id, false)} ${flash?.id === w.id && flash.ok ? 'glow' : ''}`} onClick={() => match(w.id)}>{matched.includes(w.id) && <Check size={14} strokeWidth={3} aria-hidden="true" className="mr-1 inline align-[-2px]" />}{w.meaning}</button>
+              )}
+            </div>
           </div>
         </div>}
-        <p role="status" className="text-sm text-ink-soft">{feedback}</p>
-      </Card>
+        {phase === 'over' && <section aria-label="本局总结" className="space-y-4 text-center">
+          <h2 className="text-lg font-extrabold">时间到 · 本局总结</h2>
+          <p className="pop"><span className="block text-xs font-bold tracking-[0.2em] text-white/75">总分 </span><strong className="block text-6xl font-extrabold tabular-nums text-amber-300">{score}</strong></p>
+          <ul className="grid grid-cols-2 gap-2 text-sm font-bold">
+            <li className="rounded-2xl bg-white/10 px-3 py-3">匹配 {stats.matches} 对</li>
+            <li className="rounded-2xl bg-white/10 px-3 py-3">正确率 {accuracy}</li>
+            <li className="rounded-2xl bg-white/10 px-3 py-3">完成 {stats.rounds} 轮</li>
+            <li className="rounded-2xl bg-white/10 px-3 py-3">最高连击 {stats.bestCombo}</li>
+          </ul>
+          <p className="text-xs text-white/75">练习结果不保存，也不会改动复习排期。</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" className={stageBtn} disabled={!canStart} onClick={begin}>再来一局</button>
+            <button type="button" className="inline-flex min-h-12 items-center justify-center rounded-2xl border border-white/30 px-5 font-bold text-white" onClick={onBack}>返回</button>
+          </div>
+        </section>}
+        {phase === 'playing' && <p role="status" className="mt-3 min-h-5 text-sm text-white/85">{feedback}</p>}
+      </section>
     </div>
   </div>;
 }

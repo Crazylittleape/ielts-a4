@@ -16,7 +16,7 @@ interface Props {
   onSpeak: (w: string) => void;
 }
 type CalMode = 'month' | 'week';
-const MARK_COLOR: Record<DayMarkKind, string> = { due: 'text-rose-600', done: 'text-sage-500', added: 'text-lilac-500', learned: 'text-sky-700', planned: 'text-stone-500' };
+const MARK_COLOR: Record<DayMarkKind, string> = { due: 'text-rose-600', done: 'text-sage-500', added: 'text-lilac-500', learned: 'text-honey-700', planned: 'text-stone-500' };
 
 function monthGrid(anchor: Date): (string | null)[] {
   const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1, 12);
@@ -66,8 +66,8 @@ export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, on
   return <div className="safe-bottom-pad">
     <PageHeader title="我的学习日历" subtitle={`${today} · 周${weekdayCN(parseDate(today))} · 记录来自本机学习`} />
     <div className="space-y-4 px-4 pt-1">
-      <Card className="p-5">
-        <p className="text-xs font-bold tracking-[0.2em] text-rose-500">TODAY / A4 攻坚</p>
+      <Card className="border-t-4 border-rose-500 p-5">
+        <p className="text-xs font-bold tracking-[0.2em] text-rose-600">TODAY / A4 攻坚</p>
         <div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-[52px] leading-none">{current.due.length}</span><span className="text-sm text-ink-soft">词待攻坚</span></div>
         <p className="mt-2 text-xs text-ink-soft">含逾期 {current.due.filter(w => w.overdue).length} 词 · 已完成 {current.done.length} 词 · 今日新增攻坚 {current.added.length} 词</p>
         <div className="mt-4 grid grid-cols-2 gap-3 border-y border-stone-100 py-3 text-sm">
@@ -82,9 +82,9 @@ export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, on
         <Segmented options={[{ key: 'focus', label: 'A4 攻坚' }, { key: 'all', label: '全部复习' }]} value={scope} onChange={setScope} />
         <div className="my-3 flex items-center justify-between">
           <div className="flex items-center">
-            <button type="button" className="p-2 text-ink-soft" onClick={() => shift(-1)} aria-label="上一页"><ChevronLeft size={18} /></button>
-            <button type="button" className="text-sm font-bold" onClick={() => { setAnchor(today); onSelectDay(today); }}>{anchorDate.getFullYear()} 年 {anchorDate.getMonth() + 1} 月</button>
-            <button type="button" className="p-2 text-ink-soft" onClick={() => shift(1)} aria-label="下一页"><ChevronRight size={18} /></button>
+            <button type="button" className="flex h-11 w-11 items-center justify-center text-ink-soft" onClick={() => shift(-1)} aria-label="上一页"><ChevronLeft size={18} /></button>
+            <button type="button" className="min-h-11 text-sm font-bold" onClick={() => { setAnchor(today); onSelectDay(today); }}>{anchorDate.getFullYear()} 年 {anchorDate.getMonth() + 1} 月</button>
+            <button type="button" className="flex h-11 w-11 items-center justify-center text-ink-soft" onClick={() => shift(1)} aria-label="下一页"><ChevronRight size={18} /></button>
           </div>
           <div className="w-24"><Segmented size="sm" options={[{ key: 'month', label: '月' }, { key: 'week', label: '周' }]} value={mode} onChange={setMode} /></div>
         </div>
