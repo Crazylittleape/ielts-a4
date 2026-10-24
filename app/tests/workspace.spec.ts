@@ -75,7 +75,7 @@ test('matching score, deadline and free practice do not write scheduling data',a
   await page.getByRole('button',{name:'60 秒配对',exact:true}).click();await page.getByRole('button',{name:'开始 60 秒挑战',exact:true}).click();
   await page.getByRole('button',{name:'alpha',exact:true}).click();await page.getByRole('button',{name:'第一个',exact:true}).click();
   await expect(page.getByText('得分 10',{exact:true})).toBeVisible();
-  await page.clock.fastForward(61000);await expect(page.getByText('本局结束，可以再来一局。')).toBeVisible();
+  await page.clock.fastForward(61000);await expect(page.getByRole('region',{name:'本局总结'})).toContainText('总分 10');
   expect(await snapshot(page)).toEqual(before);
 });
 test('scoped PWA supports offline reload and mobile layout',async({page,context})=>{
@@ -656,4 +656,146 @@ test('book study cards show no invented example sentence', async ({ page }) => {
   await expect(page.getByRole('button', { name: '想起来了', exact: true })).toBeVisible();
   await expect(page.getByTestId('example')).toHaveCount(0);
   await expect(page.getByText(/^例句/)).toHaveCount(0);
+});
+
+const quizWord = (word: string, meaning: string, i: number) => ({ ...fixture.words[0], id: `quiz-${i}`, word, meaning });
+async function openQuiz(page: Page) {
+  await page.getByRole('button', { name: '60 秒配对', exact: true }).click();
+}
+async function matchPair(page: Page, word: string, meaning: string) {
+  await page.getByRole('group', { name: '英文' }).getByRole('button', { name: word, exact: true }).click();
+  await page.getByRole('group', { name: '中文' }).getByRole('button', { name: meaning, exact: true }).click();
+}
+
+test('60s challenge: rounds refill, wrong picks reset combo, double taps score once, time-up locks and summarises, restart resets, nothing is written', async ({ page }) => {
+  const words = [['alpha', '第一个'], ['beta', '第二个'], ['gamma', '第三个'], ['delta', '第四个'], ['epsilon', '第五个']].map(([w, m], i) => quizWord(w, m, i));
+  await start(page, { ...fixture, words });
+  const before = await snapshot(page);
+  await openQuiz(page);
+  await expect(page.getByRole('timer')).toHaveAttribute('aria-live', 'polite');
+  await page.getByRole('button', { name: '开始 60 秒挑战', exact: true }).click();
+  const en = page.getByRole('group', { name: '英文' }).getByRole('button');
+  await expect(en).toHaveCount(4);
+  const meaningOf = Object.fromEntries(words.map(w => [w.word, w.meaning]));
+  const first = (await en.allTextContents())[0];
+  const shown = await page.getByRole('group', { name: '中文' }).getByRole('button').allTextContents();
+  await page.getByRole('group', { name: '英文' }).getByRole('button', { name: first, exact: true }).click();
+  await page.getByRole('group', { name: '中文' }).getByRole('button', { name: shown.find(m => m !== meaningOf[first])!, exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '连击已重置' })).toBeVisible();
+  await expect(page.getByRole('group', { name: '英文' }).getByRole('button', { pressed: true })).toHaveCount(0);
+  await page.getByRole('group', { name: '英文' }).getByRole('button', { name: first, exact: true }).click();
+  await page.getByRole('group', { name: '中文' }).getByRole('button', { name: meaningOf[first], exact: true }).dblclick();
+  await expect(page.getByText('得分 10', { exact: true })).toBeVisible();
+  await expect(page.getByRole('group', { name: '英文' }).getByRole('button', { name: first, exact: true })).toBeDisabled();
+  await expect(page.getByRole('group', { name: '中文' }).getByRole('button', { name: meaningOf[first], exact: true })).toBeDisabled();
+  for (const w of (await en.allTextContents()).filter(w => w !== first)) await matchPair(page, w, meaningOf[w]);
+  await expect(page.getByText('第 2 轮', { exact: true })).toBeVisible();
+  await expect(en).toHaveCount(4);
+  for (const button of await en.all()) await expect(button).toBeEnabled();
+  expect(new Set(await en.allTextContents()).size).toBe(4);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.clock.fastForward(61000);
+  await expect(page.getByRole('group', { name: '英文' })).toHaveCount(0);
+  const summary = page.getByRole('region', { name: '本局总结' });
+  await expect(summary).toContainText('总分 ');
+  await expect(summary).toContainText('匹配 4 对');
+  await expect(summary).toContainText('正确率 80%');
+  await expect(summary).toContainText('完成 1 轮');
+  await page.getByRole('button', { name: '再来一局', exact: true }).click();
+  await expect(page.getByText('得分 0', { exact: true })).toBeVisible();
+  await expect(page.getByText('连击 0', { exact: true })).toBeVisible();
+  await expect(page.getByText('第 1 轮', { exact: true })).toBeVisible();
+  await expect(page.getByRole('timer')).toHaveText('剩余 60 秒');
+  await page.clock.fastForward(61000);
+  await expect(page.getByRole('region', { name: '本局总结' })).toContainText('匹配 0 对');
+  expect(await snapshot(page)).toEqual(before);
+  await page.getByRole('button', { name: '返回', exact: true }).click();
+  await expect(page.getByRole('button', { name: '60 秒配对', exact: true })).toBeVisible();
+});
+
+test('60s challenge: duplicate meanings and fewer than 4 words still complete rounds without repeats in a round', async ({ page }) => {
+  await start(page, { ...fixture, words: [quizWord('alpha', '同一个', 0), quizWord('beta', '同一个', 1), quizWord('gamma', '不同', 2)] });
+  await openQuiz(page);
+  await page.getByRole('button', { name: '开始 60 秒挑战', exact: true }).click();
+  const en = page.getByRole('group', { name: '英文' }).getByRole('button');
+  await expect(en).toHaveCount(2);
+  for (let round = 1; round <= 3; round++) {
+    await expect(page.getByText(`第 ${round} 轮`, { exact: true })).toBeVisible();
+    const pair = await en.allTextContents();
+    for (const w of pair) await matchPair(page, w, w === 'gamma' ? '不同' : '同一个');
+  }
+  await expect(page.getByText('第 4 轮', { exact: true })).toBeVisible();
+  await expect(page.getByText('得分 90', { exact: true })).toBeVisible();
+});
+
+test('60s challenge cannot start with fewer than 2 distinct meanings and says why', async ({ page }) => {
+  await start(page, { ...fixture, words: [quizWord('alpha', '同一个', 0), quizWord('beta', '同一个', 1)] });
+  await openQuiz(page);
+  await expect(page.getByRole('button', { name: '开始 60 秒挑战', exact: true })).toBeDisabled();
+  await expect(page.getByText('至少需要 2 个释义不同的词', { exact: false })).toBeVisible();
+});
+
+test('60s challenge time does not extend while the page is hidden', async ({ page }) => {
+  await start(page, { ...fixture });
+  await openQuiz(page);
+  await page.getByRole('button', { name: '开始 60 秒挑战', exact: true }).click();
+  await page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' }); document.dispatchEvent(new Event('visibilitychange')); });
+  await page.clock.runFor(30000);
+  await page.clock.setSystemTime(new Date('2026-10-22T12:01:30+08:00'));
+  await page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' }); document.dispatchEvent(new Event('visibilitychange')); });
+  await expect(page.getByRole('region', { name: '本局总结' })).toBeVisible();
+  await expect(page.getByRole('group', { name: '英文' })).toHaveCount(0);
+});
+
+const a4Words = (n: number) => Array.from({ length: n }, (_, i) => ({ ...fixture.words[0], id: `a4-${i}`, word: `aword${i}`, meaning: `释义${i}`, focus: { active: true, addedAt: '2026-10-21', nextDate: today } }));
+
+test('A4 keeps ticks and peeks across pages and modes, and one submit grades every ticked word once', async ({ page }) => {
+  await start(page, { ...fixture, words: a4Words(10) });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await page.getByRole('button', { name: '勾选记住：aword0', exact: true }).click();
+  await page.getByRole('button', { name: /只看中/ }).click();
+  await page.getByRole('listitem').filter({ hasText: '释义1' }).getByRole('button').first().click();
+  await expect(page.getByRole('listitem').filter({ hasText: '释义1' })).toHaveAttribute('data-masked', 'none');
+  await page.getByRole('button', { name: '下一张', exact: true }).click();
+  await page.getByRole('button', { name: '勾选记住：aword9', exact: true }).click();
+  await page.getByRole('button', { name: /只看英/ }).click();
+  await page.getByRole('button', { name: /只看中/ }).click();
+  await page.getByRole('button', { name: '上一张', exact: true }).click();
+  await expect(page.getByRole('button', { name: '勾选记住：aword0', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('listitem').filter({ hasText: '释义1' })).toHaveAttribute('data-masked', 'none');
+  await expect(page.getByText(/2 已勾选/)).toBeVisible();
+  await page.getByRole('button', { name: '提交已勾选 2 词 · 按「记住」评分', exact: true }).click();
+  await page.getByRole('button', { name: '好的', exact: true }).click();
+  const saved = await snapshot(page);
+  expect((saved.revlog as { wordId: string }[]).map(l => l.wordId).sort()).toEqual(['a4-0', 'a4-9']);
+  await expect(page.getByRole('button', { name: /^忘记：/ })).toHaveCount(7);
+});
+
+test('A4 opened from a future dashboard day keeps its date and scope, is read-only, and back returns to the dashboard', async ({ page }) => {
+  const words = [...a4Words(2), { ...a4Words(1)[0], id: 'future-1', word: 'later', meaning: '以后', nextReviewDate: '2026-10-25', focus: { active: true, addedAt: '2026-10-21', nextDate: '2026-10-25' } }];
+  await start(page, { ...fixture, words });
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await page.getByRole('button', { name: /^选择日期 2026-10-25/ }).click();
+  await page.getByRole('button', { name: /^打开 A4 攻坚 · 1 词/ }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('10 月 25 日');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('重点攻坚 A4');
+  await expect(page.getByText(/3 天后的预计安排 · 周日 · 1 词/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /^记住：/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '勾选记住：later', exact: true })).toBeDisabled();
+  await expect(page.getByText(/已勾选/)).toHaveCount(0);
+  await page.getByRole('button', { name: '返回', exact: true }).click();
+  await expect(page.getByText('我的学习日历', { exact: true })).toBeVisible();
+  expect((await snapshot(page)).revlog).toHaveLength(0);
+});
+
+test('an empty A4 says how to add words and offers the all-FSRS scope and the book', async ({ page }) => {
+  await start(page, { ...fixture });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByText('今天没有待复习的单词', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '查看全部 FSRS 到期 · 4 词', exact: true }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(4);
+  await page.getByRole('button', { name: '当前：全部 FSRS 到期 · 切换重点攻坚', exact: true }).click();
+  await page.getByRole('button', { name: '去词书学习并加入 A4', exact: true }).click();
+  await expect(page.getByRole('button', { name: '雅思词汇真经', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

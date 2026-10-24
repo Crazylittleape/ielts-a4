@@ -21,6 +21,8 @@ interface Props {
   schedule: Record<string, DaySchedule>;
   scope: ReviewScope;
   onScopeChange: (scope: ReviewScope) => void;
+  allDueCount: number;
+  onOpenBook: () => void;
   onBack: () => void;
   onHardReset: (id: string) => void;
   onCheckout: (ids: string[]) => void;
@@ -31,7 +33,7 @@ interface Props {
   onEdit: (w: WordItem) => void;
 }
 
-export function A4View({ words, today, date, schedule, scope, onScopeChange, onBack, onHardReset, onCheckout, onLater, focusSummary, onGrade, onSpeak, onEdit }: Props) {
+export function A4View({ words, today, date, schedule, scope, onScopeChange, allDueCount, onOpenBook, onBack, onHardReset, onCheckout, onLater, focusSummary, onGrade, onSpeak, onEdit }: Props) {
   const isToday = date === today;
   const [practice, setPractice] = useState<string[]>([]);
   const focusOnly = scope === 'focus';
@@ -54,10 +56,6 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    setRevealed(new Set());
-  }, [mode, seed]);
-
   const list = order.map((id) => byId.get(id)).filter((w): w is WordItem => Boolean(w));
   const pageCount = Math.max(1, Math.ceil(list.length / 8));
   const currentPage = Math.min(page, pageCount - 1);
@@ -69,6 +67,8 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
   const pageRated = live ? pageWords.filter(w => doneSet.has(w.id) && !dueSet.has(w.id)).length : 0;
   const checkedPending = pendingIds.filter(id => checked.has(id));
   const unrated = pendingIds.length - checkedPending.length;
+  const checkedDue = live ? list.filter(w => dueSet.has(w.id) && checked.has(w.id)).map(w => w.id) : [];
+  const checkedCount = practice.length ? checked.size : checkedDue.length;
   useEffect(() => { setChecked(prev => new Set([...prev].filter(id => baseIds.includes(id)))); }, [baseIds]);
 
   const pageKey = pageWords.map(w => w.id).join('|');
@@ -117,7 +117,7 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
               {d.getMonth() + 1} 月 {d.getDate()} 日 <span className="text-rose-400">·</span> {focusOnly ? '重点攻坚 A4' : '全部 FSRS A4'}
             </h1>
             <p className="text-[11px] font-bold text-ink-soft">
-              {relLabel} · 周{weekdayCN(d)} · {list.length} 词 · {checked.size} 已勾选
+              {relLabel} · 周{weekdayCN(d)} · {list.length} 词{isToday ? ` · ${checkedCount} 已勾选` : ' · 只读'}
             </p>
             {focusOnly && isToday && !practice.length && <p className="text-[11px] font-bold text-honey-700" data-testid="focus-lifecycle">今日待复习 {focusSummary.due} · 今日已完成 {focusSummary.done} · 未到期 {focusSummary.waiting} · 已退出 {focusSummary.exited}</p>}
           </div>
@@ -142,7 +142,11 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
       <div className="px-3 pt-3">
         {list.length === 0 ? (
           <div className="paper paper-empty">
-            <Empty emoji="🌷" title={isToday ? '今天没有待复习的单词' : '这一天没有单词'} desc={focusOnly ? '在词书学习时，将没记牢的词加入 A4，次日开始攻坚。旧记录未保存 A4 上下文时，可切换全部复习查看。' : '从词书学习或录入新词开始；未来日期仅显示当前下次到期预测。'} />
+            <Empty emoji="🌷" title={isToday ? '今天没有待复习的单词' : '这一天没有单词'} desc={focusOnly ? '在词书学完一组后，勾选没记牢的词点「加入 A4」，次日开始攻坚。旧记录未保存 A4 上下文时，可切换全部复习查看。' : '从词书学习或录入新词开始；未来日期仅显示当前下次到期预测。'} />
+            <div className="mt-3 flex flex-col gap-2">
+              {focusOnly && isToday && allDueCount > 0 && <button type="button" className="min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-sm font-bold text-rose-500" onClick={() => onScopeChange('all')}>查看全部 FSRS 到期 · {allDueCount} 词</button>}
+              {focusOnly && <button type="button" className="min-h-11 w-full rounded-xl bg-white px-3 text-sm font-bold text-ink" onClick={onOpenBook}>去词书学习并加入 A4</button>}
+            </div>
             {focusOnly && isToday && focusSummary.waiting > 0 && focusSummary.nextDate && <p className="mt-2 text-center text-xs font-bold text-honey-700">另有 {focusSummary.waiting} 词攻坚中，最早 {focusSummary.nextDate} 到期</p>}
           </div>
         ) : (
@@ -194,16 +198,18 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
                       {isToday && !practice.length && !done && <>
                       {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className="min-h-10 rounded-lg border border-stone-200 bg-white/70 px-3 text-xs font-bold text-stone-700" onClick={() => onGrade(w.id, rating)}>{label}</button>)}
                     </>}
-                      <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} className={`rounded-xl p-2 active:bg-honey-100 ${w.isHard ? 'text-honey-500' : 'text-ink-faint'}`} aria-label="顽固词重置">
+                      <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} title={`顽固词重置：${w.word}`} className={`rounded-xl p-2 active:bg-honey-100 ${w.isHard ? 'text-honey-500' : 'text-ink-faint'}`} aria-label={`顽固词重置：${w.word}`}>
                         <Flame size={16} />
                       </button>
                       <button
                         type="button"
-                        onClick={() => !done && toggleCheck(w.id)}
+                        disabled={done || !isToday}
+                        onClick={() => !done && isToday && toggleCheck(w.id)}
                         className={`ml-0.5 flex h-9 w-9 items-center justify-center rounded-full border-2 transition ${
                           isChecked ? 'border-sage-400 bg-sage-400 text-white' : 'border-stone-300 bg-white text-transparent'
                         }`}
                         aria-label={done ? `已评分：${w.word}` : `勾选记住：${w.word}`}
+                        title={isToday ? undefined : '非今日只读，到当天再打卡'}
                         aria-pressed={isChecked}
                       >
                         <Check size={15} strokeWidth={3} />
@@ -226,11 +232,11 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
         {isToday && !practice.length && list.length > 0 && (
           <div className="mt-4">
             <p className="mb-2 text-center text-sm font-extrabold text-ink" aria-live="polite">本页已评分 {pageRated} / {pageRated + pendingIds.length}</p>
+            {checkedDue.length > 0 && <button type="button" className={`${primaryBtn} mb-2 w-full text-[15px]`} onClick={() => { const ids = checkedDue; onCheckout(ids); setChecked(prev => new Set([...prev].filter(id => !ids.includes(id)))); }}>
+              <CheckCircle2 size={18} /> 提交已勾选 {checkedDue.length} 词 · 按「记住」评分
+            </button>}
             {pendingIds.length > 0 ? (
               <>
-                {checkedPending.length > 0 && <button type="button" className={`${primaryBtn} w-full text-[15px]`} onClick={() => { onCheckout(checkedPending); setChecked(new Set()); }}>
-                  <CheckCircle2 size={18} /> 提交已勾选 {checkedPending.length} 词 · 按「记住」评分
-                </button>}
                 {unrated > 0 && <p className="mt-2 text-center text-[11px] font-semibold text-ink-soft">未评分的 {unrated} 词保留在今日待复习，可稍后处理。只有你点了评分或勾选后提交的词才会更新排期。</p>}
                 <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-stone-200 bg-white text-sm font-bold text-ink-soft" onClick={onLater}>稍后处理</button>
               </>

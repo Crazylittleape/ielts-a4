@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Home, BookOpenText, Library, X } from 'lucide-react';
 import type { AppState, StateSummary, WordFields, WordItem } from './lib';
 import { backupJson, createWord, focusSummary, gradeWord, removeFromFocus, resetWord, parseBackup, mergeBackup, speak, stateSummary, todayStr } from './lib';
-import { buildCalendar, type ReviewScope } from './calendar';
+import { buildCalendar, reviewIds, type ReviewScope } from './calendar';
 import { applyUpdate, SW_UPDATE_EVENT } from './pwa';
 import { listAutoBackups, onWorkspaceEvent, openWorkspace, persistWorkspace, saveAutoBackup, type BackupRow } from './db';
 import { MatchingGame, Statistics } from './Practice';
@@ -113,6 +113,7 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('home');
   const [a4Date, setA4Date] = useState(today);
   const [a4Scope, setA4Scope] = useState<ReviewScope>('focus');
+  const [a4Back, setA4Back] = useState<Tab>('home');
   const [selectedDay, setSelectedDay] = useState(today);
   const shownToday = useRef(today);
   useEffect(() => {
@@ -188,7 +189,7 @@ export default function App() {
   const todayWords = state?.words.filter(w => w.createdAt === today || (!w.isMastered && w.nextReviewDate <= today) || w.reviewHistory.includes(today)) || [];
   const gameWords = todayWords.length ? todayWords : state?.words || [];
   const onSpeak = useCallback((word: string) => { if (!speak(word, () => showToast('朗读失败：请检查静音开关、音量或系统英语语音', 'warn'))) showToast('当前浏览器不支持语音朗读', 'warn'); }, [showToast]);
-  const openA4 = (day: string, scope: ReviewScope = 'focus') => { setA4Scope(scope); setA4Date(day); setTab('a4'); window.scrollTo({top:0}); };
+  const openA4 = (day: string, scope: ReviewScope = 'focus') => { setA4Back('dashboard'); setA4Scope(scope); setA4Date(day); setTab('a4'); window.scrollTo({top:0}); };
   const addWords = async (items: WordFields[]): Promise<number> => {
     const s = current.current;
     if (!s || busy.current) return 0;
@@ -304,7 +305,7 @@ export default function App() {
     const s = current.current;
     if (s) await commit({ ...s, bookLearning: { ...getBookProgress(s), dailyGroups } });
   };
-  const changeTab = (t: Tab) => { if (t === 'a4') { setA4Date(today); setA4Scope('focus'); } setTab(t); window.scrollTo({top:0}); };
+  const changeTab = (t: Tab) => { if (t === 'a4') { setA4Date(today); setA4Scope('focus'); setA4Back('home'); } setTab(t); window.scrollTo({top:0}); };
 
   if (!state) return <main className="mx-auto max-w-[480px] space-y-4 p-6"><h1 className="text-xl font-bold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : blocked ? '另一个窗口仍在使用旧版本的学习记录。请关闭其他打开的本站页面或主屏幕 App，读取会自动继续。' : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
   return <div className="mx-auto min-h-screen max-w-[480px] font-ui text-ink">
@@ -314,7 +315,7 @@ export default function App() {
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
       {tab === 'home' && <><div className="flex gap-2 px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('quiz')}>60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}>学习统计</button></div><BookView state={state} today={today} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onFocus={onFocus} onUnfocus={onUnfocus} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} calendar={calendar} onOpenBook={() => changeTab('home')} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
-      {tab === 'a4' && <A4View words={state.words} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} schedule={calendar[a4Scope]} onBack={() => setTab('home')} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
+      {tab === 'a4' && <A4View words={state.words} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} allDueCount={reviewIds(calendar.all, today, today).length} onOpenBook={() => changeTab('home')} schedule={calendar[a4Scope]} onBack={() => { setTab(a4Back); window.scrollTo({ top: 0 }); }} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
       {tab === 'bank' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('add')}>录入新词</button></div><BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onUnfocus={onUnfocus} autoBackups={autoBackups} onDownloadBackup={onDownloadBackup} storagePersisted={storagePersisted} onClearAll={onClearAll} toast={showToast} /></>}
       {tab === 'quiz' && <MatchingGame words={gameWords} scopeLabel={todayWords.length ? '今日新词与复习词' : '今天没有任务，使用全部词库加练'} onBack={() => setTab('home')} onSpeak={onSpeak} />}
