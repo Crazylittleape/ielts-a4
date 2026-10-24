@@ -567,3 +567,53 @@ test('a newly deployed service worker prompts first, then switches caches and ke
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+async function maskSides(page: Page) {
+  return page.locator('li[data-masked]').evaluateAll(items => items.map(item => [item.querySelector('.font-serif')?.textContent ?? '', (item as HTMLElement).dataset.masked ?? ''] as const));
+}
+const sideCounts = (sides: (readonly [string, string])[]) => ({ en: sides.filter(([, s]) => s === 'en').length, cn: sides.filter(([, s]) => s === 'cn').length });
+const focusWords = (n: number) => Array.from({ length: n }, (_, i) => ({ ...fixture.words[0], id: `mask-${i}`, word: `maskword${i}`, meaning: `遮挡释义${i}`, focus: { active: true, addedAt: '2026-10-21', nextDate: today } }));
+
+test('random masking splits an 8-word page 4/4, is stable per seed and reassigns on shuffle', async ({ page }, info) => {
+  await start(page, { ...fixture, words: focusWords(8) });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await page.getByRole('button', { name: '🎲随机', exact: true }).click();
+  const first = await maskSides(page);
+  expect(first).toHaveLength(8);
+  expect(sideCounts(first)).toEqual({ en: 4, cn: 4 });
+  await expect(page.locator('li[data-masked="en"] .masked')).toHaveCount(4);
+  await expect(page.locator('li[data-masked="cn"] .masked')).toHaveCount(4);
+  await page.screenshot({ path: info.outputPath('A4-random-8.png'), fullPage: true });
+  await page.getByRole('button', { name: '👁️全显', exact: true }).click();
+  await expect(page.locator('.masked')).toHaveCount(0);
+  await page.getByRole('button', { name: '🎲随机', exact: true }).click();
+  expect(await maskSides(page)).toEqual(first);
+  const firstMap = new Map(first);
+  let changed = false;
+  for (let i = 0; i < 6 && !changed; i++) {
+    await page.getByRole('button', { name: '乱序', exact: true }).click();
+    const next = await maskSides(page);
+    expect(sideCounts(next)).toEqual({ en: 4, cn: 4 });
+    changed = next.some(([word, side]) => firstMap.get(word) !== side);
+  }
+  expect(changed).toBe(true);
+  const row = page.locator('li[data-masked="en"]').first();
+  const word = await row.locator('.font-serif').textContent();
+  await row.locator('button').first().click();
+  await expect(page.locator('li[data-masked]').filter({ hasText: word! })).toHaveAttribute('data-masked', 'none');
+  await page.getByRole('button', { name: `记住：${word}`, exact: true }).click();
+  await expect(page.getByText('本页已评分 1 / 8', { exact: true })).toBeVisible();
+  expect((await snapshot(page)).revlog).toHaveLength(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test('random masking on a 2-word page always hides one English and one Chinese side', async ({ page }) => {
+  await start(page, { ...fixture, words: focusWords(2) });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await page.getByRole('button', { name: '🎲随机', exact: true }).click();
+  for (let i = 0; i < 5; i++) {
+    expect(sideCounts(await maskSides(page))).toEqual({ en: 1, cn: 1 });
+    await expect(page.locator('.masked')).toHaveCount(2);
+    await page.getByRole('button', { name: '乱序', exact: true }).click();
+  }
+});

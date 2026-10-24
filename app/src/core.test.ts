@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { addToFocus, backupJson, buildSchedule, createWord, gradeWord, isDueOn, isFocusDueOn, mergeStates, parseBackup, resetWord, STORAGE_KEY, type AppState } from './lib';
+import { addToFocus, randomMaskSides, backupJson, buildSchedule, createWord, gradeWord, isDueOn, isFocusDueOn, mergeStates, parseBackup, resetWord, STORAGE_KEY, type AppState } from './lib';
 import { db, openWorkspace, persistWorkspace } from './db';
 
 const day = '2026-10-22';
@@ -153,5 +153,40 @@ describe('IndexedDB migration', () => {
     await persistWorkspace(graded);
     expect((await openWorkspace(day)).state).toEqual(graded);
     expect(opened.fresh).toBe(true);
+  });
+});
+
+describe('random A4 masking', () => {
+  const ids = (n: number, prefix = 'w') => Array.from({ length: n }, (_, i) => `${prefix}-${i}`);
+  const count = (sides: ('en' | 'cn')[]) => ({ en: sides.filter(s => s === 'en').length, cn: sides.filter(s => s === 'cn').length });
+
+  it('masks both sides on every page of 2+ words, and an 8-word page exactly 4/4', () => {
+    for (let seed = 1; seed <= 300; seed++) for (let n = 2; n <= 8; n++) {
+      const sides = randomMaskSides(ids(n), seed, 0);
+      const { en, cn } = count(sides);
+      expect(sides).toHaveLength(n);
+      expect(en).toBeGreaterThan(0);
+      expect(cn).toBeGreaterThan(0);
+      expect(Math.abs(en - cn)).toBeLessThanOrEqual(1);
+      if (n === 8) expect(en).toBe(4);
+    }
+    expect(randomMaskSides(ids(1), 3, 0)).toHaveLength(1);
+    expect(randomMaskSides([], 3, 0)).toEqual([]);
+  });
+
+  it('is reproducible for the same seed and page, and reassigns when the seed or page changes', () => {
+    const page = ids(8);
+    expect(randomMaskSides(page, 7, 1)).toEqual(randomMaskSides(page, 7, 1));
+    const bySeed = new Set(Array.from({ length: 40 }, (_, s) => randomMaskSides(page, s + 1, 0).join()));
+    expect(bySeed.size).toBeGreaterThan(10);
+    const byPage = new Set(Array.from({ length: 40 }, (_, p) => randomMaskSides(page, 1, p).join()));
+    expect(byPage.size).toBeGreaterThan(10);
+  });
+
+  it('does not fall into the old per-row hash skew such as 7/1', () => {
+    for (let seed = 1; seed <= 300; seed++) {
+      const { en } = count(randomMaskSides(ids(8, `seed${seed}`), seed, seed % 3));
+      expect(en).toBe(4);
+    }
   });
 });

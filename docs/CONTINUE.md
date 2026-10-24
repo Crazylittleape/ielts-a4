@@ -155,3 +155,12 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
     - 点击后页面刷新，只剩新缓存，IndexedDB 里的 4 个词还在，断网刷新仍能打开。
   - 这个用例在运行时创建、结束时删除 `dist/__sw-update-*__/`，不影响构建产物。
 - 未验证：这条更新流程只在 Playwright 的 Chromium/WebKit 里跑过，没在 iOS Safari 或主屏幕 App 上跑过。iPhone 主屏幕 App 的更新提示、iOS 对 BroadcastChannel 的支持（iOS 15.4 起才有）都没在真机上测过。
+
+## 随机遮挡按页受约束分配（2026-10-24 第七轮）
+
+- 原问题：`A4View` 的 `randomSide()` 对每一行独立哈希，8 词页可能出现 7/1、8/0，几乎只练一个方向。
+- `lib.ts` 新增 `randomMaskSides(ids, seed, page)`：用 seed、页码和本页词 ID 顺序生成可复现的伪随机数，先放入一半遮英文、一半遮中文（奇数页随机多一侧，最多差 1），再洗牌位置。
+  - 至少 2 词时一定同时有遮英文和遮中文；8 词页恒为 4/4；1 词页只遮一侧。
+  - 同一 seed、同一页、同一顺序结果相同（切换“全显”再切回“随机”不变）；点“乱序”会同时打乱顺序并 seed+1，重新分配；翻页按页码重新分配。
+- `A4View` 只把每行的遮挡侧换成本页分配结果；偷看、朗读、评分、勾选、分页、A4 生命周期和 FSRS 数据不变。每行 `<li>` 新增 `data-masked="en|cn|none"`，供 E2E 校验分配。
+- 测试：`core.test.ts` 新增 3 项（2–8 词 × 300 个 seed 的约束、可复现与 seed/页码变化、不会出现 7/1）。移动 Chromium/WebKit E2E 新增 2 项：8 词页 4/4 且两侧 `.masked` 各 4 个、全显后切回不变、乱序后仍 4/4 且分配改变、偷看后可评分只写 1 条日志；2 词页连续乱序始终 1/1。把旧哈希逻辑临时放回时这两项 E2E 均失败。

@@ -626,3 +626,24 @@ export function shuffle<T>(arr: T[]): T[] {
 export function weekdayCN(d: Date): string {
   return ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
 }
+
+export type MaskSide = 'en' | 'cn';
+
+/** One masked side per row for a page: halves (odd pages ±1) in a seeded, reproducible order. */
+export function randomMaskSides(ids: string[], seed: number, page: number): MaskSide[] {
+  let h = 2166136261 ^ seed;
+  for (const ch of `${page}|${ids.join('|')}`) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  const next = () => {
+    h = (h + 0x6d2b79f5) | 0;
+    let t = Math.imul(h ^ (h >>> 15), 1 | h);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const enCount = ids.length % 2 && next() < 0.5 ? Math.ceil(ids.length / 2) : Math.floor(ids.length / 2);
+  const sides = ids.map((_, i): MaskSide => (i < enCount ? 'en' : 'cn'));
+  for (let i = sides.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [sides[i], sides[j]] = [sides[j], sides[i]];
+  }
+  return sides;
+}

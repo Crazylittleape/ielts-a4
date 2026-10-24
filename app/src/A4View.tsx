@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Shuffle, Volume2, Flame, Check, Pencil, CheckCircle2 } from 'lucide-react';
 import type { DaySchedule, FocusSummary, WordItem } from './lib';
-import { diffDays, parseDate, shuffle, weekdayCN } from './lib';
+import { diffDays, parseDate, randomMaskSides, shuffle, weekdayCN } from './lib';
 import { reviewIds, type ReviewScope } from './calendar';
 import { Segmented, StageChip, primaryBtn, Empty } from './ui';
 
@@ -11,7 +11,7 @@ const MASK_MODES: { key: MaskMode; emoji: string; label: string; hint: string }[
   { key: 'all', emoji: '👁️', label: '全显', hint: '中英文全部清晰显示' },
   { key: 'en', emoji: '🇬🇧', label: '只看英', hint: '只看英文 · 默想中文释义' },
   { key: 'cn', emoji: '🇨🇳', label: '只看中', hint: '只看中文 · 回想英文拼写' },
-  { key: 'random', emoji: '🎲', label: '随机', hint: '每行随机遮挡一侧 · 轻点可偷看' }
+  { key: 'random', emoji: '🎲', label: '随机', hint: '每页英文、中文各遮约一半 · 乱序后重新分配 · 轻点可偷看' }
 ];
 
 interface Props {
@@ -71,17 +71,14 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
   const unrated = pendingIds.length - checkedPending.length;
   useEffect(() => { setChecked(prev => new Set([...prev].filter(id => baseIds.includes(id)))); }, [baseIds]);
 
-  const randomSide = (id: string, idx: number) => {
-    let h = seed * 9301 + idx * 49297;
-    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-    return h % 2 === 0 ? 'en' : 'cn';
-  };
+  const pageKey = pageWords.map(w => w.id).join('|');
+  const randomSides = useMemo(() => randomMaskSides(pageKey ? pageKey.split('|') : [], seed, currentPage), [pageKey, seed, currentPage]);
 
-  const sideMasked = (w: WordItem, idx: number, side: 'en' | 'cn') => {
+  const sideMasked = (w: WordItem, pageIndex: number, side: 'en' | 'cn') => {
     const key = `${w.id}:${side}`;
     if (revealed.has(key)) return false;
     if (mode === 'all') return false;
-    if (mode === 'random') return randomSide(w.id, idx) === side;
+    if (mode === 'random') return randomSides[pageIndex] === side;
     return mode === 'en' ? side === 'cn' : side === 'en';
   };
 
@@ -162,10 +159,10 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
                 const idx = currentPage * 8 + pageIndex;
                 const done = isToday && !practice.length && doneSet.has(w.id) && !dueSet.has(w.id);
                 const isChecked = checked.has(w.id) || done;
-                const enMasked = sideMasked(w, idx, 'en');
-                const cnMasked = sideMasked(w, idx, 'cn');
+                const enMasked = sideMasked(w, pageIndex, 'en');
+                const cnMasked = sideMasked(w, pageIndex, 'cn');
                 return (
-                  <li key={w.id} className={`relative flex flex-wrap items-stretch gap-1 px-1 py-4 transition ${isChecked ? 'opacity-45' : ''}`}>
+                  <li key={w.id} data-masked={enMasked ? 'en' : cnMasked ? 'cn' : 'none'} className={`relative flex flex-wrap items-stretch gap-1 px-1 py-4 transition ${isChecked ? 'opacity-45' : ''}`}>
                     <div className="flex w-6 shrink-0 flex-col items-center justify-center text-[10px] font-bold text-stone-400">
                       <span>{String(idx + 1).padStart(2, '0')}</span>
                       <StageChip word={w} stage={w.stage} compact />
