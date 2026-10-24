@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BOOK, BOOK_GROUPS } from './bookCatalog';
 import { addToFocus, backupJson, createWord, gradeWord, initialState, mergeStates, parseBackup, resetWord } from './lib';
-import { buildCalendar, reviewIds } from './calendar';
+import { buildCalendar, dayMarks, reviewIds } from './calendar';
 
 const day = '2026-10-23';
 describe('personal calendar', () => {
@@ -82,5 +82,36 @@ describe('personal calendar', () => {
     for (const focus of [{ ...word.focus, active: 'yes' }, { ...word.focus, nextDate: undefined }, { ...word.focus, addedAt: '2026-02-30' }, { ...word.focus, reason: 3 }, 'active', null])
       expect(() => parseBackup(JSON.stringify({ ...state, version: 3, words: [{ ...word, focus }] }), day)).toThrow('A4 攻坚状态无效');
     expect(parseBackup(JSON.stringify({ version: 2, words: [{ ...word, focus: { active: 'yes' } }] }), day).words[0].focus).toBeUndefined();
+  });
+});
+
+describe('calendar day marks', () => {
+  const marks = (state: ReturnType<typeof initialState>, scope: 'focus' | 'all', date: string) =>
+    dayMarks(buildCalendar(state, day), scope, date, day).map(m => `${m.kind}:${m.count}`);
+  const build = () => {
+    const due = addToFocus(createWord({ word: 'due', meaning: '待' }, '2026-10-20'), '2026-10-22');
+    const done = addToFocus(createWord({ word: 'done', meaning: '完' }, '2026-10-20'), '2026-10-22');
+    const fresh = addToFocus(createWord({ word: 'fresh', meaning: '新' }, day), day);
+    const legacy = createWord({ word: 'legacy', meaning: '旧' }, '2026-10-19');
+    legacy.reviewHistory.push('2026-10-21');
+    const state = { ...initialState(day), words: [due, done, fresh, legacy], bookLearning: { bookId: BOOK.id, dailyGroups: 2, completed: { [BOOK_GROUPS[0].id]: '2026-10-21' } } };
+    return gradeWord(state, done.id, day, 3);
+  };
+  it('today separates pending, completed and newly added A4 words', () => {
+    expect(marks(build(), 'focus', day)).toEqual(['due:1', 'done:1', 'added:1']);
+  });
+  it('past days show only real records; A4 never counts book first-study', () => {
+    const state = build();
+    expect(marks(state, 'focus', '2026-10-22')).toEqual(['added:2']);
+    expect(marks(state, 'focus', '2026-10-21')).toEqual([]);
+    expect(marks(state, 'all', '2026-10-21')).toEqual(['done:1', 'learned:25']);
+    expect(marks(state, 'all', '2026-10-19')).toEqual([]);
+  });
+  it('future days show only the current next-due prediction, labelled as predicted', () => {
+    const state = build();
+    const future = dayMarks(buildCalendar(state, day), 'focus', '2026-10-24', day);
+    expect(future.map(m => `${m.kind}:${m.count}`)).toEqual(['planned:1']);
+    expect(future[0]).toMatchObject({ text: '≈1', label: '预计到期 1 词' });
+    expect(dayMarks(buildCalendar(state, day), 'focus', day, day).map(m => m.label)).toEqual(['待复习 1 词', '已完成 1 词', '新增攻坚 1 词']);
   });
 });

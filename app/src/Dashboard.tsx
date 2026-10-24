@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, ArrowRight, Volume2 } from 'lucide-react';
 import type { WordItem } from './lib';
 import { addDays, formatDate, parseDate, weekdayCN, diffDays } from './lib';
-import { emptyDay, reviewIds, type PersonalCalendar, type ReviewScope } from './calendar';
+import { DAY_KIND_LABEL, DAY_MARK_LEGEND, dayKind, dayMarks, emptyDay, reviewIds, type DayMarkKind, type PersonalCalendar, type ReviewScope } from './calendar';
 import { Card, PageHeader, Segmented, primaryBtn, Empty } from './ui';
 
 interface Props {
@@ -16,6 +16,7 @@ interface Props {
   onSpeak: (w: string) => void;
 }
 type CalMode = 'month' | 'week';
+const MARK_COLOR: Record<DayMarkKind, string> = { due: 'text-rose-600', done: 'text-sage-500', added: 'text-lilac-500', learned: 'text-sky-700', planned: 'text-stone-500' };
 
 function monthGrid(anchor: Date): (string | null)[] {
   const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1, 12);
@@ -56,6 +57,11 @@ export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, on
   };
   const anchorDate = parseDate(anchor);
   const focusCount = reviewIds(calendar.focus, today, today).length;
+  const selectedKind = dayKind(selectedDay, today);
+  const selectedMarks = dayMarks(calendar, scope, selectedDay, today);
+  const doneIds = new Set(selected.done);
+  const chipStatus = (id: string) => selectedKind === 'future' ? '预计' : doneIds.has(id) ? '已完成' : '待复习';
+  const selectedAdded = selectedKind !== 'future' ? selected.added.filter(id => !ids.includes(id)) : [];
   const allCount = reviewIds(calendar.all, today, today).length;
   return <div className="safe-bottom-pad">
     <PageHeader title="我的学习日历" subtitle={`${today} · 周${weekdayCN(parseDate(today))} · 记录来自本机学习`} />
@@ -63,7 +69,7 @@ export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, on
       <Card className="p-5">
         <p className="text-xs font-bold tracking-[0.2em] text-rose-500">TODAY / A4 攻坚</p>
         <div className="mt-2 flex items-baseline gap-2"><span className="font-serif text-[52px] leading-none">{current.due.length}</span><span className="text-sm text-ink-soft">词待攻坚</span></div>
-        <p className="mt-2 text-xs text-ink-soft">含逾期 {current.due.filter(w => w.overdue).length} 词 · 已完成 {current.done.length} 词 · 今日加入 {current.added.length} 词</p>
+        <p className="mt-2 text-xs text-ink-soft">含逾期 {current.due.filter(w => w.overdue).length} 词 · 已完成 {current.done.length} 词 · 今日新增攻坚 {current.added.length} 词</p>
         <div className="mt-4 grid grid-cols-2 gap-3 border-y border-stone-100 py-3 text-sm">
           <div><p className="text-xs text-ink-soft">词书初学 · 已完成</p><p className="mt-1 font-bold" data-testid="today-learning">{learned?.groups ?? 0} 组 / {learned?.words ?? 0} 词</p></div>
           <div><p className="text-xs text-ink-soft">全部长期复习（含 A4）</p><p className="mt-1 font-bold">待复习 {all.due.length} · 已完成 {all.done.length}</p></div>
@@ -86,20 +92,20 @@ export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, on
           {['日', '一', '二', '三', '四', '五', '六'].map(d => <div key={d} className="pb-1 text-[11px] text-ink-soft">{d}</div>)}
           {cells.map((day, i) => {
             if (!day) return <div key={`empty-${i}`} />;
-            const item = schedule[day] ?? emptyDay();
-            const activity = item.done.length + (calendar.learning[day]?.words ?? 0);
-            const count = day > today ? item.planned.length : day === today && item.due.length ? item.due.length : activity;
-            return <button type="button" key={day} aria-label={`选择日期 ${day}`} onClick={() => onSelectDay(day)} className="flex min-h-14 min-w-0 flex-col items-center py-1">
+            const marks = dayMarks(calendar, scope, day, today);
+            return <button type="button" key={day} aria-label={`选择日期 ${day}${marks.length ? `：${marks.map(m => m.label).join('，')}` : ''}`} onClick={() => onSelectDay(day)} className="flex min-h-14 min-w-0 flex-col items-center py-1">
               <span className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${day === selectedDay ? 'bg-rose-500 text-white' : day === today ? 'bg-rose-100 text-rose-600' : ''}`}>{parseDate(day).getDate()}</span>
-              <span className={`mt-1 text-[10px] leading-none ${day > today ? 'text-stone-500' : day === today && item.due.length ? 'text-rose-600' : 'text-sage-500'}`}>{count > 0 ? `${day > today ? '≈' : day === today && item.due.length ? '待' : '✓'}${count}` : item.added.length ? '+' : ''}</span>
+              {marks.map(m => <span key={m.kind} aria-hidden="true" className={`mt-0.5 text-[10px] font-bold leading-none ${MARK_COLOR[m.kind]}`}>{m.text}</span>)}
             </button>;
           })}
         </div>
-        <p className="mt-3 text-center text-[10px] text-ink-soft">✓ 已完成词数（初学 + 复习） · 待 到期含逾期 · ≈ 预计 · + 新增攻坚</p>
+        <p className="mt-3 flex flex-wrap justify-center gap-x-3 gap-y-1 text-[11px] text-ink-soft">{DAY_MARK_LEGEND.map(l => <span key={l.kind}><b className={MARK_COLOR[l.kind]}>{l.symbol}</b> {l.label}</span>)}</p>
+        <p className="mt-1 text-center text-[11px] text-ink-soft">过去只显示真实记录；未来只显示每张卡当前的下次到期（预计）</p>
       </Card>
       <Card className="p-4">
         <p className="text-xs font-bold text-ink-soft">{relLabel} · {selectedDay} · 周{weekdayCN(parseDate(selectedDay))}</p>
         <h2 className="mt-1 text-lg font-bold">{scope === 'focus' ? 'A4 攻坚' : '全部复习'} · {ids.length} 词{selectedDay > today ? '（预计）' : ''}</h2>
+        <p className="mt-1 text-sm font-bold text-ink" data-testid="day-breakdown">{DAY_KIND_LABEL[selectedKind]}：{selectedMarks.length ? selectedMarks.map(m => m.label).join(' · ') : '无'}</p>
         {selectedDay <= today && <div className="mt-3 space-y-1 text-xs text-ink-soft">
           <p>词书初学：{selectedLearning?.groups ?? 0} 组 / {selectedLearning?.words ?? 0} 词</p>
           <p>全部复习：已完成 {calendar.all[selectedDay]?.done.length ?? 0} 词{selectedDay === today ? ` · 待复习 ${all.due.length} 词` : ''}</p>
@@ -108,10 +114,13 @@ export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, on
         {ids.length > 0 ? <>
           <div className="mt-4 flex flex-wrap gap-2">{ids.map(id => {
             const word = byId.get(id); if (!word) return null;
-            return <button type="button" key={id} title={word.meaning} onClick={() => onSpeak(word.word)} className="inline-flex items-center gap-1 rounded-lg border border-stone-200 px-2 py-1 font-serif text-base">{word.word}<Volume2 size={12} /></button>;
+            const status = chipStatus(id);
+            return <button type="button" key={id} title={word.meaning} aria-label={`${word.word}（${status}）`} onClick={() => onSpeak(word.word)} className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 font-serif text-base ${status === '已完成' ? 'border-sage-200 bg-sage-50 text-sage-500' : status === '预计' ? 'border-dashed border-stone-300 text-ink-soft' : 'border-rose-200'}`}>{status === '已完成' && <span aria-hidden="true" className="font-sans text-xs">✓</span>}{word.word}<Volume2 size={12} /></button>;
           })}</div>
           <button type="button" className="mt-4 min-h-11 w-full rounded-xl bg-rose-50 text-sm font-bold text-rose-600" onClick={() => onOpenA4(selectedDay, scope)}>打开{scope === 'focus' ? ' A4 攻坚' : '全部复习'} · {ids.length} 词 <ArrowRight size={14} className="inline" /></button>
-        </> : <Empty emoji="🍃" title={selectedDay > today ? '暂无预计复习' : '暂无此范围的复习记录'} desc={selectedDay > today ? '评分后，下次到期日会随记忆情况调整' : '完成词书学习后，挑选难词加入 A4，次日开始攻坚'} />}
+        </> : null}
+        {selectedAdded.length > 0 && <p className="mt-3 text-xs text-ink-soft">当日新增攻坚：<span className="font-serif text-sm text-ink">{selectedAdded.map(id => byId.get(id)?.word).filter(Boolean).join('、')}</span></p>}
+        {ids.length > 0 ? null : <Empty emoji="🍃" title={selectedDay > today ? '暂无预计复习' : '暂无此范围的复习记录'} desc={selectedDay > today ? '评分后，下次到期日会随记忆情况调整' : '完成词书学习后，挑选难词加入 A4，次日开始攻坚'} />}
         <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">{selectedDay > today ? '预计仅包含每张卡片目前的下次到期日，实际安排会随评分变化。' : selectedDay < today ? '历史按当日唯一词卡计数。旧记录没有 A4 上下文时，仅归入全部复习。' : `本范围待复习 ${selected.due.length} 词，已完成 ${selected.done.length} 词；两者合并为此页清单。`}</p>
       </Card>
       <p className="px-1 text-[11px] leading-relaxed text-ink-soft">学习记录保存在当前浏览器。不同设备尚未同步，同一浏览器共用本机记录。A4 是全部复习中的重点词，两个数字不可相加。</p>

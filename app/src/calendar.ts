@@ -52,3 +52,33 @@ export function reviewIds(schedule: Record<string, DaySchedule>, date: string, t
   const day = schedule[date] ?? emptyDay();
   return [...new Set(date < today ? day.done : date > today ? day.planned.map(item => item.id) : [...day.due.map(item => item.id), ...day.done])];
 }
+
+export type DayMarkKind = 'due' | 'done' | 'added' | 'learned' | 'planned';
+export interface DayMark { kind: DayMarkKind; count: number; text: string; label: string }
+export type DayKind = 'past' | 'today' | 'future';
+export const dayKind = (date: string, today: string): DayKind => date < today ? 'past' : date > today ? 'future' : 'today';
+export const DAY_KIND_LABEL: Record<DayKind, string> = { past: '真实记录', today: '今天', future: '预计' };
+export const DAY_MARK_LEGEND: { kind: DayMarkKind; symbol: string; label: string }[] = [
+  { kind: 'due', symbol: '待', label: '待复习（今天，含逾期）' },
+  { kind: 'done', symbol: '✓', label: '已完成' },
+  { kind: 'added', symbol: '+', label: '新增攻坚' },
+  { kind: 'learned', symbol: '学', label: '词书初学（仅全部复习）' },
+  { kind: 'planned', symbol: '≈', label: '预计到期' }
+];
+
+/** Past = real records only, today = pending + done, future = current next-due prediction only. */
+export function dayMarks(calendar: PersonalCalendar, scope: ReviewScope, date: string, today: string): DayMark[] {
+  const day = calendar[scope][date] ?? emptyDay();
+  const kind = dayKind(date, today);
+  const counts: [DayMarkKind, number][] = kind === 'future'
+    ? [['planned', day.planned.length]]
+    : [
+        ['due', kind === 'today' ? day.due.length : 0],
+        ['done', day.done.length],
+        ['added', day.added.length],
+        ['learned', scope === 'all' ? calendar.learning[date]?.words ?? 0 : 0]
+      ];
+  const names: Record<DayMarkKind, string> = { due: '待复习', done: '已完成', added: '新增攻坚', learned: '词书初学', planned: '预计到期' };
+  const symbols = Object.fromEntries(DAY_MARK_LEGEND.map(l => [l.kind, l.symbol])) as Record<DayMarkKind, string>;
+  return counts.filter(([, n]) => n > 0).map(([k, n]) => ({ kind: k, count: n, text: `${symbols[k]}${n}`, label: `${names[k]} ${n} 词` }));
+}

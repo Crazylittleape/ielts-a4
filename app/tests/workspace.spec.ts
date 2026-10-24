@@ -229,7 +229,7 @@ for (const groups of [1, 2]) test(`calendar personal progress: ${groups} groups 
   await start(page, { ...fixture, words, bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed } });
   await page.getByRole('button', { name: '看板', exact: true }).click();
   await expect(page.getByTestId('today-learning')).toHaveText(`${groups} 组 / ${groups * 25} 词`);
-  await page.getByRole('button', { name: '选择日期 2026-10-23', exact: true }).click();
+  await page.getByRole('button', { name: /^选择日期 2026-10-23/ }).click();
   await expect(page.getByRole('heading', { name: /^A4 攻坚 ·/ })).toHaveText(`A4 攻坚 · ${focusCount} 词（预计）`);
   if (!focusCount) return;
   await page.getByRole('button', { name: '打开 A4 攻坚 · 2 词', exact: true }).click();
@@ -450,4 +450,29 @@ test('a fresh workspace shows a read-only first-run guide and stores no demo wor
   await page.reload();
   await expect(page.getByTestId('first-run-guide')).toBeVisible();
   expect((await snapshot(page)).words).toHaveLength(0);
+});
+
+test('calendar cells and day detail separate pending, done, new A4 and predicted words', async ({ page }, testInfo) => {
+  const focus = (addedAt: string, nextDate: string) => ({ focus: { active: true, addedAt, nextDate }, focusAddedDays: [addedAt], nextReviewDate: nextDate });
+  const words = fixture.words.map((word, index) => ({ ...word, ...(index === 0 || index === 2 ? focus('2026-10-21', today) : index === 1 ? focus(today, '2026-10-23') : {}) }));
+  await start(page, { ...fixture, words, bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: { 'u01-g01': '2026-10-21' } } });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await page.getByRole('button', { name: '记住：alpha', exact: true }).click();
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await expect(page.getByRole('button', { name: '选择日期 2026-10-22：待复习 1 词，已完成 1 词，新增攻坚 1 词', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '选择日期 2026-10-21：新增攻坚 2 词', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '选择日期 2026-10-23：预计到期 1 词', exact: true })).toBeVisible();
+  await expect(page.getByTestId('day-breakdown')).toHaveText('今天：待复习 1 词 · 已完成 1 词 · 新增攻坚 1 词');
+  await expect(page.getByRole('button', { name: 'alpha（已完成）', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'gamma（待复习）', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: testInfo.outputPath('calendar-marks.png'), fullPage: true });
+  await page.getByRole('button', { name: /^选择日期 2026-10-23/ }).click();
+  await expect(page.getByTestId('day-breakdown')).toHaveText('预计：预计到期 1 词');
+  await expect(page.getByRole('button', { name: 'beta（预计）', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /^选择日期 2026-10-21/ }).click();
+  await expect(page.getByTestId('day-breakdown')).toHaveText('真实记录：新增攻坚 2 词');
+  await page.getByRole('button', { name: '全部复习', exact: true }).click();
+  await expect(page.getByRole('button', { name: '选择日期 2026-10-21：词书初学 25 词', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '选择日期 2026-10-22：待复习 2 词，已完成 1 词', exact: true })).toBeVisible();
 });
