@@ -75,4 +75,12 @@ describe('personal calendar', () => {
     expect(again.focusAddedDays).toEqual(['2026-10-21', '2026-10-24']);
     expect(again.card?.due.slice(0, 10)).toBe('2026-10-25');
   });
+  it('rejects malformed focus state in v3 backups instead of silently dropping it', () => {
+    const word = addToFocus(createWord({ word: 'test', meaning: '测试' }, '2026-10-21'), '2026-10-21');
+    const state = { ...initialState(day), words: [word] };
+    expect(parseBackup(backupJson(state), day).words[0].focus).toEqual(word.focus);
+    for (const focus of [{ ...word.focus, active: 'yes' }, { ...word.focus, nextDate: undefined }, { ...word.focus, addedAt: '2026-02-30' }, { ...word.focus, reason: 3 }, 'active', null])
+      expect(() => parseBackup(JSON.stringify({ ...state, version: 3, words: [{ ...word, focus }] }), day)).toThrow('A4 攻坚状态无效');
+    expect(parseBackup(JSON.stringify({ version: 2, words: [{ ...word, focus: { active: 'yes' } }] }), day).words[0].focus).toBeUndefined();
+  });
 });

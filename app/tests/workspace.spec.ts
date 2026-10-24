@@ -235,7 +235,7 @@ for (const groups of [1, 2]) test(`calendar personal progress: ${groups} groups 
   await expect(page.getByRole('listitem')).toHaveCount(2);
   await expect(page.getByRole('button', { name: '忘记', exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.screenshot({ path: `/Users/crazyape/Documents/Codex/2026-10-22/hi/outputs/A4-paper-${info.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: info.outputPath('A4-paper.png'), fullPage: true });
   await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部 FSRS 到期', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(4);
 });
@@ -267,11 +267,11 @@ test('readable paper paginates without losing cards or grading other pages', asy
   await expect(page.getByText('今日复习 · 本页 8 词 · 第 1 / 2 页', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(await page.getByText('electroencephalographically', { exact: true }).evaluate(element => element.getBoundingClientRect().right <= element.closest('button')!.getBoundingClientRect().right)).toBe(true);
-  await page.getByRole('listitem').first().screenshot({ path: `/Users/crazyape/Documents/Codex/2026-10-22/hi/outputs/A4-longword-${info.project.name}.png` });
+  await page.getByRole('listitem').first().screenshot({ path: info.outputPath('A4-longword.png') });
   await page.getByRole('button', { name: /只看中/ }).click();
   await expect(page.getByRole('listitem').first().locator('.masked')).toHaveCount(1);
   await page.getByRole('button', { name: /全显/ }).click();
-  await page.screenshot({ path: `/Users/crazyape/Documents/Codex/2026-10-22/hi/outputs/A4-study-${info.project.name}.png`, fullPage: true });
+  await page.screenshot({ path: info.outputPath('A4-study.png'), fullPage: true });
   await page.getByRole('button', { name: '下一张', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(1);
   await page.getByRole('button', { name: /完成本页复习打卡 · 1 词/ }).click();
@@ -279,4 +279,57 @@ test('readable paper paginates without losing cards or grading other pages', asy
   expect((await snapshot(page)).revlog).toHaveLength(1);
   await page.getByRole('button', { name: '上一张', exact: true }).click();
   await expect(page.getByRole('button', { name: '忘记', exact: true })).toHaveCount(8);
+});
+
+test('group completion picks only chosen weak words, and tomorrow A4 shows exactly those', async ({ page }, testInfo) => {
+  const bookLearning = { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: {}, active: { groupId: 'u01-g01', seen: 23, round: 2, retry: [], inRetry: false } };
+  await start(page, { ...fixture, bookLearning });
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await page.getByRole('button', { name: '继续本组学习', exact: true }).click();
+  await page.getByLabel('英文拼写', { exact: true }).fill('wrong');
+  await page.getByRole('button', { name: '检查拼写', exact: true }).click();
+  await expect(page.getByRole('button', { name: '加入 A4 攻坚 · 明天复习', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '继续', exact: true }).click();
+  for (const word of [sequence[24], sequence[23]]) {
+    await page.getByLabel('英文拼写', { exact: true }).fill(word);
+    await page.getByRole('button', { name: '检查拼写', exact: true }).click();
+    await page.getByRole('button', { name: '继续', exact: true }).click();
+  }
+  await expect(page.getByText('本组学习完成', { exact: true })).toBeVisible();
+  await expect(page.getByRole('listitem')).toHaveCount(25);
+  await expect(page.getByRole('listitem').first()).toContainText(sequence[23]);
+  await expect(page.getByRole('listitem').first()).toContainText('本次出错');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole('button', { name: `加入 A4：${sequence[23]}`, exact: true }).click();
+  await expect(page.getByRole('button', { name: `已加入 A4：${sequence[23]}`, exact: true })).toBeDisabled();
+  await expect(page.getByText('已选 1 词加入 A4 · 明天只复习这些', { exact: true })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('book-focus-picker.png'), fullPage: true });
+  const saved = await snapshot(page);
+  expect(saved.words).toHaveLength(29);
+  expect((saved.words as { word: string; focus?: { active: boolean } }[]).filter(w => w.focus?.active).map(w => w.word)).toEqual([sequence[23]]);
+  await page.getByRole('button', { name: '返回词书', exact: true }).click();
+  await page.getByRole('button', { name: /第 1 单元 自然地理/ }).click();
+  await page.getByRole('button', { name: /第 1 组 · 25 词/ }).click();
+  await expect(page.getByRole('button', { name: `已加入 A4：${sequence[23]}`, exact: true })).toBeDisabled();
+  await expect(page.getByRole('listitem')).toHaveCount(25);
+  await page.clock.setSystemTime(new Date('2026-10-23T09:00:00+08:00'));
+  await page.reload();
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('listitem').first()).toContainText(sequence[23]);
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await expect(page.getByRole('button', { name: '今日 A4 攻坚 · 1 词', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '今日全部复习 · 29 词', exact: true })).toBeVisible();
+});
+
+test('an app left open overnight moves today’s A4 and dashboard to the new day', async ({ page }) => {
+  await start(page);
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('10 月 22 日');
+  await page.clock.setSystemTime(new Date('2026-10-23T00:01:00+08:00'));
+  await page.clock.fastForward(31000);
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('10 月 23 日');
+  await expect(page.getByText(/^今日任务/)).toBeVisible();
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await expect(page.getByText(/^今天 · 2026-10-23/)).toBeVisible();
 });

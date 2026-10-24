@@ -414,6 +414,7 @@ export function parseBackup(text: string, today: string): AppState {
   const ids = new Set<string>();
   const names = new Set<string>();
   const words = arr.map((raw, index) => {
+    if (strict && isRecord(raw) && raw.focus !== undefined && !(isRecord(raw.focus) && typeof raw.focus.active === 'boolean' && isValidDate(raw.focus.addedAt) && isValidDate(raw.focus.nextDate) && (raw.focus.reason === undefined || typeof raw.focus.reason === 'string'))) throw new Error('A4 攻坚状态无效');
     if (strict && isRecord(raw) && raw.focusAddedDays !== undefined && (!Array.isArray(raw.focusAddedDays) || !raw.focusAddedDays.every(isValidDate))) throw new Error('A4 加入日期无效');
     const w = normalizeWord(raw, today);
     if (!w || !isRecord(raw)) throw new Error(`第 ${index + 1} 个单词无效，未导入任何数据`);

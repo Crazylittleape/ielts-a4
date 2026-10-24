@@ -1,6 +1,6 @@
-import { BOOK, BOOK_GROUPS, BOOK_WORD_COUNT } from './bookCatalog';
+import { BOOK, BOOK_GROUPS, BOOK_WORD_COUNT, type BookGroup } from './bookCatalog';
 import { allEntries } from './dict';
-import { createWord, isValidDate, type AppState, type BookLearning, type WordFields } from './lib';
+import { addToFocus, createWord, isValidDate, type AppState, type BookLearning, type WordFields } from './lib';
 
 export function getBookProgress(state: AppState): BookLearning {
   return state.bookLearning ?? { bookId: BOOK.id, dailyGroups: 2, completed: {} };
@@ -94,10 +94,35 @@ export function answerBookQuestion(state: AppState, today: string, answer: BookA
   }
   if (seen < group.words.length || retry.length) return { ...state, bookLearning: { ...progress, active: { groupId: group.id, seen, round, retry, inRetry } } };
   const have = new Set(state.words.map(word => word.word.toLowerCase()));
-  const fresh = group.words.filter(word => !have.has(word.toLowerCase())).map(word => createWord({ ...getBookWord(word), tag: `${BOOK.title} · ${group.unitTitle} · 第 ${group.index} 组` }, today));
+  const fresh = group.words.filter(word => !have.has(word.toLowerCase())).map(word => createWord({ ...getBookWord(word), tag: bookGroupTag(group) }, today));
   return {
     ...state,
     words: [...state.words, ...fresh],
     bookLearning: { bookId: BOOK.id, dailyGroups: progress.dailyGroups, completed: { ...progress.completed, [group.id]: today } }
   };
+}
+
+export const bookGroupTag = (group: BookGroup) => `${BOOK.title} · ${group.unitTitle} · 第 ${group.index} 组`;
+
+let groupByWord: Map<string, BookGroup> | undefined;
+
+export function bookGroupOfWord(word: string): BookGroup | undefined {
+  groupByWord ??= new Map(BOOK_GROUPS.flatMap(group => group.words.map(name => [name.toLowerCase(), group] as const)));
+  return groupByWord.get(word.trim().toLowerCase());
+}
+
+/** Adds a studied/active-group book word to A4 on its single shared card. */
+export function focusBookWord(state: AppState, word: string, today: string, reason = '词书回忆模糊/忘记'): AppState {
+  if (!isValidDate(today)) throw new Error('无效的学习日期');
+  const key = word.trim().toLowerCase();
+  const existing = state.words.find(item => item.word.toLowerCase() === key);
+  if (existing) {
+    const next = addToFocus(existing, today, reason);
+    return next === existing ? state : { ...state, words: state.words.map(item => item.id === existing.id ? next : item) };
+  }
+  const group = bookGroupOfWord(key);
+  const progress = getBookProgress(state);
+  if (!group || !(progress.completed[group.id] || progress.active?.groupId === group.id)) return state;
+  const name = group.words.find(item => item.toLowerCase() === key)!;
+  return { ...state, words: [...state.words, addToFocus(createWord({ ...getBookWord(name), tag: bookGroupTag(group) }, today), today, reason)] };
 }

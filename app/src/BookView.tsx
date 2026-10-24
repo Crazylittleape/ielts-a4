@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ArrowLeft, BookOpen, Check, ChevronRight, Lock, Volume2 } from 'lucide-react';
 import type { AppState } from './lib';
 import { BOOK, BOOK_GROUPS, type BookGroup } from './bookCatalog';
-import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, checkBookSpelling, type BookAnswer } from './book';
+import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, getBookWord, checkBookSpelling, type BookAnswer } from './book';
 import { Card, PageHeader, Field, inputCls, primaryBtn, ghostBtn } from './ui';
 
 interface Props {
@@ -15,8 +15,34 @@ interface Props {
   onFocus: (word: string, reason?: string) => Promise<boolean>;
 }
 
+function FocusPicker({ group, state, missed, onFocus, onSpeak }: { group: BookGroup; state: AppState; missed: string[]; onFocus: Props['onFocus']; onSpeak: Props['onSpeak'] }) {
+  const focused = new Set(state.words.filter(word => word.focus?.active).map(word => word.word.toLowerCase()));
+  const missedSet = new Set(missed.map(word => word.toLowerCase()));
+  const ordered = [...group.words.filter(word => missedSet.has(word.toLowerCase())), ...group.words.filter(word => !missedSet.has(word.toLowerCase()))];
+  const chosen = group.words.filter(word => focused.has(word.toLowerCase())).length;
+  return <Card className="p-4 text-left">
+    <h3 className="text-base font-bold">挑出没记牢的词加入 A4</h3>
+    <p className="mt-1 text-xs leading-relaxed text-ink-soft">只有你点选的词进入 A4 攻坚，明天开始复习；其余词按长期 FSRS 安排。{missed.length ? '本次出错的词排在最前。' : ''}</p>
+    <p role="status" className="mt-2 text-sm font-bold text-honey-700">{chosen ? `已选 ${chosen} 词加入 A4 · 明天只复习这些` : '尚未选择 A4 攻坚词'}</p>
+    <ul className="mt-2 divide-y divide-stone-100">{ordered.map(name => {
+      const isFocused = focused.has(name.toLowerCase());
+      const isMissed = missedSet.has(name.toLowerCase());
+      return <li key={name} className="flex items-center gap-3 py-3">
+        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onSpeak(name)}>
+          <span className="flex flex-wrap items-baseline gap-x-2"><span className="break-words font-serif text-lg font-semibold leading-tight">{name}</span>{isMissed && <span className="rounded bg-rose-50 px-1.5 text-[10px] font-bold text-rose-600">本次出错</span>}</span>
+          <span className="mt-0.5 line-clamp-2 block break-words text-xs text-ink-soft">{getBookWord(name).meaning}</span>
+        </button>
+        <button type="button" aria-label={`${isFocused ? '已加入' : '加入'} A4：${name}`} disabled={isFocused} onClick={() => void onFocus(name, isMissed ? '词书回忆出错' : '词书自选薄弱')} className={`min-h-11 shrink-0 rounded-xl border px-3 text-xs font-bold ${isFocused ? 'border-sage-200 bg-sage-50 text-sage-500' : 'border-honey-300 bg-honey-50 text-ink'}`}>{isFocused ? '已加入 ✓' : '加入 A4'}</button>
+      </li>;
+    })}</ul>
+  </Card>;
+}
+
 export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onFocus }: Props) {
-  const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study'>('library');
+  const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study' | 'review'>('library');
+  const [missed, setMissed] = useState<Record<string, string[]>>({});
+  const [finishedId, setFinishedId] = useState<string | null>(null);
+  const [reviewId, setReviewId] = useState<string | null>(null);
   const [unitId, setUnitId] = useState(BOOK.units[0].id);
   const [revealed, setRevealed] = useState(false);
   const [spelling, setSpelling] = useState('');
@@ -30,9 +56,20 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   const question = getBookQuestion(state);
   useEffect(() => { setRevealed(false); setSpelling(''); setChecked(null); }, [active?.groupId, active?.seen, question?.round, question?.inRetry, question?.wordIndex]);
 
+  const focusedNames = new Set(state.words.filter(word => word.focus?.active).map(word => word.word.toLowerCase()));
   const submitAnswer = async (answer: BookAnswer) => {
-    if (await onAnswer(answer)) { setRevealed(false); setSpelling(''); setChecked(null); }
+    const groupId = active?.groupId;
+    const name = question?.word.word;
+    const wrong = answer.kind === 'recall' ? !answer.remembered : !checkBookSpelling(name ?? '', answer.text);
+    if (await onAnswer(answer)) {
+      if (groupId && name && wrong) setMissed(prev => ({ ...prev, [groupId]: [...new Set([...(prev[groupId] ?? []), name])] }));
+      if (groupId) setFinishedId(groupId);
+      setRevealed(false); setSpelling(''); setChecked(null);
+    }
   };
+  const focusButton = (name: string, reason: string) => focusedNames.has(name.toLowerCase())
+    ? <button type="button" disabled className="w-full rounded-2xl border border-sage-200 bg-sage-50 px-4 py-2.5 text-sm font-bold text-sage-500">已加入 A4 · 明天复习 ✓</button>
+    : <button type="button" className="w-full rounded-2xl border border-honey-300 bg-honey-50 px-4 py-2.5 text-sm font-bold text-ink" onClick={() => void onFocus(name, reason)}>加入 A4 攻坚 · 明天复习</button>;
   const go = (next: typeof screen) => { setScreen(next); window.scrollTo({ top: 0 }); };
   const start = async (group: BookGroup) => {
     if (await onBegin(group.id)) go('study');
@@ -61,7 +98,10 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   </div>;
 
   if (screen === 'study') {
-    if (!active || !activeGroup || !question) return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="px-4"><Card className="space-y-4 p-6 text-center"><Check className="mx-auto text-sage-500" size={36} /><h2 className="font-serif text-2xl">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始复习。</p><button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></Card></div></div>;
+    if (!active || !activeGroup || !question) {
+      const finished = BOOK_GROUPS.find(group => group.id === finishedId && progress.completed[group.id]);
+      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><Check className="mx-auto text-sage-500" size={36} /><h2 className="text-2xl font-bold">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始长期复习。</p></Card>{finished && <FocusPicker group={finished} state={state} missed={missed[finished.id] ?? []} onFocus={onFocus} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
+    }
     const { word, kind, round } = question;
     const mode = ['英文回忆中文', '音标回忆中文', '中文拼写英文'][round];
     const spellingMode = kind === 'spelling';
@@ -86,12 +126,18 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
             </div>}
           </form>}
         </Card>
-        {!spellingMode && revealed && <div className="space-y-3"><div className="grid grid-cols-2 gap-3"><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></div><button type="button" className="w-full rounded-2xl border border-honey-200 bg-honey-50 px-4 py-2.5 text-sm font-bold text-honey-700" onClick={() => void onFocus(word.word, '词书回忆模糊/忘记')}>加入 A4 攻坚 · 明天复习</button></div>}
-        {spellingMode && checked !== null && <button type="button" className={`${primaryBtn} w-full`} onClick={() => void submitAnswer({kind:'spelling',text:checked})}>继续</button>}
+        {!spellingMode && revealed && <div className="space-y-3"><div className="grid grid-cols-2 gap-3"><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></div>{focusButton(word.word, '词书回忆模糊/忘记')}</div>}
+        {spellingMode && checked !== null && <div className="space-y-3"><button type="button" className={`${primaryBtn} w-full`} onClick={() => void submitAnswer({kind:'spelling',text:checked})}>继续</button>{focusButton(word.word, checkBookSpelling(word.word, checked) ? '词书拼写不稳' : '词书拼写出错')}</div>}
         <p className="px-2 text-center text-xs leading-relaxed text-ink-soft">每轮错题会在轮末重练。确认后自动保存，完成三轮后计入已学。</p>
       </div>
     </div>;
   }
+
+  const reviewGroup = BOOK_GROUPS.find(group => group.id === reviewId && progress.completed[group.id]);
+  if (screen === 'review' && reviewGroup) return <div className="safe-bottom-pad">
+    <PageHeader title={`${reviewGroup.unitTitle} · 第 ${reviewGroup.index} 组`} subtitle={`已完成 ${progress.completed[reviewGroup.id]} · 选词加入 A4`} left={back('unit')} />
+    <div className="px-4"><FocusPicker group={reviewGroup} state={state} missed={missed[reviewGroup.id] ?? []} onFocus={onFocus} onSpeak={onSpeak} /></div>
+  </div>;
 
   if (screen === 'unit') return <div className="safe-bottom-pad">
     <PageHeader title={unit.title} subtitle={`第 ${BOOK.units.indexOf(unit) + 1} 单元 · ${unit.words.length} 词 · ${unit.groups.length} 组`} left={back('book')} />
@@ -100,7 +146,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
       {unit.groups.map(group => {
         const done = Boolean(progress.completed[group.id]);
         const available = !done && stats.current?.id === group.id && (Boolean(active) || plan.remainingGroups.length > 0);
-        return <Card key={group.id} className="p-4"><button type="button" className="flex w-full items-center justify-between gap-3 text-left disabled:text-ink-faint" disabled={!available} onClick={() => void start(group)}><span><span className="block text-sm font-bold">第 {group.index} 组 · {group.words.length} 词</span><span className="mt-1 block text-xs">{done ? '已完成' : active?.groupId === group.id ? `学习中 · 第 ${(active.round ?? 0) + 1} / 3 轮` : available ? '待学习' : '待解锁'}</span></span>{done ? <Check size={18} className="text-sage-500" /> : available ? <ChevronRight size={18} /> : <Lock size={16} />}</button><p className="mt-2 text-xs text-ink-faint">{group.words[0]} — {group.words[group.words.length - 1]}</p></Card>;
+        return <Card key={group.id} className="p-4"><button type="button" className="flex w-full items-center justify-between gap-3 text-left disabled:text-ink-faint" disabled={!available && !done} onClick={() => { if (done) { setReviewId(group.id); go('review'); } else void start(group); }}><span><span className="block text-sm font-bold">第 {group.index} 组 · {group.words.length} 词</span><span className="mt-1 block text-xs">{done ? '已完成 · 选词加入 A4' : active?.groupId === group.id ? `学习中 · 第 ${(active.round ?? 0) + 1} / 3 轮` : available ? '待学习' : '待解锁'}</span></span>{done ? <Check size={18} className="text-sage-500" /> : available ? <ChevronRight size={18} /> : <Lock size={16} />}</button><p className="mt-2 text-xs text-ink-faint">{group.words[0]} — {group.words[group.words.length - 1]}</p></Card>;
       })}
     </div>
   </div>;

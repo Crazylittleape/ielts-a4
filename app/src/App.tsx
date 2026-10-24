@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Home, BookOpenText, Library, X } from 'lucide-react';
 import type { AppState, WordFields, WordItem } from './lib';
-import { addToFocus, createWord, gradeWord, resetWord, parseBackup, mergeBackup, seedWords, speak, todayStr } from './lib';
+import { createWord, gradeWord, resetWord, parseBackup, mergeBackup, seedWords, speak, todayStr } from './lib';
 import { buildCalendar, type ReviewScope } from './calendar';
 import { openWorkspace, persistWorkspace } from './db';
 import { MatchingGame, Statistics } from './Practice';
@@ -9,7 +9,7 @@ import { Dashboard } from './Dashboard';
 import { A4View } from './A4View';
 import { AddView } from './AddView';
 import { BookView } from './BookView';
-import { beginGroup, answerBookQuestion, getBookProgress, getBookQuestion, type BookAnswer } from './book';
+import { beginGroup, answerBookQuestion, focusBookWord, getBookProgress, type BookAnswer } from './book';
 import { BankView } from './BankView';
 import { Confetti, Field, Toast, inputCls, primaryBtn, ghostBtn } from './ui';
 
@@ -113,6 +113,15 @@ export default function App() {
   const [a4Date, setA4Date] = useState(today);
   const [a4Scope, setA4Scope] = useState<ReviewScope>('focus');
   const [selectedDay, setSelectedDay] = useState(today);
+  const shownToday = useRef(today);
+  useEffect(() => {
+    // A PWA resumed after midnight should not leave "today" views on yesterday.
+    const previous = shownToday.current;
+    if (previous === today) return;
+    shownToday.current = today;
+    setA4Date(day => day === previous ? today : day);
+    setSelectedDay(day => day === previous ? today : day);
+  }, [today]);
   const [toast, setToast] = useState<{ msg: string; tone: ToastTone } | null>(null);
   const [confetti, setConfetti] = useState<{ title: string; subtitle: string } | null>(null);
   const [editing, setEditing] = useState<WordItem | null>(null);
@@ -183,17 +192,13 @@ export default function App() {
   const onFocus = async (word: string, reason?: string) => {
     const s = current.current;
     if (!s) return false;
-    let target = s.words.find(w => w.word.toLowerCase() === word.toLowerCase());
-    let words = s.words;
-    if (!target) {
-      const question = getBookQuestion(s);
-      if (!question || question.word.word.toLowerCase() !== word.toLowerCase()) return false;
-      target = createWord({ ...question.word, tag: question.word.tag || '雅思词汇真经' }, today);
-      words = [...words, target];
+    const next = focusBookWord(s, word, today, reason);
+    if (next === s) {
+      if (s.words.some(w => w.word.toLowerCase() === word.toLowerCase() && w.focus?.active)) showToast('已在 A4 攻坚中，保持原任务', 'info');
+      return next.words.some(w => w.word.toLowerCase() === word.toLowerCase() && w.focus?.active);
     }
-    const wasActive = Boolean(target.focus?.active);
-    const saved = await commit({ ...s, words: words.map(w => w.id === target!.id ? addToFocus(w, today, reason) : w) });
-    if (saved) showToast(wasActive ? '已在 A4 攻坚中，保持原任务' : '已加入 A4 攻坚，明天开始复习', 'ok');
+    const saved = await commit(next);
+    if (saved) showToast('已加入 A4 攻坚，明天开始复习', 'ok');
     return saved;
   };
   const onCheckout = async (ids: string[]) => {

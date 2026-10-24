@@ -76,3 +76,13 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - Warm-white paper uses subtle procedural grain, neutral desk, fine edge, soft shadow, date/source/count heading and footer. Each page holds at most eight cards without reducing mobile font sizes. Submission only grades due cards on the displayed page; English long words wrap within their own column. Chinese fallback uses sans fonts, headwords retain Times New Roman.
 - Verification: 42 Vitest tests, production TypeScript/Vite build, and 30 mobile Chromium/WebKit checks passed. Inspected full-page paper and long-word screenshots; verified no horizontal overflow, focus/all navigation, persistence, pagination, scope masking and offline reload. Actual iPhone hardware remains unverified.
 - Release cache: `ielts-a4-v3-20261023-personal-paper-1`. Existing sessions finish before the new worker takes over; close all site/PWA windows and reopen to activate it.
+
+## 组完成后挑选 A4 词（2026-10-24）
+
+- 组学习完成页列出本组 25 词，本次回忆/拼写出错的词排在最前并标“本次出错”；每词一个“加入 A4”按钮，状态行显示“已选 N 词加入 A4 · 明天只复习这些”。不点击的词不进入 A4。
+- 已完成的组可在单元页再次点开（“已完成 · 选词加入 A4”），用同一选择器补加。出错标记只存在于当前会话内存，不写入数据库、不反推历史。
+- 拼写题检查后也显示“加入 A4 攻坚 · 明天复习”；已加入的词显示禁用的“已加入 A4 ✓”，避免重复点击的疑惑。
+- `book.ts` 的 `focusBookWord(state, word, today, reason)` 是唯一的词书加入入口：已有卡直接 `addToFocus`（同 id、同 FSRS card、幂等）；尚无卡时只允许已完成组或当前学习组的词，按 `bookGroupTag(group)` 建卡，之后组完成不会重复建卡。未知词、未学组的词原样返回。
+- v3 备份中 `focus` 字段格式非法（`active` 非布尔、日期无效、`reason` 非字符串等）时拒绝整份导入（“A4 攻坚状态无效”），v1/v2 旧备份仍宽松忽略。
+- App 跨午夜仍打开时：`today` 每 30 秒/回到前台刷新，A4 与看板若停在“昨天=当时的今天”会跟随切到新的一天；用户手动选的其他日期不变。
+- 验证：`npm test` 46 项、`npm run build`、移动 Chromium/WebKit E2E 34/34 通过；检查了完成页选择器截图，iPhone 13 视口无横向溢出。注意 E2E 用 `vite preview` 读取 `dist/`，改代码后必须先 `npm run build` 再跑 E2E。真机 iPhone（Safari 语音、主屏幕 standalone、原生键盘、长期存储、真实跨午夜唤醒）仍未验证。

@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import sequence from './data/book-sequence.json';
 import { BOOK, BOOK_GROUPS, BOOK_WORD_COUNT } from './bookCatalog';
-import { answerBookQuestion, beginGroup, checkBookSpelling, dailyPlan, getBookProgress, getBookQuestion, getBookStats, getBookWord } from './book';
+import { answerBookQuestion, beginGroup, bookGroupTag, checkBookSpelling, focusBookWord, dailyPlan, getBookProgress, getBookQuestion, getBookStats, getBookWord } from './book';
 import { backupJson, createWord, gradeWord, mergeStates, parseBackup, type AppState } from './lib';
 import { db, openWorkspace, persistWorkspace } from './db';
 
@@ -287,5 +287,35 @@ describe('three-round responses and retries', () => {
     expect(retry.bookLearning!.active).toMatchObject({ round: 0, seen: 25, retry: [3, 2, 1], inRetry: true });
     expect(mergeStates(retry, merged)).toEqual(retry);
     expect(mergeStates(retry, retry)).toEqual(retry);
+  });
+});
+
+describe('book weak words to A4', () => {
+  it('creates a mid-group focus card with the same group source tag that completion uses', () => {
+    const started = beginGroup(empty(), 'u01-g01');
+    const focused = focusBookWord(started, 'ATMOSPHERE', today);
+    expect(focused.words).toHaveLength(1);
+    expect(focused.words[0]).toMatchObject({ word: 'atmosphere', tag: bookGroupTag(BOOK_GROUPS[0]), nextReviewDate: '2026-10-23', focus: { active: true, addedAt: today, nextDate: '2026-10-23' } });
+    expect(focusBookWord(focused, 'atmosphere', today)).toBe(focused);
+    let done = focused;
+    while (getBookQuestion(done)) done = pass(done);
+    expect(done.words).toHaveLength(25);
+    expect(new Set(done.words.map(word => word.tag))).toEqual(new Set([bookGroupTag(BOOK_GROUPS[0])]));
+    expect(done.words.filter(word => word.focus?.active).map(word => word.word)).toEqual(['atmosphere']);
+  });
+  it('focuses only chosen words of completed groups, reusing the same card id', () => {
+    const done = complete(empty());
+    const target = done.words.find(word => word.word === BOOK_GROUPS[0].words[3])!;
+    const focused = focusBookWord(done, target.word, today);
+    expect(focused.words).toHaveLength(25);
+    expect(focused.words.find(word => word.focus?.active)?.id).toBe(target.id);
+    expect(focused.words.filter(word => word.focus?.active)).toHaveLength(1);
+    expect(focused.revlog).toEqual(done.revlog);
+  });
+  it('ignores unknown words and words of groups not yet studied', () => {
+    const started = beginGroup(empty(), 'u01-g01');
+    expect(focusBookWord(started, 'not-a-book-word', today)).toBe(started);
+    expect(focusBookWord(started, BOOK_GROUPS[1].words[0], today)).toBe(started);
+    expect(() => focusBookWord(started, 'atmosphere', 'bad-day')).toThrow();
   });
 });
