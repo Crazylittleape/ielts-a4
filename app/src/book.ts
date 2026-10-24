@@ -1,6 +1,7 @@
 import { BOOK, BOOK_GROUPS, BOOK_WORD_COUNT, type BookGroup } from './bookCatalog';
 import { allEntries } from './dict';
-import { addToFocus, createWord, isValidDate, type AppState, type BookLearning, type WordFields } from './lib';
+import { addToFocus, createWord, isValidDate, type AppState, type BookLearning, type WordExample, type WordFields } from './lib';
+import examples from './data/book-examples.json';
 
 export function getBookProgress(state: AppState): BookLearning {
   return state.bookLearning ?? { bookId: BOOK.id, dailyGroups: 2, completed: {} };
@@ -33,12 +34,16 @@ export function dailyPlan(state: AppState, today: string) {
 let dictionary: Map<string, ReturnType<typeof allEntries>[number]> | undefined;
 const definitions: Record<string, string> = { 'El Niño': 'n. 厄尔尼诺现象', 'shade-tolerant': 'adj. 耐阴的' };
 
-export function getBookWord(word: string): WordFields {
+export type BookExample = Required<Pick<WordExample, 'exampleEn' | 'exampleSource'>> & Pick<WordExample, 'exampleZh'>;
+/** Sourced example sentences keyed by headword; see docs/BOOK-SOURCE.md. Empty until a licensed source is added. */
+export const BOOK_EXAMPLES: Record<string, BookExample> = examples;
+
+export function getBookWord(word: string, exampleData: Record<string, BookExample> = BOOK_EXAMPLES): WordFields {
   dictionary ??= new Map(allEntries().map(entry => [entry.word.toLowerCase(), entry]));
   const entry = dictionary.get(word.toLowerCase());
   const meaning = definitions[word] ?? entry?.meaning;
   if (!meaning) throw new Error(`词书中缺少「${word}」的释义`);
-  return { word, meaning, phonetic: entry?.phonetic ?? '', synonyms: '', tag: BOOK.title };
+  return { word, meaning, phonetic: entry?.phonetic ?? '', synonyms: '', tag: BOOK.title, ...exampleData[word] };
 }
 
 export function beginGroup(state: AppState, groupId: string): AppState {

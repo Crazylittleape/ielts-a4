@@ -617,3 +617,43 @@ test('random masking on a 2-word page always hides one English and one Chinese s
     await page.getByRole('button', { name: '乱序', exact: true }).click();
   }
 });
+
+test('A4 shows a collapsed, sourced example with read-aloud only for words that have one, and persists it', async ({ page }) => {
+  await page.addInitScript(() => {
+    const spoken: string[] = [];
+    (window as unknown as { __spoken: string[] }).__spoken = spoken;
+    (window as unknown as { SpeechSynthesisUtterance: unknown }).SpeechSynthesisUtterance = class { text: string; constructor(text: string) { this.text = text; } };
+    Object.defineProperty(window, 'speechSynthesis', { configurable: true, value: { speak: (u: { text: string }) => spoken.push(u.text), cancel: () => {}, getVoices: () => [], onvoiceschanged: null } });
+  });
+  const words = focusWords(2);
+  // Test fixture only; the shipped book has no example data.
+  Object.assign(words[0], { exampleEn: 'Fixture sentence for maskword0.', exampleZh: '测试用例句。', exampleSource: 'E2E fixture' });
+  await start(page, { ...fixture, words });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByTestId('example')).toHaveCount(1);
+  const sentence = page.getByText('Fixture sentence for maskword0.', { exact: true });
+  await expect(sentence).toBeHidden();
+  await page.getByText('例句：maskword0', { exact: true }).click();
+  await expect(sentence).toBeVisible();
+  await expect(page.getByText('测试用例句。', { exact: true })).toBeVisible();
+  await expect(page.getByText('来源：E2E fixture', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '朗读例句：maskword0', exact: true }).click();
+  expect(await page.evaluate(() => (window as unknown as { __spoken: string[] }).__spoken)).toEqual(['Fixture sentence for maskword0.']);
+  await expect(page.getByRole('button', { name: '朗读例句：maskword1', exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.getByRole('button', { name: '记住：maskword0', exact: true }).click();
+  await expect(page.getByText('本页已评分 1 / 2', { exact: true })).toBeVisible();
+  const saved = (await snapshot(page)).words as { word: string; exampleEn?: string; exampleSource?: string }[];
+  expect(saved.find(w => w.word === 'maskword0')).toMatchObject({ exampleEn: 'Fixture sentence for maskword0.', exampleSource: 'E2E fixture' });
+  expect(saved.find(w => w.word === 'maskword1')?.exampleEn).toBeUndefined();
+});
+
+test('book study cards show no invented example sentence', async ({ page }) => {
+  await start(page, { ...fixture, words: [] });
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await page.getByRole('button', { name: '开始今日学习', exact: true }).click();
+  await page.getByRole('button', { name: '显示答案', exact: true }).click();
+  await expect(page.getByRole('button', { name: '想起来了', exact: true })).toBeVisible();
+  await expect(page.getByTestId('example')).toHaveCount(0);
+  await expect(page.getByText(/^例句/)).toHaveCount(0);
+});

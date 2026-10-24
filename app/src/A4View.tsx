@@ -3,7 +3,7 @@ import { ChevronLeft, Shuffle, Volume2, Flame, Check, Pencil, CheckCircle2 } fro
 import type { DaySchedule, FocusSummary, WordItem } from './lib';
 import { diffDays, parseDate, randomMaskSides, shuffle, weekdayCN } from './lib';
 import { reviewIds, type ReviewScope } from './calendar';
-import { Segmented, StageChip, primaryBtn, Empty } from './ui';
+import { Segmented, StageChip, primaryBtn, Empty, ExampleBlock } from './ui';
 
 type MaskMode = 'all' | 'en' | 'cn' | 'random';
 
@@ -189,6 +189,7 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, onB
                         </div>
                       </button>
                     </div>
+                    <ExampleBlock word={w} onSpeak={onSpeak} className="w-full pl-7" />
                     <div className="flex w-full items-center justify-end gap-1 pt-2">
                       {isToday && !practice.length && !done && <>
                       {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className="min-h-10 rounded-lg border border-stone-200 bg-white/70 px-3 text-xs font-bold text-stone-700" onClick={() => onGrade(w.id, rating)}>{label}</button>)}

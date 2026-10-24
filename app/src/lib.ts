@@ -9,7 +9,10 @@ export const STAGE_LABELS = ['迁移 S0', '迁移 S1', '迁移 S2', '迁移 S3',
 export type SerializedCard = Omit<Card, 'due' | 'last_review'> & { due: string; last_review?: string };
 export interface ReviewEntry { id: string; wordId: string; day: string; rating: 0 | 1 | 2 | 3 | 4; log: Record<string, unknown>; focus?: boolean };
 
-export interface WordItem {
+/** Optional example sentence; only kept with a traceable source. */
+export interface WordExample { exampleEn?: string; exampleZh?: string; exampleSource?: string }
+
+export interface WordItem extends WordExample {
   id: string;
   word: string;
   phonetic: string;
@@ -39,7 +42,7 @@ function withoutSnapshot(focus: FocusState): FocusState {
   return rest;
 }
 
-export interface WordFields {
+export interface WordFields extends WordExample {
   word: string;
   meaning: string;
   phonetic?: string;
@@ -245,6 +248,12 @@ export function resetWord(state: AppState, id: string, day: string): AppState {
   return { ...state, words: state.words.map((w) => w.id === id ? hardReset(w, day) : w), revlog: [...state.revlog, { id: uid(), wordId: id, day, rating: 0, log: { action: 'reset' } }] };
 }
 
+function exampleFields(r: Record<string, unknown>): WordExample {
+  const text = (value: unknown) => (typeof value === 'string' ? value.trim() : '');
+  const en = text(r.exampleEn), zh = text(r.exampleZh), source = text(r.exampleSource);
+  return en && source ? { exampleEn: en, ...(zh ? { exampleZh: zh } : {}), exampleSource: source } : {};
+}
+
 export function createWord(f: WordFields, day: string): WordItem {
   return {
     id: uid(),
@@ -260,7 +269,8 @@ export function createWord(f: WordFields, day: string): WordItem {
     nextReviewDate: addDays(day, INTERVALS[0]),
     reviewHistory: [day],
     isHard: false,
-    tag: (f.tag || '').trim() || undefined
+    tag: (f.tag || '').trim() || undefined,
+    ...exampleFields({ ...f })
   };
 }
 
@@ -291,6 +301,7 @@ export function normalizeWord(raw: unknown, fallbackDay: string): WordItem | nul
     card: r.card as SerializedCard | undefined,
     isFavorite: Boolean(r.isFavorite ?? r.favorite),
     isMastered: Boolean(r.isMastered ?? r.mastered),
+    ...exampleFields(r),
     ...(Array.isArray(r.focusAddedDays) ? { focusAddedDays: uniqSorted(r.focusAddedDays.filter(isValidDate)) } : {}),
     focus: isRecord(r.focus) && typeof r.focus.active === 'boolean' && isValidDate(r.focus.addedAt) && isValidDate(r.focus.nextDate)
       ? { active: r.focus.active, addedAt: r.focus.addedAt, nextDate: r.focus.nextDate, ...(typeof r.focus.reason === 'string' ? { reason: r.focus.reason } : {}), ...(r.focus.active && validSnapshot(r.focus.before) ? { before: r.focus.before } : {}) }
@@ -487,6 +498,7 @@ export function parseBackup(text: string, today: string): AppState {
   const words = arr.map((raw, index) => {
     if (strict && isRecord(raw) && raw.focus !== undefined && !(isRecord(raw.focus) && typeof raw.focus.active === 'boolean' && isValidDate(raw.focus.addedAt) && isValidDate(raw.focus.nextDate) && (raw.focus.reason === undefined || typeof raw.focus.reason === 'string') && (raw.focus.before === undefined || validSnapshot(raw.focus.before)))) throw new Error('A4 攻坚状态无效');
     if (strict && isRecord(raw) && raw.focusAddedDays !== undefined && (!Array.isArray(raw.focusAddedDays) || !raw.focusAddedDays.every(isValidDate))) throw new Error('A4 加入日期无效');
+    if (strict && isRecord(raw) && (['exampleEn', 'exampleZh', 'exampleSource'].some(k => raw[k] !== undefined && typeof raw[k] !== 'string') || (typeof raw.exampleEn === 'string' && raw.exampleEn.trim() && !(typeof raw.exampleSource === 'string' && raw.exampleSource.trim())))) throw new Error(`第 ${index + 1} 个单词的例句字段无效`);
     const w = normalizeWord(raw, today);
     if (!w || !isRecord(raw)) throw new Error(`第 ${index + 1} 个单词无效，未导入任何数据`);
     if (strict && (typeof raw.id !== 'string' || !raw.id || !isValidDate(raw.createdAt) || !isValidDate(raw.nextReviewDate) || !Array.isArray(raw.reviewHistory) || !raw.reviewHistory.every(isValidDate) || typeof raw.isHard !== 'boolean' || typeof raw.stage !== 'number' || !Number.isInteger(raw.stage) || raw.stage < 0 || raw.stage > MAX_STAGE || ['phonetic', 'synonyms'].some((k) => typeof raw[k] !== 'string') || (raw.tag !== undefined && typeof raw.tag !== 'string') || (raw.card !== undefined && !validCard(raw.card)) || ['isFavorite', 'isMastered', 'favorite', 'mastered'].some((k) => raw[k] !== undefined && typeof raw[k] !== 'boolean'))) throw new Error(`第 ${index + 1} 个单词的日期或调度数据无效`);
@@ -549,8 +561,10 @@ export function mergeStates(current: AppState, incoming: AppState): AppState {
       mapped.set(word.id, existing.id);
       // Preserve focus evidence without replacing the authoritative local card.
       const focusDays = uniqSorted([...(existing.focusAddedDays ?? (existing.focus ? [existing.focus.addedAt] : [])), ...(word.focusAddedDays ?? (word.focus ? [word.focus.addedAt] : []))]);
-      if (focusDays.length) {
-        const merged = { ...existing, focusAddedDays: focusDays, ...(!existing.focus && word.focus ? { focus: { ...withoutSnapshot(word.focus), nextDate: existing.nextReviewDate } } : {}) };
+      // A missing local example is content, not schedule, so it can be filled in.
+      const example = !existing.exampleEn && word.exampleEn ? exampleFields({ ...word }) : {};
+      if (focusDays.length || example.exampleEn) {
+        const merged = { ...existing, ...example, ...(focusDays.length ? { focusAddedDays: focusDays } : {}), ...(!existing.focus && word.focus ? { focus: { ...withoutSnapshot(word.focus), nextDate: existing.nextReviewDate } } : {}) };
         words[words.findIndex(item => item.id === existing.id)] = merged;
         byName.set(word.word.toLowerCase(), merged);
       }

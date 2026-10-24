@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
-import { STAGE_LABELS, type WordItem } from './lib';
+import { Volume2 } from 'lucide-react';
+import { STAGE_LABELS, type WordExample, type WordItem } from './lib';
 
 export const inputCls =
   'w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-[16px] text-ink placeholder:text-ink-faint focus:border-rose-300 focus:outline-none focus:ring-4 focus:ring-rose-100/70 transition';
@@ -15,6 +16,23 @@ export const ghostBtn =
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-3xl bg-white shadow-card ${className}`}>{children}</div>;
+}
+
+/** Collapsed example sentence with read-aloud; renders nothing without a sourced example. */
+export function ExampleBlock({ word, onSpeak, className = '' }: { word: WordExample & { word: string }; onSpeak: (text: string) => void; className?: string }) {
+  if (!word.exampleEn || !word.exampleSource) return null;
+  const sentence = word.exampleEn;
+  return (
+    <details className={`text-left ${className}`} data-testid="example">
+      <summary className="cursor-pointer text-xs font-bold text-ink-soft">例句：{word.word}</summary>
+      <p lang="en" className="mt-1 break-words font-serif text-[15px] leading-snug text-ink">{sentence}</p>
+      {word.exampleZh && <p className="mt-0.5 break-words text-xs text-ink-soft">{word.exampleZh}</p>}
+      <div className="mt-1 flex flex-wrap items-center gap-2">
+        <button type="button" aria-label={`朗读例句：${word.word}`} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-stone-200 bg-white/70 px-2 text-xs font-bold text-ink-soft" onClick={() => onSpeak(sentence)}><Volume2 size={13} /> 朗读例句</button>
+        <span className="break-words text-[10px] text-ink-faint">来源：{word.exampleSource}</span>
+      </div>
+    </details>
+  );
 }
 
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {

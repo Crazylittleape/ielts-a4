@@ -49,3 +49,7 @@ The repository/data licensing boundary remains documented in `app/public/license
 Reference file SHA-256: `b0e0907caa0372d1552ac825c050a4fd6164b2ec642347051e45fd421ac6739e`.
 
 The source reference is available at the pinned link above. Download with `gh api repos/hefengxian/my-ielts/contents/src/pages/vocabulary/vocabulary.txt?ref=5cef573933663c4673c6e0093f1df04e68018b1a -H "Accept: application/vnd.github.raw+json"`. Lines with `|` are words; nonempty nonseparator lines (`---`, `+++`, `===`) are chapter headings. Verify the ordered chapter-start names against `book.test.ts` and the offsets against the unchanged sequence.
+
+## Example sentences
+
+None are bundled: coverage is 0 / 3,630. ECDICT and the Qwerty sequence contain no examples; the my-ielts reference has examples but declares no license and they are not copied. `app/src/data/book-examples.json` holds sourced examples keyed by headword (`exampleEn`, optional `exampleZh`, required `exampleSource`); `examples.test.ts` rejects entries that are not real book headwords or lack a source. See `docs/CONTINUE.md` (例句字段) for the candidate licensed source and integration steps.

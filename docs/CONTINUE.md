@@ -164,3 +164,19 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
   - 同一 seed、同一页、同一顺序结果相同（切换“全显”再切回“随机”不变）；点“乱序”会同时打乱顺序并 seed+1，重新分配；翻页按页码重新分配。
 - `A4View` 只把每行的遮挡侧换成本页分配结果；偷看、朗读、评分、勾选、分页、A4 生命周期和 FSRS 数据不变。每行 `<li>` 新增 `data-masked="en|cn|none"`，供 E2E 校验分配。
 - 测试：`core.test.ts` 新增 3 项（2–8 词 × 300 个 seed 的约束、可复现与 seed/页码变化、不会出现 7/1）。移动 Chromium/WebKit E2E 新增 2 项：8 词页 4/4 且两侧 `.masked` 各 4 个、全显后切回不变、乱序后仍 4/4 且分配改变、偷看后可评分只写 1 条日志；2 词页连续乱序始终 1/1。把旧哈希逻辑临时放回时这两项 E2E 均失败。
+
+## 例句字段、例句展示和朗读（2026-10-24 第七轮）
+
+- 来源调查结论：当前没有可合法打包的例句，词书例句覆盖率 0 / 3,630。
+  - `app/src/data/dict.txt`（来自 ECDICT）字段为词头、音标、中文释义、柯林斯星级、牛津、词频、标签，没有例句；ECDICT 的 `ecdict.csv` 表头 `word,phonetic,definition,translation,pos,collins,oxford,tag,bnc,frq,exchange,detail,audio` 也没有例句列。
+  - Qwerty Learner `IELTSVocabularyBible.json` 只有 `name`、`trans`、`usphone`，没有例句。
+  - hefengxian/my-ielts `vocabulary.txt` 每行有例句，但该仓库 GitHub 未声明任何许可证（`license: null`），且内容疑似转录自出版物，版权不清，不使用。
+  - 可选的合法来源：Tatoeba（CC BY 2.0 FR，需逐句署名作者与句子 ID）。接入需要按词头挑句、人工抽检、在 `exampleSource` 写明 `Tatoeba #句子ID by 作者 (CC BY 2.0 FR)`，并在 `NOTICE.txt` 补许可说明；本轮未接入。
+- 数据链路：`WordItem`/`WordFields` 新增可选 `exampleEn`、`exampleZh`、`exampleSource`（`WordExample`）。
+  - 只有 `exampleEn` 和 `exampleSource` 都非空时才保留（`exampleZh` 可选），没有来源的例句在 `createWord`/`normalizeWord` 里丢弃；v3 备份里类型错误或缺来源会拒绝导入（“第 N 个单词的例句字段无效”）。
+  - Dexie `words` 表不建索引，字段随词对象保存，无需升级数据库版本；旧数据没有这些字段，照常读取。
+  - JSON 备份、覆盖恢复（`parseBackup` → `persistWorkspace`）原样保留。合并导入：新词带上例句；同名词保留本机排期、卡片和释义，仅在本机没有例句时补入导入的例句（例句是内容不是排期）。
+  - 词书例句数据放在 `app/src/data/book-examples.json`（当前为 `{}`），`getBookWord` 按词头读取并经 `createWord` 进入同一个 `WordItem`。已学过的词不会被回填。
+- UI：`ui.tsx` 新增 `ExampleBlock`，默认折叠（`<details>`，标题“例句：词”），展开显示英文例句、中文翻译、来源和“朗读例句”按钮（读屏名“朗读例句：词”，复用 `speak` 和原有朗读失败提示）。没有带来源例句的词什么都不显示。词书学习卡在显示答案或拼写检查后显示；A4 卡在评分按钮上方显示（遮挡模式下例句默认折叠，展开会露出答案，由用户自行决定）。
+- 测试：新增 `src/examples.test.ts` 6 项（createWord 来源规则、v3/旧版备份往返与非法拒绝、IndexedDB 覆盖恢复后与 FSRS/A4/日志共存、合并导入补例句不动排期、词书数据只含来源完整的真实词头且当前为空、词书例句流入 `WordItem`）。移动 Chromium/WebKit E2E 新增 2 项：A4 折叠例句、来源、朗读调用（替换 `speechSynthesis` 记录文本）、无例句词不显示、评分后例句仍在 IndexedDB；词书学习卡不显示例句。例句均为标明 fixture 的测试数据，不随应用发布。
+- 未验证：真机 iOS Safari 朗读例句（静音开关、系统语音）；VoiceOver 对 `<details>` 的朗读。

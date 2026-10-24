@@ -3,7 +3,7 @@ import { ArrowLeft, BookOpen, Check, ChevronRight, Lock, Volume2 } from 'lucide-
 import type { AppState } from './lib';
 import { BOOK, BOOK_GROUPS, type BookGroup } from './bookCatalog';
 import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, getBookWord, checkBookSpelling, type BookAnswer } from './book';
-import { Card, PageHeader, Field, inputCls, primaryBtn, ghostBtn } from './ui';
+import { Card, PageHeader, Field, inputCls, primaryBtn, ghostBtn, ExampleBlock } from './ui';
 
 interface Props {
   state: AppState;
@@ -126,13 +126,14 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
             {word.phonetic && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft`}>{word.phonetic}</p>}
             {kind === 'phonetic' && !word.phonetic && <p className="text-xs text-ink-soft">暂无音标，本题使用英文提示</p>}
             <button type="button" className={ghostBtn} onClick={() => onSpeak(word.word)} aria-label={showTarget ? `朗读 ${word.word}` : '朗读提示'}><Volume2 size={17} /> 朗读</button>
-            {revealed ? <p className="whitespace-pre-line border-t border-rose-50 pt-5 text-left text-base leading-relaxed">{word.meaning}</p> : <button type="button" className={`${ghostBtn} w-full`} onClick={() => setRevealed(true)}>显示答案</button>}
+            {revealed ? <><p className="whitespace-pre-line border-t border-rose-50 pt-5 text-left text-base leading-relaxed">{word.meaning}</p><ExampleBlock word={word} onSpeak={onSpeak} /></> : <button type="button" className={`${ghostBtn} w-full`} onClick={() => setRevealed(true)}>显示答案</button>}
           </>}
           {spellingMode && <form className="space-y-4" onSubmit={event => { event.preventDefault(); if (checked === null && spelling.trim()) setChecked(spelling); }}>
             <Field label="英文拼写"><input className={inputCls} aria-label="英文拼写" value={spelling} onChange={event => setSpelling(event.target.value)} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="off" readOnly={checked !== null} placeholder="输入英文" /></Field>
             {checked === null ? <><button type="submit" className={`${primaryBtn} w-full`} disabled={!spelling.trim()}>检查拼写</button><button type="button" className={`${ghostBtn} w-full`} onClick={() => setChecked('')}>想不起来</button></> : <div role="status" className="space-y-2 text-left text-sm">
               <p className={checkBookSpelling(word.word, checked) ? 'font-bold text-sage-500' : 'font-bold text-rose-500'}>{checkBookSpelling(word.word, checked) ? '拼写正确' : '拼写有误，稍后重练'}</p>
               <p>你的答案：{checked || '未作答'}</p><p>正确答案：{word.word}</p>
+              <ExampleBlock word={word} onSpeak={onSpeak} />
             </div>}
           </form>}
         </Card>
