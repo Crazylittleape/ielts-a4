@@ -20,7 +20,7 @@ test('migrate, grade once, submit explicitly ticked words and persist after relo
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await start(page);
   await page.getByRole('button',{name:/A4 刷词/}).click();
-  await page.getByRole('button',{name:'当前：重点攻坚 · 切换全部 FSRS 到期'}).click();
+  await page.getByRole('button',{name:'当前：重点攻坚 · 切换全部到期复习'}).click();
   await page.getByRole('button',{name:/^忘记：/}).first().click();
   await expect(page.getByRole('button',{name:/^忘记：/})).toHaveCount(3);
   for (const word of ['beta','gamma','delta']) await page.getByRole('button',{name:`勾选记住：${word}`,exact:true}).click();
@@ -38,7 +38,7 @@ test('new word form completes, favorites/mastered are reversible and durable',as
   await start(page);await page.getByRole('button',{name:'我的单词',exact:true}).click();await page.getByRole('button',{name:'录入新词',exact:true}).click();
   await page.getByPlaceholder('ubiquitous',{exact:true}).fill('zebra');
   await page.getByLabel(/中文释义/).fill('n. 斑马');
-  await page.getByRole('button',{name:/录入并排进FSRS日历/}).first().click();
+  await page.getByRole('button',{name:/录入并加入复习/}).first().click();
   await expect(page.getByPlaceholder('ubiquitous',{exact:true})).toHaveValue('');
   await page.getByRole('button',{name:'我的单词',exact:true}).click();
   const row=page.getByRole('listitem').filter({has:page.getByRole('button',{name:'zebra',exact:true})});
@@ -175,7 +175,7 @@ test('stale tab rejection retains new word form and existing records',async({pag
   const before=await snapshot(page);
   await page.getByRole('button',{name:'我的单词',exact:true}).click();await page.getByRole('button',{name:'录入新词',exact:true}).click();
   await page.getByPlaceholder('ubiquitous',{exact:true}).fill('quokka');await page.getByLabel(/中文释义/).fill('短尾矮袋鼠');
-  await page.getByRole('button',{name:'录入并排进FSRS日历',exact:true}).click();
+  await page.getByRole('button',{name:'录入并加入复习',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('保存未完成');
   await expect(page.getByPlaceholder('ubiquitous',{exact:true})).toHaveValue('quokka');
   expect(await snapshot(page)).toEqual(before);
@@ -237,7 +237,7 @@ for (const groups of [1, 2]) test(`calendar personal progress: ${groups} groups 
   await expect(page.getByRole('button', { name: /^忘记：/ })).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('A4-paper.png'), fullPage: true });
-  await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部 FSRS 到期', exact: true }).click();
+  await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部到期复习', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(4);
 });
 
@@ -247,7 +247,7 @@ test('today dashboard opens the exact all/focus counts and preserves focus revie
   await page.getByRole('button', { name: '看板', exact: true }).click();
   await page.getByRole('button', { name: '今日全部复习 · 4 词', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(4);
-  await page.getByRole('button', { name: '当前：全部 FSRS 到期 · 切换重点攻坚', exact: true }).click();
+  await page.getByRole('button', { name: '当前：全部到期复习 · 切换重点攻坚', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(2);
   await page.getByRole('button', { name: /^记住：/ }).first().click();
   await expect(page.getByRole('listitem')).toHaveCount(2);
@@ -381,7 +381,7 @@ test('not-in-review words stay out of home, A4, dashboard and the due count but 
   await start(page, { ...fixture, words: [...fixture.words, ...off] });
   await expect(page.getByTestId('next-step')).toContainText('全部到期复习 · 4 词');
   await page.getByRole('button', { name: /A4 刷词/ }).click();
-  await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部 FSRS 到期' }).click();
+  await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部到期复习' }).click();
   await expect(page.getByRole('listitem')).toHaveCount(4);
   await page.getByRole('button', { name: '看板', exact: true }).click();
   await expect(page.getByRole('button', { name: '今日全部复习 · 4 词', exact: true })).toBeVisible();
@@ -405,7 +405,7 @@ test('review density is saved, survives reload, and changes the next due date of
   const before = await due('beta');
   const grade = async (word: string) => {
     await page.getByRole('button', { name: /A4 刷词/ }).click();
-    await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部 FSRS 到期' }).click();
+    await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部到期复习' }).click();
     await page.getByRole('button', { name: `记住：${word}`, exact: true }).click();
     await expect(page.getByText(/评分已保存/)).toBeVisible();
   };
@@ -840,13 +840,13 @@ test('A4 opened from a future dashboard day keeps its date and scope, is read-on
   expect((await snapshot(page)).revlog).toHaveLength(0);
 });
 
-test('an empty A4 says how to add words and offers the all-FSRS scope and the book', async ({ page }) => {
+test('an empty A4 says how to add words and offers the all-review scope and the book', async ({ page }) => {
   await start(page, { ...fixture });
   await page.getByRole('button', { name: /A4 刷词/ }).click();
   await expect(page.getByText('今天没有待复习的单词', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: '查看全部 FSRS 到期 · 4 词', exact: true }).click();
+  await page.getByRole('button', { name: '查看全部到期复习 · 4 词', exact: true }).click();
   await expect(page.getByRole('listitem')).toHaveCount(4);
-  await page.getByRole('button', { name: '当前：全部 FSRS 到期 · 切换重点攻坚', exact: true }).click();
+  await page.getByRole('button', { name: '当前：全部到期复习 · 切换重点攻坚', exact: true }).click();
   await page.getByRole('button', { name: '去词书学习并加入 A4', exact: true }).click();
   await expect(page.getByRole('button', { name: '雅思词汇真经', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -859,7 +859,7 @@ test('home next step follows real due words into A4 and the daily report counts 
   await expect(page.getByTestId('daily-report')).toContainText('已复习0 词');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await step.getByRole('button', { name: '开始到期复习 · 4 词', exact: true }).click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('全部 FSRS A4');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('全部复习 A4');
   await expect(page.getByRole('listitem')).toHaveCount(4);
   await page.getByRole('button', { name: '记住：alpha', exact: true }).click();
   await expect(page.getByText(/评分已保存 · 下次复习 \d+ 月 \d+ 日/)).toBeVisible();
@@ -926,4 +926,101 @@ test('60s challenge announces the last 10 seconds once and the summary shows bes
   await page.clock.fastForward(11000);
   await expect(page.getByTestId('timer-announce')).toHaveText('时间到，本局结束');
   await expect(page.getByRole('region', { name: '本局总结' })).toContainText('最高连击 2');
+});
+
+test('batch review save failure rolls back every word and reports no success', async ({ page }) => {
+  const words = sequence.slice(0, 25).map((word, i) => ({ ...fixture.words[0], id: `off-${i}`, word, review: 'off' }));
+  await start(page, { ...fixture, words, bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: { 'u01-g01': today }, missed: { 'u01-g01': [sequence[0], sequence[1]] } } });
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await page.getByRole('button', { name: /第 1 单元 自然地理/ }).click();
+  await page.getByRole('button', { name: /第 1 组 · 25 词/ }).click();
+  const before = await snapshot(page);
+  await page.evaluate(() => {
+    const original = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (this: IDBObjectStore, value, key) {
+      if (this.name === 'cards') throw new DOMException('fixture write failed', 'QuotaExceededError');
+      return key === undefined ? original.call(this, value) : original.call(this, value, key);
+    };
+  });
+  await page.getByRole('button', { name: '本组全部 25 词', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('保存未完成');
+  await expect(page.getByRole('status').filter({ hasText: '保存失败，没有加入任何词' })).toBeVisible();
+  await expect(page.getByText('已在复习 0 / 25 词', { exact: true })).toBeVisible();
+  expect(await snapshot(page)).toEqual(before);
+});
+
+async function wallpaperFile(page: Page) {
+  const png = await page.evaluate(() => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1800; canvas.height = 900;
+    const ctx = canvas.getContext('2d')!;
+    ctx.fillStyle = '#206050'; ctx.fillRect(0, 0, 1800, 900);
+    return canvas.toDataURL('image/png').split(',')[1];
+  });
+  return { name: 'wallpaper.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') };
+}
+
+test('wallpaper persists across learning saves and offline reload, reset keeps all learning records', async ({ page, context }) => {
+  await start(page);
+  const before = await snapshot(page);
+  await page.getByText('外观设置', { exact: true }).click();
+  await expect(page.getByRole('button', { name: '上传壁纸', exact: true })).toBeEnabled();
+  await page.getByLabel('选择壁纸图片').setInputFiles(await wallpaperFile(page));
+  await expect(page.getByText('壁纸已保存，离线也可使用', { exact: false })).toBeVisible();
+  await expect(page.getByTestId('wallpaper')).toHaveCount(1);
+  expect(await snapshot(page)).toEqual(before);
+  const preview = page.getByAltText('当前壁纸预览');
+  expect(await preview.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1600);
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await page.getByRole('button', { name: '强化', exact: true }).click();
+  await expect(page.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const saved = await snapshot(page);
+  await page.evaluate(() => navigator.serviceWorker.ready);
+  await page.reload();
+  await expect(page.getByTestId('wallpaper')).toHaveCount(1);
+  await context.setOffline(true);
+  await page.reload();
+  await expect(page.getByTestId('wallpaper')).toHaveCount(1);
+  await page.getByText('外观设置', { exact: true }).click();
+  await page.getByRole('button', { name: '恢复默认背景', exact: true }).click();
+  await expect(page.getByTestId('wallpaper')).toHaveCount(0);
+  expect(await snapshot(page)).toEqual(saved);
+  await page.reload();
+  await expect(page.getByRole('heading', { name: '词书库', exact: true })).toBeVisible();
+  await expect(page.getByTestId('wallpaper')).toHaveCount(0);
+});
+
+test('invalid wallpaper and storage failure keep the saved image and learning records', async ({ page }) => {
+  await start(page);
+  await page.getByText('外观设置', { exact: true }).click();
+  const input = page.getByLabel('选择壁纸图片');
+  const file = await wallpaperFile(page);
+  await expect(page.getByRole('button', { name: '上传壁纸', exact: true })).toBeEnabled();
+  await input.setInputFiles(file);
+  await expect(page.getByAltText('当前壁纸预览')).toBeVisible();
+  const previousUrl = await page.getByAltText('当前壁纸预览').getAttribute('src');
+  const before = await snapshot(page);
+  for (const invalid of [
+    { name: 'bad.txt', mimeType: 'text/plain', buffer: Buffer.from('not an image') },
+    { name: 'bad.png', mimeType: 'image/png', buffer: Buffer.from('corrupt image') },
+    { name: 'large.png', mimeType: 'image/png', buffer: Buffer.alloc(10 * 1024 * 1024 + 1) }
+  ]) {
+    await input.setInputFiles(invalid);
+    await expect(page.getByRole('alert')).toContainText('壁纸未保存');
+    await expect(page.getByAltText('当前壁纸预览')).toHaveAttribute('src', previousUrl!);
+  }
+  await page.evaluate(() => {
+    const original = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (this: IDBObjectStore, value, key) {
+      if (this.name === 'images') throw new DOMException('fixture full', 'QuotaExceededError');
+      return key === undefined ? original.call(this, value) : original.call(this, value, key);
+    };
+  });
+  await input.setInputFiles(file);
+  await expect(page.getByRole('alert')).toContainText('壁纸未保存');
+  await expect(page.getByAltText('当前壁纸预览')).toHaveAttribute('src', previousUrl!);
+  expect(await snapshot(page)).toEqual(before);
+  await page.reload();
+  await expect(page.getByTestId('wallpaper')).toHaveCount(1);
+  expect(await snapshot(page)).toEqual(before);
 });

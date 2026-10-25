@@ -123,6 +123,16 @@ describe('only chosen words enter review', () => {
     raw.words[0].review = 'maybe';
     expect(() => parseBackup(JSON.stringify(raw), today)).toThrow('复习状态无效');
   });
+  it('merging A4 evidence cannot trap a local off word in a contradictory active state', () => {
+    const local = finish(empty());
+    const incoming = joinGroupReview(local, g1.id, 'all', today).state;
+    const merged = mergeStates(local, incoming);
+    expect(merged.words.every(word => word.review === 'off')).toBe(true);
+    expect(merged.words.some(word => word.focus?.active)).toBe(false);
+    const joined = joinGroupReview(merged, g1.id, 'all', today);
+    expect(joined.added).toBe(g1.words.length);
+    expect(joined.state.words.every(word => word.review === undefined && word.focus?.active)).toBe(true);
+  });
 });
 
 describe('review density changes future FSRS due dates only', () => {

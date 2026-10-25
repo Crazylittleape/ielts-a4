@@ -621,7 +621,7 @@ export function mergeStates(current: AppState, incoming: AppState): AppState {
       // A missing local example is content, not schedule, so it can be filled in.
       const example = !existing.exampleEn && word.exampleEn ? exampleFields({ ...word }) : {};
       if (focusDays.length || example.exampleEn) {
-        const merged = { ...existing, ...example, ...(focusDays.length ? { focusAddedDays: focusDays } : {}), ...(!existing.focus && word.focus ? { focus: { ...withoutSnapshot(word.focus), nextDate: existing.nextReviewDate } } : {}) };
+        const merged = { ...existing, ...example, ...(focusDays.length ? { focusAddedDays: focusDays } : {}), ...(!existing.focus && word.focus && existing.review !== 'off' ? { focus: { ...withoutSnapshot(word.focus), nextDate: existing.nextReviewDate } } : {}) };
         words[words.findIndex(item => item.id === existing.id)] = merged;
         byName.set(word.word.toLowerCase(), merged);
       }

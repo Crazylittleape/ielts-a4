@@ -120,7 +120,7 @@ export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, on
           <button type="button" className="mt-4 min-h-11 w-full rounded-xl bg-rose-50 text-sm font-bold text-rose-600" onClick={() => onOpenA4(selectedDay, scope)}>打开{scope === 'focus' ? ' A4 攻坚' : '全部复习'} · {ids.length} 词 <ArrowRight size={14} className="inline" /></button>
         </> : null}
         {selectedAdded.length > 0 && <p className="mt-3 text-xs text-ink-soft">当日新增攻坚：<span className="font-serif text-sm text-ink">{selectedAdded.map(id => byId.get(id)?.word).filter(Boolean).join('、')}</span></p>}
-        {ids.length > 0 ? null : <Empty emoji="🍃" title={selectedDay > today ? '暂无预计复习' : '暂无此范围的复习记录'} desc={selectedDay > today ? '评分后，下次到期日会随记忆情况调整' : '完成词书学习后，挑选难词加入 A4，次日开始攻坚'} />}
+        {ids.length > 0 ? null : <Empty emoji="🍃" title={selectedDay > today ? '暂无预计复习' : '暂无此范围的复习记录'} desc={selectedDay > today ? '评分后，下次到期日会随记忆情况调整' : '学完一组后，一键加入本组错词或全部词，次日开始复习'} />}
         <p className="mt-3 text-[11px] leading-relaxed text-ink-soft">{selectedDay > today ? '预计仅包含每张卡片目前的下次到期日，实际安排会随评分变化。' : selectedDay < today ? '历史按当日唯一词卡计数。旧记录没有 A4 上下文时，仅归入全部复习。' : `本范围待复习 ${selected.due.length} 词，已完成 ${selected.done.length} 词；两者合并为此页清单。`}</p>
       </Card>
       <p className="px-1 text-[11px] leading-relaxed text-ink-soft">学习记录保存在当前浏览器。不同设备尚未同步，同一浏览器共用本机记录。A4 是全部复习中的重点词，两个数字不可相加。</p>

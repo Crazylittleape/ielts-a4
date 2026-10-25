@@ -21,6 +21,7 @@ interface Props {
   onOpenA4?: (scope: ReviewScope) => void;
   onQuiz?: () => void;
   more?: ReactNode;
+  appearance?: ReactNode;
 }
 
 const PICK_LABEL: Record<GroupPick, string> = { missed: '本组错词', all: '本组全部' };
@@ -52,7 +53,7 @@ function GroupReview({ group, state, onJoin, onSpeak }: { group: BookGroup; stat
   if (preferred === 'all') options.reverse();
   return <Card className="p-4 text-left">
     <h3 className="text-base font-bold">把这一组加入复习</h3>
-    <p className="mt-1 text-xs leading-relaxed text-ink-soft">选中的词明天出现在 A4；没选的词只记为已学，不安排复习。</p>
+    <p className="mt-1 text-xs leading-relaxed text-ink-soft">新加入的词明天出现在 A4。已有复习日期保持不变，未选择的新词只记为已学。</p>
     <div className="mt-3 grid gap-2">
       {options.map(({ pick, count }) => <button key={pick} type="button" disabled={pending || count === null} aria-describedby={count === null ? `missed-na-${group.id}` : undefined} className={`${pick === preferred ? primaryBtn : ghostBtn} w-full`} onClick={() => void run(pick)}>{count === null ? '本组错词 · 记录不可用' : `${PICK_LABEL[pick]} ${count} 词`}</button>)}
     </div>
@@ -72,7 +73,7 @@ function GroupReview({ group, state, onJoin, onSpeak }: { group: BookGroup; stat
   </Card>;
 }
 
-export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onJoinGroup, onSaveSettings, report, onOpenA4, onQuiz, more }: Props) {
+export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onJoinGroup, onSaveSettings, report, onOpenA4, onQuiz, more, appearance }: Props) {
   const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study' | 'review'>('library');
   const [finishedId, setFinishedId] = useState<string | null>(null);
   const [reviewId, setReviewId] = useState<string | null>(null);
@@ -132,6 +133,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
         </div>
       </Card>
       {more}
+      {appearance}
     </div>
   </div>;
 
@@ -211,7 +213,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
       </Card>
       <Card className="space-y-4 p-5">
         <h2 id="study-settings" className="text-sm font-bold">学习设置</h2>
-        <div><p className="mb-1.5 text-xs font-bold text-ink-soft" id="pick-label">学完一组后默认加入</p><div role="group" aria-labelledby="pick-label"><Segmented options={[{ key: 'missed' as GroupPick, label: '本组错词' }, { key: 'all' as GroupPick, label: '本组全部单词' }]} value={state.settings.groupPick ?? 'missed'} onChange={pick => void onSaveSettings({ groupPick: pick })} /></div><p className="mt-1 text-xs text-ink-soft">组完成页会把这个选项放在最前面，点按后才会加入。</p></div>
+        <div><p className="mb-1.5 text-xs font-bold text-ink-soft" id="pick-label">组完成页的默认选择</p><div role="group" aria-labelledby="pick-label"><Segmented options={[{ key: 'missed' as GroupPick, label: '本组错词' }, { key: 'all' as GroupPick, label: '本组全部单词' }]} value={state.settings.groupPick ?? 'missed'} onChange={pick => void onSaveSettings({ groupPick: pick })} /></div><p className="mt-1 text-xs text-ink-soft">组完成页会把这个选项放在最前面，点按后才会加入。</p></div>
         <div><p className="mb-1.5 text-xs font-bold text-ink-soft" id="density-label">复习密度</p><div role="group" aria-labelledby="density-label"><Segmented options={DENSITY_OPTIONS} value={state.settings.density ?? 'standard'} onChange={density => void onSaveSettings({ density })} /></div><p className="mt-1 text-xs leading-relaxed text-ink-soft">越密集，间隔越短、每日任务通常越多。保存后用于之后的每次评分，已经排好的日期不变。</p></div>
       </Card>
       <div className="flex items-center justify-between px-1"><h2 className="text-sm font-bold">单元目录</h2><span className="text-xs text-ink-faint">已完成 {stats.completedGroups} / {BOOK_GROUPS.length} 组</span></div>

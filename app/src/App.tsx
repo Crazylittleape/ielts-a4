@@ -3,6 +3,7 @@ import { Home, BookOpenText, Library, X, Zap, BarChart3 } from 'lucide-react';
 import type { AppState, GroupPick, Settings, StateSummary, WordFields, WordItem } from './lib';
 import { backupJson, createWord, DENSITIES, focusSummary, gradeWord, joinReview, parseDate, removeFromFocus, resetWord, parseBackup, mergeBackup, speak, stateSummary, todayStr } from './lib';
 import { dailyReport } from './coach';
+import { useWallpaper, WallpaperSettings } from './Wallpaper';
 import { buildCalendar, reviewIds, type ReviewScope } from './calendar';
 import { applyUpdate, SW_UPDATE_EVENT } from './pwa';
 import { listAutoBackups, onWorkspaceEvent, openWorkspace, persistWorkspace, saveAutoBackup, type BackupRow } from './db';
@@ -106,6 +107,7 @@ function TabBar({ tab, onChange, due }: { tab: Tab; onChange: (t: Tab) => void; 
 
 export default function App() {
   const today = useToday();
+  const wallpaper = useWallpaper();
   const [state, setState] = useState<AppState | null>(null);
   const current = useRef<AppState | null>(null);
   const [loadError, setLoadError] = useState('');
@@ -330,12 +332,14 @@ export default function App() {
   const changeTab = (t: Tab) => { if (t === 'a4') { setA4Date(today); setA4Scope('focus'); setA4Back('home'); } setTab(t); window.scrollTo({top:0}); };
 
   if (!state) return <main className="mx-auto max-w-[480px] space-y-4 p-6"><h1 className="text-xl font-bold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : blocked ? '另一个窗口仍在使用旧版本的学习记录。请关闭其他打开的本站页面或主屏幕 App，读取会自动继续。' : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
-  return <div className="mx-auto min-h-screen max-w-[480px] font-ui text-ink">
+  return <>
+    {wallpaper.url && <div aria-hidden="true" data-testid="wallpaper" className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url("${wallpaper.url}")` }} />}
+    <div className={`relative z-10 mx-auto min-h-screen max-w-[480px] font-ui text-ink ${wallpaper.url ? 'bg-cream/95' : ''}`}>
     {staleElsewhere && !saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>其他标签页已更新学习记录。请刷新后继续，避免在旧页面上操作。</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>刷新学习记录</button></div>}
     {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 bg-sage-100 p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
     {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><BookView more={<div className="flex flex-wrap gap-2"><span className="sr-only">更多练习</span><button className={ghostBtn} onClick={() => changeTab('quiz')}><Zap size={16} className="text-honey-600" aria-hidden="true" />60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}><BarChart3 size={16} className="text-rose-500" aria-hidden="true" />学习统计</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
+      {tab === 'home' && <><BookView appearance={<WallpaperSettings {...wallpaper} />} more={<div className="flex flex-wrap gap-2"><span className="sr-only">更多练习</span><button className={ghostBtn} onClick={() => changeTab('quiz')}><Zap size={16} className="text-honey-600" aria-hidden="true" />60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}><BarChart3 size={16} className="text-rose-500" aria-hidden="true" />学习统计</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} calendar={calendar} onOpenBook={() => changeTab('home')} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View words={state.words} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} allDueCount={reviewIds(calendar.all, today, today).length} onOpenBook={() => changeTab('home')} schedule={calendar[a4Scope]} onBack={() => { setTab(a4Back); window.scrollTo({ top: 0 }); }} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
@@ -348,5 +352,6 @@ export default function App() {
     {saving && <p role="status" className="fixed left-1/2 top-2 z-[80] -translate-x-1/2 rounded-full bg-white px-4 py-2 text-sm shadow-card">正在保存…</p>}
     {stamp && <DoneStamp title={stamp.title} subtitle={stamp.subtitle} onClose={() => setStamp(null)} />}
     {toast && <Toast message={toast.msg} tone={toast.tone} />}
-  </div>;
+    </div>
+  </>;
 }

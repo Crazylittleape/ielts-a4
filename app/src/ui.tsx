@@ -74,7 +74,7 @@ export function StageChip({ stage, compact = false, word }: { stage: number; com
   const s = Math.max(0, Math.min(STAGE_LABELS.length - 1, stage));
   return (
     <span className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-extrabold ${STAGE_STYLE[s]}`}>
-      {word?.isMastered ? '已掌握' : word?.card ? (compact ? 'FSRS' : ['新词', '学习', '复习', '重学'][word.card.state]) : 'FSRS'}
+      {word?.isMastered ? '已掌握' : word?.card ? (compact ? '复习' : ['新词', '学习', '复习', '重学'][word.card.state]) : '复习'}
     </span>
   );
 }

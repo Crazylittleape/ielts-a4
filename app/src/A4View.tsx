@@ -114,7 +114,7 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
           </button>
           <div className="min-w-0 flex-1">
             <h1 className="truncate text-[20px] font-semibold leading-tight text-ink">
-              {d.getMonth() + 1} 月 {d.getDate()} 日 <span className="text-rose-400">·</span> {focusOnly ? '重点攻坚 A4' : '全部 FSRS A4'}
+              {d.getMonth() + 1} 月 {d.getDate()} 日 <span className="text-rose-400">·</span> {focusOnly ? '重点攻坚 A4' : '全部复习 A4'}
             </h1>
             <p className="text-[11px] font-bold text-ink-soft">
               {relLabel} · 周{weekdayCN(d)} · {list.length} 词{isToday ? ` · ${checkedCount} 已勾选` : ' · 只读'}
@@ -135,16 +135,16 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
         <div className="mt-2">
           <Segmented options={MASK_MODES} value={mode} onChange={setMode} />
           <p className="mt-1 text-center text-[11px] font-bold text-ink-soft">{hint}</p>
-            <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-bold text-rose-600" onClick={() => onScopeChange(focusOnly ? 'all' : 'focus')}>{focusOnly ? '当前：重点攻坚 · 切换全部 FSRS 到期' : '当前：全部 FSRS 到期 · 切换重点攻坚'}</button>
+            <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-bold text-rose-600" onClick={() => onScopeChange(focusOnly ? 'all' : 'focus')}>{focusOnly ? '当前：重点攻坚 · 切换全部到期复习' : '当前：全部到期复习 · 切换重点攻坚'}</button>
         </div>
       </header>
 
       <div className="px-3 pt-3">
         {list.length === 0 ? (
           <div className="paper paper-empty">
-            <Empty emoji="🌷" title={isToday ? '今天没有待复习的单词' : '这一天没有单词'} desc={focusOnly ? '在词书学完一组后，勾选没记牢的词点「加入 A4」，次日开始攻坚。旧记录未保存 A4 上下文时，可切换全部复习查看。' : '从词书学习或录入新词开始；未来日期仅显示当前下次到期预测。'} />
+            <Empty emoji="🌷" title={isToday ? '今天没有待复习的单词' : '这一天没有单词'} desc={focusOnly ? '学完一组后，一键选择本组错词或全部词加入复习，次日出现在这里。已有的复习任务也可切换「全部到期复习」查看。' : '从词书学习或录入新词开始；未来日期仅显示当前下次到期预测。'} />
             <div className="mt-3 flex flex-col gap-2">
-              {focusOnly && isToday && allDueCount > 0 && <button type="button" className="min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-sm font-bold text-rose-500" onClick={() => onScopeChange('all')}>查看全部 FSRS 到期 · {allDueCount} 词</button>}
+              {focusOnly && isToday && allDueCount > 0 && <button type="button" className="min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-sm font-bold text-rose-500" onClick={() => onScopeChange('all')}>查看全部到期复习 · {allDueCount} 词</button>}
               {focusOnly && <button type="button" className="min-h-11 w-full rounded-xl bg-white px-3 text-sm font-bold text-ink" onClick={onOpenBook}>去词书学习并加入 A4</button>}
             </div>
             {focusOnly && isToday && focusSummary.waiting > 0 && focusSummary.nextDate && <p className="mt-2 text-center text-xs font-bold text-honey-700">另有 {focusSummary.waiting} 词攻坚中，最早 {focusSummary.nextDate} 到期</p>}
@@ -248,7 +248,7 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
         )}
         {isToday && (practice.length > 0 || (schedule[today]?.due.length ?? 0) === 0) && <div className="mt-4 text-center">
           <button type="button" className={primaryBtn} disabled={!words.some(w => !w.isMastered)} onClick={() => { setPractice(shuffle(words.filter(w => !w.isMastered)).slice(0, 30).map(w => w.id)); setChecked(new Set()); }}>随机加练 · 最多 30 词</button>
-          <p className="mt-2 text-xs text-ink-soft">{practice.length ? '加练模式：遮挡、勾选和朗读不改变 FSRS 排期。' : '没有待复习任务时，可以自由加练。'}</p>
+          <p className="mt-2 text-xs text-ink-soft">{practice.length ? '加练模式：遮挡、勾选和朗读不改变复习日期。' : '没有待复习任务时，可以自由加练。'}</p>
         </div>}
         {!isToday && list.length > 0 && (
           <p className="mt-3 text-center text-[11px] font-semibold text-ink-faint">

@@ -59,7 +59,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
       .sort((a, b) => (a.nextReviewDate < b.nextReviewDate ? -1 : a.nextReviewDate > b.nextReviewDate ? 1 : a.word.localeCompare(b.word)));
   }, [words, filter, q, tag, today, mistakes]);
 
-  const offInList = list.filter(w => w.review === 'off');
+  const offInList = list.filter(w => w.review === 'off' && !w.isMastered && !w.mastered);
 
   const counts = useMemo(() => {
     const c: Record<Filter, number> = { all: words.length, off: 0, focus: 0, history: 0, due: 0, hard: 0, favorite: 0, mastered: 0, s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0 };

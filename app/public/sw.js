@@ -1,5 +1,5 @@
 // Bump this name with every published build. Only this app's caches are cleaned.
-const CACHE = 'ielts-a4-v3-20261025-simple-review-1';
+const CACHE = 'ielts-a4-v3-20261025-simple-review-2';
 const ROOT = new URL('./', self.location.href);
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', event => {

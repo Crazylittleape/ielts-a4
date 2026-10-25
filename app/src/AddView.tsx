@@ -94,7 +94,7 @@ function SingleAdd({ words, onAdd, toast }: { words: WordItem[]; onAdd: Props['o
         </Field>
       </div>
       <button type="button" className={`${primaryBtn} w-full`} onClick={submit}>
-        <Plus size={18} /> 录入并排进FSRS日历
+        <Plus size={18} /> 录入并加入复习
       </button>
     </Card>
   );
@@ -152,7 +152,7 @@ function PasteImport({ words, onAdd, toast }: { words: WordItem[]; onAdd: Props[
         </div>
       )}
       <button type="button" className={`${primaryBtn} w-full`} onClick={confirm} disabled={!preview || preview.items.length === 0}>
-        <Sparkles size={18} /> 一键解析并排入FSRS日历
+        <Sparkles size={18} /> 解析并加入复习
       </button>
     </Card>
   );
