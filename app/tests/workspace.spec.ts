@@ -283,15 +283,18 @@ test('readable paper paginates without losing cards or grading other pages', asy
   await expect(page.getByRole('button', { name: /^忘记：/ })).toHaveCount(8);
 });
 
-test('group completion picks only chosen weak words, and tomorrow A4 shows exactly those', async ({ page }, testInfo) => {
-  const bookLearning = { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: {}, active: { groupId: 'u01-g01', seen: 23, round: 2, retry: [], inRetry: false } };
+test('group completion: one-tap missed/all batch with real counts, missed words persist across reload, tomorrow A4 shows exactly those', async ({ page }, testInfo) => {
+  const bookLearning = { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: {}, active: { groupId: 'u01-g01', seen: 23, round: 2, retry: [], inRetry: false }, missed: { 'u01-g01': [sequence[5]] } };
   await start(page, { ...fixture, bookLearning });
   await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
   await page.getByRole('button', { name: '继续本组学习', exact: true }).click();
   await page.getByLabel('英文拼写', { exact: true }).fill('wrong');
   await page.getByRole('button', { name: '检查拼写', exact: true }).click();
-  await expect(page.getByRole('button', { name: '加入 A4 攻坚 · 明天复习', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: /加入/ })).toHaveCount(0);
   await page.getByRole('button', { name: '继续', exact: true }).click();
+  await page.reload();
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await page.getByRole('button', { name: '继续本组学习', exact: true }).click();
   for (const word of [sequence[24], sequence[23]]) {
     await page.getByLabel('英文拼写', { exact: true }).fill(word);
     await page.getByRole('button', { name: '检查拼写', exact: true }).click();
@@ -299,29 +302,36 @@ test('group completion picks only chosen weak words, and tomorrow A4 shows exact
   }
   await expect(page.getByText('本组学习完成', { exact: true })).toBeVisible();
   await expect(page.getByRole('listitem')).toHaveCount(25);
-  await expect(page.getByRole('listitem').first()).toContainText(sequence[23]);
-  await expect(page.getByRole('listitem').first()).toContainText('本次出错');
+  await expect(page.getByRole('listitem').filter({ hasText: '本次出错' })).toHaveCount(2);
+  await expect(page.getByRole('button', { name: /^加入 A4/ })).toHaveCount(0);
+  const before = await snapshot(page);
+  expect(before.words).toHaveLength(29);
+  expect((before.words as { focus?: { active: boolean }; review?: string }[]).filter(w => w.review === 'off')).toHaveLength(25);
+  expect((before.words as { focus?: { active: boolean } }[]).some(w => w.focus?.active)).toBe(false);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  await page.getByRole('button', { name: `加入 A4：${sequence[23]}`, exact: true }).click();
-  await expect(page.getByRole('button', { name: `移出 A4：${sequence[23]}`, exact: true })).toBeVisible();
-  await expect(page.getByText('已选 1 词加入 A4 · 明天只复习这些', { exact: true })).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath('book-focus-picker.png'), fullPage: true });
+  await page.screenshot({ path: testInfo.outputPath('group-complete-batch.png'), fullPage: true });
+  const missedBtn = page.getByRole('button', { name: '本组错词 2 词', exact: true });
+  await expect(page.getByRole('button', { name: '本组全部 25 词', exact: true })).toBeVisible();
+  await missedBtn.click();
+  await expect(page.getByRole('status').filter({ hasText: '已加入 2 词，明天开始复习' })).toBeVisible();
+  await missedBtn.click();
+  await expect(page.getByRole('status').filter({ hasText: '没有新加入：2 词已在复习中' })).toBeVisible();
   const saved = await snapshot(page);
-  expect(saved.words).toHaveLength(29);
-  expect((saved.words as { word: string; focus?: { active: boolean } }[]).filter(w => w.focus?.active).map(w => w.word)).toEqual([sequence[23]]);
+  expect((saved.words as { word: string; focus?: { active: boolean } }[]).filter(w => w.focus?.active).map(w => w.word).sort()).toEqual([sequence[5], sequence[23]].sort());
+  expect(saved.revlog).toHaveLength(0);
+  expect((saved.meta as { key: string; value: { groupPick?: string } }[]).find(m => m.key === 'settings')?.value.groupPick).toBe('missed');
   await page.getByRole('button', { name: '返回词书', exact: true }).click();
   await page.getByRole('button', { name: /第 1 单元 自然地理/ }).click();
   await page.getByRole('button', { name: /第 1 组 · 25 词/ }).click();
-  await expect(page.getByRole('button', { name: `移出 A4：${sequence[23]}`, exact: true })).toBeVisible();
-  await expect(page.getByRole('listitem')).toHaveCount(25);
+  await expect(page.getByText('已在复习 2 / 25 词', { exact: true })).toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: '本次出错' })).toHaveCount(2);
   await page.clock.setSystemTime(new Date('2026-10-23T09:00:00+08:00'));
   await page.reload();
   await page.getByRole('button', { name: /A4 刷词/ }).click();
-  await expect(page.getByRole('listitem')).toHaveCount(1);
-  await expect(page.getByRole('listitem').first()).toContainText(sequence[23]);
+  await expect(page.getByRole('listitem')).toHaveCount(2);
   await page.getByRole('button', { name: '看板', exact: true }).click();
-  await expect(page.getByRole('button', { name: '今日 A4 攻坚 · 1 词', exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: '今日全部复习 · 29 词', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '今日 A4 攻坚 · 2 词', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: '今日全部复习 · 6 词', exact: true })).toBeVisible();
 });
 
 test('an app left open overnight moves today’s A4 and dashboard to the new day', async ({ page }) => {
@@ -335,37 +345,79 @@ test('an app left open overnight moves today’s A4 and dashboard to the new day
   await page.getByRole('button', { name: '看板', exact: true }).click();
   await expect(page.getByText(/^今天 · 2026-10-23/)).toBeVisible();
 });
-test('a mistaken A4 pick can be undone in the picker and in My Words, without demo-data reset', async ({ page }, testInfo) => {
-  await start(page, { ...fixture, bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: { 'u01-g01': today } } });
+test('old groups: missed history unavailable, all-batch keeps existing schedules; My Words batch-adds the filtered not-in-review words and undo returns them', async ({ page }, testInfo) => {
+  const old = sequence.slice(0, 2).map((word, i) => ({ id: `old-${i}`, word, meaning: '旧词', phonetic: '', synonyms: '', createdAt: '2026-10-01', stage: 1, nextReviewDate: '2026-11-01', reviewHistory: ['2026-10-01'], isHard: false }));
+  await start(page, { ...fixture, words: [...fixture.words, ...old], bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: { 'u01-g01': '2026-10-20' } } });
   await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
   await page.getByRole('button', { name: /第 1 单元 自然地理/ }).click();
   await page.getByRole('button', { name: /第 1 组 · 25 词/ }).click();
-  for (const word of sequence.slice(0, 2)) await page.getByRole('button', { name: `加入 A4：${word}`, exact: true }).click();
-  await expect(page.getByText('已选 2 词加入 A4 · 明天只复习这些', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: `移出 A4：${sequence[1]}`, exact: true }).click();
-  await expect(page.getByText('已选 1 词加入 A4 · 明天只复习这些', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: `加入 A4：${sequence[1]}`, exact: true })).toBeVisible();
-  const active = async () => ((await snapshot(page)).words as { word: string; focus?: { active: boolean } }[]).filter(w => w.focus?.active).map(w => w.word);
-  expect(await active()).toEqual([sequence[0]]);
+  await expect(page.getByRole('button', { name: '本组错词 · 记录不可用', exact: true })).toBeDisabled();
+  await expect(page.getByText(/^历史错词记录不可用/)).toBeVisible();
+  await page.getByRole('button', { name: '本组全部 25 词', exact: true }).click();
+  await expect(page.getByRole('status').filter({ hasText: '已加入 25 词，明天开始复习（其中 2 词保留原复习日期）' })).toBeVisible();
+  const words = (await snapshot(page)).words as { id: string; word: string; nextReviewDate: string; focus?: { active: boolean }; review?: string }[];
+  expect(words.filter(w => w.id.startsWith('old-')).map(w => w.nextReviewDate)).toEqual(['2026-11-01', '2026-11-01']);
+  expect(words.filter(w => w.focus?.active)).toHaveLength(25);
+  expect(words.filter(w => w.focus?.active && !w.id.startsWith('old-')).every(w => w.nextReviewDate === '2026-10-23')).toBe(true);
 
   await page.getByRole('button', { name: '我的单词', exact: true }).click();
-  await expect(page.getByRole('button', { name: '恢复示例数据' })).toHaveCount(0);
-  await page.getByRole('button', { name: /^A4 攻坚 1$/ }).click();
-  await expect(page.getByRole('listitem')).toHaveCount(1);
-  const row = page.getByRole('listitem').first();
-  await expect(row).toContainText(sequence[0]);
-  await expect(row).toContainText('攻坚中 · 2026-10-23 到期');
-  await page.screenshot({ path: testInfo.outputPath('bank-focus-filter.png') });
+  await page.getByRole('button', { name: /^A4 攻坚 25$/ }).click();
+  const row = page.getByRole('listitem').filter({ hasText: sequence[3] });
   await row.getByRole('button', { name: '移出 A4', exact: true }).click();
-  await expect(page.getByRole('listitem')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^A4 攻坚 0$/ })).toBeVisible();
-  expect(await active()).toEqual([]);
+  await page.getByRole('button', { name: /^未加入复习 1$/ }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('listitem').first()).toContainText('已学 · 未加入复习');
+  await expect(page.getByRole('button', { name: /^加入/ })).toHaveCount(0);
+  await page.screenshot({ path: testInfo.outputPath('bank-batch.png') });
+  await page.getByRole('button', { name: '将筛选出的 1 个未复习词加入复习', exact: true }).click();
+  await expect(page.getByRole('button', { name: /^未加入复习 0$/ })).toBeVisible();
+  expect(((await snapshot(page)).words as { focus?: { active: boolean } }[]).filter(w => w.focus?.active)).toHaveLength(25);
+  expect((await snapshot(page)).revlog).toHaveLength(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
 
-  await page.clock.setSystemTime(new Date('2026-10-23T09:00:00+08:00'));
-  await page.reload();
+test('not-in-review words stay out of home, A4, dashboard and the due count but remain searchable', async ({ page }) => {
+  const off = ['epsilon', 'zeta'].map((word, i) => ({ id: `off-${i}`, word, meaning: `未选${i}`, phonetic: '', synonyms: '', createdAt: '2026-10-20', stage: 0, nextReviewDate: today, reviewHistory: ['2026-10-20'], isHard: false, review: 'off' }));
+  await start(page, { ...fixture, words: [...fixture.words, ...off] });
+  await expect(page.getByTestId('next-step')).toContainText('全部到期复习 · 4 词');
   await page.getByRole('button', { name: /A4 刷词/ }).click();
-  await expect(page.getByText('今天没有待复习的单词', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部 FSRS 到期' }).click();
+  await expect(page.getByRole('listitem')).toHaveCount(4);
+  await page.getByRole('button', { name: '看板', exact: true }).click();
+  await expect(page.getByRole('button', { name: '今日全部复习 · 4 词', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '我的单词', exact: true }).click();
+  await expect(page.getByText('共 6 词 · 顽固 0 · 今日待复习 4', { exact: true })).toBeVisible();
+  await page.getByPlaceholder(/搜索英文/).fill('zeta');
+  await expect(page.getByRole('listitem')).toHaveCount(1);
+});
+
+test('review density is saved, survives reload, and changes the next due date of later grades', async ({ page }, testInfo) => {
+  await start(page);
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await page.getByRole('button', { name: '强化', exact: true }).click();
+  await expect(page.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText('越密集，间隔越短、每日任务通常越多', { exact: false })).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath('density-settings.png'), fullPage: true });
+  await page.reload();
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await expect(page.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  const due = async (word: string) => ((await snapshot(page)).words as { word: string; nextReviewDate: string }[]).find(w => w.word === word)!.nextReviewDate;
+  const before = await due('beta');
+  const grade = async (word: string) => {
+    await page.getByRole('button', { name: /A4 刷词/ }).click();
+    await page.getByRole('button', { name: '当前：重点攻坚 · 切换全部 FSRS 到期' }).click();
+    await page.getByRole('button', { name: `记住：${word}`, exact: true }).click();
+    await expect(page.getByText(/评分已保存/)).toBeVisible();
+  };
+  await grade('alpha');
+  expect(await due('beta')).toBe(before);
+  await page.getByRole('button', { name: '词书库', exact: true }).click();
+  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
+  await page.getByRole('button', { name: '轻松', exact: true }).click();
+  await expect(page.getByRole('button', { name: '轻松', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await grade('beta');
+  expect(await due('alpha') < await due('beta')).toBe(true);
+  expect(((await snapshot(page)).meta as { key: string; value: { density?: string } }[]).find(m => m.key === 'settings')?.value.density).toBe('relaxed');
 });
 
 test('A4 never grades unrated words: progress shows rated/total and unrated words stay for later', async ({ page }, testInfo) => {

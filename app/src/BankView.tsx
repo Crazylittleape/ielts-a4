@@ -5,7 +5,7 @@ import { isDueOn, backupJson, focusStatus } from './lib';
 import { MAX_AUTO_BACKUPS, type BackupRow } from './db';
 import { Card, PageHeader, StageChip, inputCls, softBtn, ghostBtn, SectionTitle, Empty } from './ui';
 
-type Filter = 'all' | 'focus' | 'history' | 'due' | 'hard' | 'favorite' | 'mastered' | 's0' | 's1' | 's2' | 's3' | 's4' | 's5';
+type Filter = 'all' | 'off' | 'focus' | 'history' | 'due' | 'hard' | 'favorite' | 'mastered' | 's0' | 's1' | 's2' | 's3' | 's4' | 's5';
 
 interface Props {
   state: AppState;
@@ -18,6 +18,7 @@ interface Props {
   onSpeak: (w: string) => void;
   onImport: (text: string, mode: 'merge' | 'replace') => Promise<boolean>;
   onUnfocus: (word: string) => Promise<boolean>;
+  onJoin: (ids: string[]) => Promise<boolean>;
   autoBackups: BackupRow[];
   onDownloadBackup: (key: string) => void;
   storagePersisted: boolean | null;
@@ -25,7 +26,7 @@ interface Props {
   toast: (msg: string, tone?: 'ok' | 'warn' | 'info') => void;
 }
 
-export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggleFavorite, onToggleMastered, onSpeak, onImport, onUnfocus, autoBackups, onDownloadBackup, storagePersisted, onClearAll, toast }: Props) {
+export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggleFavorite, onToggleMastered, onSpeak, onImport, onUnfocus, onJoin, autoBackups, onDownloadBackup, storagePersisted, onClearAll, toast }: Props) {
   const { words } = state;
   const mistakes = useMemo(() => new Set(state.revlog.filter(log => log.rating === 1).map(log => log.wordId)), [state.revlog]);
   const [filter, setFilter] = useState<Filter>('all');
@@ -43,6 +44,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
     const k = q.trim().toLowerCase();
     return words
       .filter((w) => {
+        if (filter === 'off') return w.review === 'off';
         if (filter === 'focus') return Boolean(w.focus?.active);
         if (filter === 'history') return Boolean(w.focus || w.focusAddedDays?.length);
         if (filter === 'due') return isDueOn(w, today);
@@ -57,9 +59,12 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
       .sort((a, b) => (a.nextReviewDate < b.nextReviewDate ? -1 : a.nextReviewDate > b.nextReviewDate ? 1 : a.word.localeCompare(b.word)));
   }, [words, filter, q, tag, today, mistakes]);
 
+  const offInList = list.filter(w => w.review === 'off');
+
   const counts = useMemo(() => {
-    const c: Record<Filter, number> = { all: words.length, focus: 0, history: 0, due: 0, hard: 0, favorite: 0, mastered: 0, s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0 };
+    const c: Record<Filter, number> = { all: words.length, off: 0, focus: 0, history: 0, due: 0, hard: 0, favorite: 0, mastered: 0, s0: 0, s1: 0, s2: 0, s3: 0, s4: 0, s5: 0 };
     words.forEach((w) => {
+      if (w.review === 'off') c.off++;
       if (w.focus?.active) c.focus++;
       if (w.focus || w.focusAddedDays?.length) c.history++;
       if (isDueOn(w, today)) c.due++;
@@ -73,6 +78,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
 
   const filters: { key: Filter; label: string }[] = [
     { key: 'all', label: '全部' },
+    { key: 'off', label: '未加入复习' },
     { key: 'focus', label: 'A4 攻坚' },
     { key: 'history', label: '攻坚记录' },
     { key: 'due', label: '今日待复习' },
@@ -148,6 +154,10 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
           </div>
         )}
 
+        {offInList.length > 0 && <Card className="space-y-2 p-4">
+          <p className="text-xs leading-relaxed text-ink-soft">当前筛选里有 {offInList.length} 个已学但未加入复习的词。先用搜索、来源或筛选缩小范围，再统一加入。</p>
+          <button type="button" className={`${softBtn} w-full`} onClick={() => void onJoin(offInList.map(w => w.id))}>将筛选出的 {offInList.length} 个未复习词加入复习</button>
+        </Card>}
         <Card className="overflow-hidden">
           {list.length === 0 ? (
             <Empty emoji="🔍" title="没有匹配的单词" desc="换个筛选条件试试" />
@@ -162,6 +172,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
                       </button>
                       <span className="text-[11px] font-semibold text-ink-soft">{w.phonetic}</span>
                       <StageChip word={w} stage={w.stage} />
+                      {w.review === 'off' && <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10.5px] font-bold text-ink-soft">已学 · 未加入复习</span>}
                       {w.isHard && <Flame size={12} className="text-honey-500" />}
                     </div>
                     <p className="truncate text-[12.5px] font-bold text-ink">{w.meaning}</p>

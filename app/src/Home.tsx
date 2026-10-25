@@ -19,10 +19,10 @@ export function TodayCoach({ today, report, step, plan, firstRun, onA4, onBook, 
   const d = parseDate(today);
   const view = step.kind === 'a4'
     ? step.scope === 'focus'
-      ? { eyebrow: '下一步 · A4 攻坚', title: `A4 攻坚 · ${step.count} 词`, detail: '你在词书里挑出的薄弱词。逐词评分后，FSRS 自动安排下次复习。', action: `开始复习 A4 · ${step.count} 词`, Icon: Layers, run: () => onA4('focus') }
-      : { eyebrow: '下一步 · 到期复习', title: `全部到期复习 · ${step.count} 词`, detail: 'A4 攻坚已清空，这些是 FSRS 安排在今天的词。', action: `开始到期复习 · ${step.count} 词`, Icon: Layers, run: () => onA4('all') }
+      ? { eyebrow: '下一步 · A4 攻坚', title: `A4 攻坚 · ${step.count} 词`, detail: '你选进复习的词。逐词评分后，下次复习会自动安排。', action: `开始复习 A4 · ${step.count} 词`, Icon: Layers, run: () => onA4('focus') }
+      : { eyebrow: '下一步 · 到期复习', title: `全部到期复习 · ${step.count} 词`, detail: '今天到期的复习词。', action: `开始到期复习 · ${step.count} 词`, Icon: Layers, run: () => onA4('all') }
     : step.kind === 'book'
-      ? { eyebrow: step.resume ? '下一步 · 继续本组' : firstRun ? '第一步 · 从词书开始' : '下一步 · 学新词', title: step.label, detail: step.resume ? '上次学到一半，接着完成三轮。' : `${step.words} 词 · 教学 → 回忆 → 拼写，学完把薄弱词加入 A4。`, action: `${step.resume ? '继续学习' : '开始学习'}：${step.label}`, Icon: BookOpen, run: onBook }
+      ? { eyebrow: step.resume ? '下一步 · 继续本组' : firstRun ? '第一步 · 从词书开始' : '下一步 · 学新词', title: step.label, detail: step.resume ? '上次学到一半，接着完成三轮。' : `${step.words} 词 · 教学 → 回忆 → 拼写，学完一键选择要复习的词。`, action: `${step.resume ? '继续学习' : '开始学习'}：${step.label}`, Icon: BookOpen, run: onBook }
       : { eyebrow: '今日计划已完成', title: '今天的任务都完成了', detail: '想再练一会儿，可以玩 60 秒配对，不会改动复习排期。', action: '60 秒配对加练', Icon: Check, run: onQuiz };
   const items: [string, string][] = [['已复习', `${report.reviewed} 词`], ['其中记住', `${report.remembered} 词`], ['新学', `${report.learnedWords} 词`], ['A4 待复习', `${report.focusDue} 词`]];
   return (
@@ -44,7 +44,6 @@ export function TodayCoach({ today, report, step, plan, firstRun, onA4, onBook, 
           <span className="shrink-0 text-xs font-bold text-rose-100">词书今日 {Math.min(plan.done, plan.target)} / {plan.target} 组</span>
           <span aria-hidden="true" className="flex flex-1 gap-1">{Array.from({ length: plan.target }, (_, i) => <span key={i} className={`h-2 flex-1 rounded-full ${i < plan.done ? 'bg-sage-300' : 'bg-white/20'}`} />)}</span>
         </div>
-        <p className="px-5 pb-4 text-[11px] text-rose-100">数字都来自这台设备上的学习记录。</p>
       </>}
     </section>
   );

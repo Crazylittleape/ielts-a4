@@ -188,7 +188,7 @@ describe('book progress persistence and recovery', () => {
     incoming = beginGroup(incoming, 'u01-g02');
     incoming = pass(pass(incoming, today), today);
     const merged = mergeStates(local, incoming);
-    expect(merged.bookLearning).toEqual({ bookId: BOOK.id, dailyGroups: 3, completed: { 'u01-g01': '2026-10-21' }, active: { groupId: 'u01-g02', seen: 2, round: 0, retry: [], inRetry: false } });
+    expect(merged.bookLearning).toEqual({ bookId: BOOK.id, dailyGroups: 3, completed: { 'u01-g01': '2026-10-21' }, active: { groupId: 'u01-g02', seen: 2, round: 0, retry: [], inRetry: false }, missed: { 'u01-g01': [], 'u01-g02': [] } });
     expect(dailyPlan(merged, today).completed).toBe(0);
     expect(mergeStates(merged, incoming)).toEqual(merged);
     const further = complete(incoming);

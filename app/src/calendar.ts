@@ -30,7 +30,7 @@ export function buildCalendar(state: AppState, today: string) {
     for (const day of word.focusAddedDays ?? (word.focus ? [word.focus.addedAt] : [])) {
       if (day <= today) get(focus, day).added.push(word.id);
     }
-    if (word.isMastered || word.mastered) continue;
+    if (word.isMastered || word.mastered || word.review === 'off') continue;
     for (const map of word.focus?.active ? [all, focus] : [all]) {
       if (isDueOn(word, today)) get(map, today).due.push({ id: word.id, stage: word.stage, overdue: word.nextReviewDate < today });
       else if (word.nextReviewDate > today && word.nextReviewDate <= addDays(today, 240)) get(map, word.nextReviewDate).planned.push({ id: word.id, stage: word.stage });

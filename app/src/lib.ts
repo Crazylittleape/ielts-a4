@@ -31,10 +31,12 @@ export interface WordItem extends WordExample {
   mastered?: boolean;
   focusAddedDays?: string[];
   focus?: FocusState;
+  /** 'off' = learned in the book but not chosen for review; absent = scheduled as before. */
+  review?: 'off';
 }
 
 /** Schedule before an A4 add; only kept while no newer review/reset has touched the card. */
-export interface FocusSnapshot { nextReviewDate: string; card: SerializedCard; isMastered?: boolean; mastered?: boolean }
+export interface FocusSnapshot { nextReviewDate: string; card: SerializedCard; isMastered?: boolean; mastered?: boolean; review?: 'off' }
 export interface FocusState { active: boolean; addedAt: string; nextDate: string; reason?: string; before?: FocusSnapshot }
 
 function withoutSnapshot(focus: FocusState): FocusState {
@@ -54,15 +56,25 @@ export interface AppState {
   revlog: ReviewEntry[];
   words: WordItem[];
   skipped: string[];
-  settings: { dailyClaim: number; lastClaimDate: string };
+  settings: Settings;
   bookLearning?: BookLearning;
 }
+
+/** Review density maps to FSRS desired retention: higher retention = shorter intervals. */
+export type Density = 'relaxed' | 'standard' | 'intense';
+export type GroupPick = 'all' | 'missed';
+export interface Settings { dailyClaim: number; lastClaimDate: string; density?: Density; groupPick?: GroupPick }
+export const DENSITY_RETENTION: Record<Density, number> = { relaxed: 0.85, standard: 0.9, intense: 0.95 };
+export const DENSITIES = Object.keys(DENSITY_RETENTION) as Density[];
+export const densityOf = (state: Pick<AppState, 'settings'>): Density => state.settings.density ?? 'standard';
 
 export interface BookLearning {
   bookId: string;
   dailyGroups: number;
   completed: Record<string, string>;
   active?: { groupId: string; seen: number; round?: 0 | 1 | 2; retry?: number[]; inRetry?: boolean };
+  /** Words answered wrong in any round, per group; only groups started with this record have an entry. */
+  missed?: Record<string, string[]>;
 }
 
 export const pad2 = (n: number) => String(n).padStart(2, '0');
@@ -107,7 +119,7 @@ export function uniqSorted(arr: string[]): string[] {
   return Array.from(new Set(arr)).sort();
 }
 
-const scheduler = fsrs({ enable_short_term: false, enable_fuzz: false });
+const schedulers = Object.fromEntries(DENSITIES.map(d => [d, fsrs({ enable_short_term: false, enable_fuzz: false, request_retention: DENSITY_RETENTION[d] })])) as Record<Density, ReturnType<typeof fsrs>>;
 
 function serializeCard(card: Card): SerializedCard {
   return { ...card, due: card.due.toISOString(), last_review: card.last_review?.toISOString() };
@@ -134,11 +146,11 @@ function hydrateCard(w: WordItem): Card {
 }
 
 export function isDueOn(w: WordItem, day: string): boolean {
-  return !w.isMastered && !w.mastered && w.nextReviewDate <= day && !w.reviewHistory.includes(day);
+  return !w.isMastered && !w.mastered && w.review !== 'off' && w.nextReviewDate <= day && !w.reviewHistory.includes(day);
 }
 
-function scheduleReview(w: WordItem, day: string, rating: 1 | 2 | 3 | 4): { word: WordItem; log: Record<string, unknown> } {
-  const result = scheduler.next(hydrateCard(w), parseDate(day), rating as Rating.Again | Rating.Hard | Rating.Good | Rating.Easy);
+function scheduleReview(w: WordItem, day: string, rating: 1 | 2 | 3 | 4, density: Density = 'standard'): { word: WordItem; log: Record<string, unknown> } {
+  const result = (schedulers[density] ?? schedulers.standard).next(hydrateCard(w), parseDate(day), rating as Rating.Again | Rating.Hard | Rating.Good | Rating.Easy);
   // A4 is a daily worksheet: even Again is reviewed on the next local day.
   const dueDay = formatDate(result.card.due) > day ? formatDate(result.card.due) : addDays(day, 1);
   result.card.due = parseDate(dueDay);
@@ -153,8 +165,9 @@ export function addToFocus(w: WordItem, day: string, reason = '词书复习薄�
   if (w.focus?.active) return w;
   const nextDate = addDays(day, 1);
   const card = migrateCard(w);
-  const before: FocusSnapshot = { nextReviewDate: w.nextReviewDate, card, ...(w.isMastered !== undefined ? { isMastered: w.isMastered } : {}), ...(w.mastered !== undefined ? { mastered: w.mastered } : {}) };
-  return { ...w, isMastered: false, mastered: false, nextReviewDate: nextDate,
+  const before: FocusSnapshot = { nextReviewDate: w.nextReviewDate, card, ...(w.isMastered !== undefined ? { isMastered: w.isMastered } : {}), ...(w.mastered !== undefined ? { mastered: w.mastered } : {}), ...(w.review === 'off' ? { review: 'off' as const } : {}) };
+  const { review: _review, ...rest } = w;
+  return { ...rest, isMastered: false, mastered: false, nextReviewDate: nextDate,
     card: { ...card, due: parseDate(nextDate).toISOString() },
     focusAddedDays: uniqSorted([...(w.focusAddedDays ?? (w.focus ? [w.focus.addedAt] : [])), day]),
     focus: { active: true, addedAt: day, nextDate, reason, before } };
@@ -171,6 +184,7 @@ export function removeFromFocus(w: WordItem, day: string): WordItem {
   const restored: WordItem = before ? { ...w, nextReviewDate: before.nextReviewDate, card: before.card, isMastered: before.isMastered ?? false, mastered: before.mastered ?? false } : w;
   if (before && before.isMastered === undefined) delete restored.isMastered;
   if (before && before.mastered === undefined) delete restored.mastered;
+  if (before?.review === 'off') restored.review = 'off';
   // A same-day removal is an undo of a mistaken add, so it leaves no A4 history.
   const days = (w.focusAddedDays ?? [w.focus.addedAt]).filter(d => !(w.focus!.addedAt === day && d === day));
   if (!days.length) { const { focus: _focus, focusAddedDays: _days, ...rest } = restored; return rest; }
@@ -220,8 +234,31 @@ export function isFocusDueOn(w: WordItem, day: string): boolean {
   return Boolean(w.focus?.active && isDueOn(w, day));
 }
 
-export function completeReview(w: WordItem, day: string): WordItem {
-  return isDueOn(w, day) ? scheduleReview(w, day, 3).word : w;
+export function completeReview(w: WordItem, day: string, density: Density = 'standard'): WordItem {
+  return isDueOn(w, day) ? scheduleReview(w, day, 3, density).word : w;
+}
+
+export interface JoinResult { state: AppState; added: number; kept: number; already: number; mastered: number }
+
+/**
+ * Puts chosen words into review/A4 in one state change, by word id.
+ * Not-yet-scheduled ('off') words get their first due date tomorrow; words that
+ * already have a schedule join A4 on their current due date with the card untouched;
+ * words already in A4 and mastered words are left as they are. No review log is written.
+ */
+export function joinReview(state: AppState, ids: string[], today: string, reason = '批量加入复习'): JoinResult {
+  if (!isValidDate(today)) throw new Error('无效的复习日期');
+  const want = new Set(ids);
+  const r = { added: 0, kept: 0, already: 0, mastered: 0 };
+  const words = state.words.map(w => {
+    if (!want.delete(w.id)) return w;
+    if (w.focus?.active) { r.already++; return w; }
+    if (w.isMastered || w.mastered) { r.mastered++; return w; }
+    if (w.review === 'off') { r.added++; return addToFocus(w, today, reason); }
+    r.kept++;
+    return { ...w, focusAddedDays: uniqSorted([...(w.focusAddedDays ?? (w.focus ? [w.focus.addedAt] : [])), today]), focus: { active: true, addedAt: today, nextDate: w.nextReviewDate, reason } };
+  });
+  return { state: r.added || r.kept ? { ...state, words } : state, ...r };
 }
 
 export function gradeWord(state: AppState, id: string, day: string, rating: 1 | 2 | 3 | 4): AppState {
@@ -230,7 +267,7 @@ export function gradeWord(state: AppState, id: string, day: string, rating: 1 | 
   // The active word schedule is authoritative. Imported logs are audit history
   // and must not block a still-due local card. isDueOn also deduplicates grades.
   if (!word || !isDueOn(word, day)) return state;
-  const next = scheduleReview(word, day, rating);
+  const next = scheduleReview(word, day, rating, densityOf(state));
   return { ...state, words: state.words.map((w) => w.id === id ? next.word : w), revlog: [...state.revlog, { id: uid(), wordId: id, day, rating, log: next.log, focus: Boolean(word.focus?.active) }] };
 }
 
@@ -302,6 +339,7 @@ export function normalizeWord(raw: unknown, fallbackDay: string): WordItem | nul
     isFavorite: Boolean(r.isFavorite ?? r.favorite),
     isMastered: Boolean(r.isMastered ?? r.mastered),
     ...exampleFields(r),
+    ...(r.review === 'off' ? { review: 'off' as const } : {}),
     ...(Array.isArray(r.focusAddedDays) ? { focusAddedDays: uniqSorted(r.focusAddedDays.filter(isValidDate)) } : {}),
     focus: isRecord(r.focus) && typeof r.focus.active === 'boolean' && isValidDate(r.focus.addedAt) && isValidDate(r.focus.nextDate)
       ? { active: r.focus.active, addedAt: r.focus.addedAt, nextDate: r.focus.nextDate, ...(typeof r.focus.reason === 'string' ? { reason: r.focus.reason } : {}), ...(r.focus.active && validSnapshot(r.focus.before) ? { before: r.focus.before } : {}) }
@@ -325,7 +363,7 @@ export function buildSchedule(words: WordItem[], today: string, horizonDays = 24
     w.reviewHistory.forEach((h) => {
       if (h !== w.createdAt) get(h).done.push(w.id);
     });
-    if (w.isMastered || w.mastered) return;
+    if (w.isMastered || w.mastered || w.review === 'off') return;
     if (isDueOn(w, today)) get(today).due.push({ id: w.id, stage: w.stage, overdue: w.nextReviewDate < today });
     else if (w.nextReviewDate > today && w.nextReviewDate <= end) get(w.nextReviewDate).planned.push({ id: w.id, stage: w.stage });
   });
@@ -425,7 +463,7 @@ export function seedWords(today: string): WordItem[] {
   ];
 }
 
-export const DEFAULT_SETTINGS = { dailyClaim: 30, lastClaimDate: '' };
+export const DEFAULT_SETTINGS: Settings = { dailyClaim: 30, lastClaimDate: '' };
 
 export function initialState(_today: string): AppState {
   return { words: [], skipped: [], settings: { ...DEFAULT_SETTINGS }, revlog: [] };
@@ -455,7 +493,7 @@ function validCard(value: unknown): value is SerializedCard {
 }
 
 function validSnapshot(value: unknown): value is FocusSnapshot {
-  return isRecord(value) && isValidDate(value.nextReviewDate) && validCard(value.card) && ['isMastered', 'mastered'].every(key => value[key] === undefined || typeof value[key] === 'boolean');
+  return isRecord(value) && isValidDate(value.nextReviewDate) && validCard(value.card) && ['isMastered', 'mastered'].every(key => value[key] === undefined || typeof value[key] === 'boolean') && (value.review === undefined || value.review === 'off');
 }
 
 function parseBookLearning(value: unknown): BookLearning {
@@ -482,6 +520,16 @@ function parseBookLearning(value: unknown): BookLearning {
     if (typeof round !== 'number' || ![0, 1, 2].includes(round) || !Array.isArray(retry) || retry.some(index => typeof index !== 'number' || !Number.isInteger(index) || index < 0 || index >= next.words.length) || new Set(retry).size !== retry.length || typeof inRetry !== 'boolean' || (inRetry ? seen !== next.words.length || retry.length === 0 : seen >= next.words.length || retry.some(index => index >= seen))) throw new Error('词书学习轮次或重试记录无效');
     progress.active = { groupId: next.id, seen, ...(active.round === undefined ? {} : { round: round as 0 | 1 | 2 }), ...(active.retry === undefined ? {} : { retry }), ...(active.inRetry === undefined ? {} : { inRetry }) };
   }
+  if (value.missed !== undefined) {
+    if (!isRecord(value.missed)) throw new Error('错词记录无效');
+    const missed: Record<string, string[]> = {};
+    for (const [id, list] of Object.entries(value.missed)) {
+      const group = BOOK_GROUPS.find(g => g.id === id);
+      if (!group || !(completed[id] || progress.active?.groupId === id) || !Array.isArray(list) || !list.every(w => typeof w === 'string' && group.words.includes(w)) || new Set(list).size !== list.length) throw new Error('错词记录无效');
+      missed[id] = list as string[];
+    }
+    progress.missed = missed;
+  }
   return progress;
 }
 
@@ -497,6 +545,7 @@ export function parseBackup(text: string, today: string): AppState {
   const names = new Set<string>();
   const words = arr.map((raw, index) => {
     if (strict && isRecord(raw) && raw.focus !== undefined && !(isRecord(raw.focus) && typeof raw.focus.active === 'boolean' && isValidDate(raw.focus.addedAt) && isValidDate(raw.focus.nextDate) && (raw.focus.reason === undefined || typeof raw.focus.reason === 'string') && (raw.focus.before === undefined || validSnapshot(raw.focus.before)))) throw new Error('A4 攻坚状态无效');
+    if (strict && isRecord(raw) && raw.review !== undefined && raw.review !== 'off') throw new Error(`第 ${index + 1} 个单词的复习状态无效`);
     if (strict && isRecord(raw) && raw.focusAddedDays !== undefined && (!Array.isArray(raw.focusAddedDays) || !raw.focusAddedDays.every(isValidDate))) throw new Error('A4 加入日期无效');
     if (strict && isRecord(raw) && (['exampleEn', 'exampleZh', 'exampleSource'].some(k => raw[k] !== undefined && typeof raw[k] !== 'string') || (typeof raw.exampleEn === 'string' && raw.exampleEn.trim() && !(typeof raw.exampleSource === 'string' && raw.exampleSource.trim())))) throw new Error(`第 ${index + 1} 个单词的例句字段无效`);
     const w = normalizeWord(raw, today);
@@ -511,10 +560,14 @@ export function parseBackup(text: string, today: string): AppState {
   });
   if (strict && (!Array.isArray(obj.skipped) || !Array.isArray(obj.revlog) || !isRecord(obj.settings))) throw new Error('备份缺少词桶、复习日志或设置');
   if (obj.skipped !== undefined && (!Array.isArray(obj.skipped) || !obj.skipped.every((v) => typeof v === 'string'))) throw new Error('跳过词表无效');
-  const settings = { ...DEFAULT_SETTINGS };
+  const settings: Settings = { ...DEFAULT_SETTINGS };
   if (obj.settings !== undefined) {
     if (!isRecord(obj.settings)) throw new Error('设置无效');
-    const { dailyClaim, lastClaimDate } = obj.settings;
+    const { dailyClaim, lastClaimDate, density, groupPick } = obj.settings;
+    if (density !== undefined && !DENSITIES.includes(density as Density)) throw new Error('复习密度设置无效');
+    if (groupPick !== undefined && groupPick !== 'all' && groupPick !== 'missed') throw new Error('组完成默认选择无效');
+    if (density !== undefined) settings.density = density as Density;
+    if (groupPick !== undefined) settings.groupPick = groupPick as GroupPick;
     if (dailyClaim !== undefined && (typeof dailyClaim !== 'number' || !Number.isInteger(dailyClaim) || dailyClaim < 1 || dailyClaim > 500)) throw new Error('每日新词目标无效');
     if (lastClaimDate !== undefined && lastClaimDate !== '' && !isValidDate(lastClaimDate)) throw new Error('领取日期无效');
     if (strict && (dailyClaim === undefined || lastClaimDate === undefined)) throw new Error('设置缺少字段');
@@ -547,7 +600,11 @@ function mergeBookLearning(current?: BookLearning, incoming?: BookLearning): Boo
     const retry = [...new Set(cursors.filter(cursor => (cursor.round ?? 0) === (active.round ?? 0)).flatMap(cursor => cursor.retry ?? []))];
     if (retry.length || active.retry !== undefined) active.retry = retry;
   }
-  return { bookId: BOOK.id, dailyGroups: current?.dailyGroups ?? incoming?.dailyGroups ?? 2, completed, ...(active ? { active: { ...active } } : {}) };
+  const missed: Record<string, string[]> = {};
+  for (const source of [current?.missed, incoming?.missed]) for (const [id, list] of Object.entries(source ?? {})) {
+    if (completed[id] || active?.groupId === id) missed[id] = [...new Set([...(missed[id] ?? []), ...list])];
+  }
+  return { bookId: BOOK.id, dailyGroups: current?.dailyGroups ?? incoming?.dailyGroups ?? 2, completed, ...(active ? { active: { ...active } } : {}), ...(Object.keys(missed).length ? { missed } : {}) };
 }
 
 export function mergeStates(current: AppState, incoming: AppState): AppState {

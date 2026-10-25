@@ -196,3 +196,14 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - 验证：Vitest 88 项（新增 `coach.test.ts` 4 项），移动 Chromium/WebKit E2E 86 项（新增 10 项）。在 320px 宽度下，200% 根字号时首页、A4、看板、挑战页均无横向溢出；reduced-motion 下动画时长为 0.01ms。主要文字对比度：ink 13.1:1、ink-soft 5.7:1、主按钮白字 6.3:1、挑战舞台白字 16.5:1。
 - 仍未验证：iPhone 真机 Safari 和主屏幕 App 的实际观感、VoiceOver 播报、系统“减少动态效果”开关。
 - Codex 接收：完整补丁 SHA-256 `3621aaef0770f48a523268b103f2ad348ecf6e644330086e1c7e4be89d991402`，应用后 tree `74507f9bdaf6c05e2adbaed0802d2132286255e0` 与 Devin 一致。本机复核 88 单测、86 移动 E2E、构建和 diff 检查通过；32 张隔离测试截图覆盖 320/375/390/1280px，未发现横向溢出或页面脚本异常。另复现并修复印章弹窗 Tab/Shift+Tab 逃逸，补入现有 E2E；调深黄色阶段标签和警告提示的文字对比度（6.17:1、5.20:1），缩小词书封面字以避免末字单独换行。
+
+## 2026-10-25 · 简约学习工具（批量加入复习 / 错词记录 / 复习密度）
+
+设计与规则见 `docs/superpowers/specs/2026-10-25-simple-review-design.md`。
+
+- 数据：`WordItem.review?: 'off'`（已学但未加入复习）；`FocusSnapshot.review` 用于当天撤销；`BookLearning.missed?: Record<groupId, string[]>`；`settings.density?: 'relaxed'|'standard'|'intense'`，`settings.groupPick?: 'all'|'missed'`。全部是可选字段，旧备份/旧 IndexedDB 不迁移、不改写，缺省即旧行为（在复习中、标准密度、错词默认、历史错词未知）。Dexie 表结构未变。
+- 调度：`isDueOn` 与 `buildSchedule`/`buildCalendar` 排除 `review: 'off'`；`gradeWord` 按 `settings.density` 选择 `request_retention` 0.85/0.9/0.95 的 FSRS 实例，标准 = 旧参数。
+- 界面：组完成页与已完成组回看页只有“本组错词 N 词 / 本组全部 N 词”批量按钮和结果状态；学习卡和词表不再有逐词“加入 A4”。词书页新增“学习设置”（默认加入范围、复习密度）。“我的单词”新增“未加入复习”筛选和“将筛选出的 N 个未复习词加入复习”。首页去掉顶部 60 秒/统计按钮（移到词书卡下方），主流程文案去掉 FSRS 术语。
+- Service Worker 缓存版本 `ielts-a4-v3-20261025-simple-review-1`。
+- 测试：Vitest 新增 `src/review.test.ts` 15 项（错词跨轮/重练/刷新/备份/合并/历史未知/非法拒绝；完成组不排期；错词与全部批量的精确集合、去重、重复点击不变、无日志；旧卡保留排期 vs off→on 明天；当天撤销恢复 off；密度：标准=旧调度、强化≤标准≤轻松且有实际差异、遗忘均次日、改设置不动已有排期、持久化/备份/非法值）。E2E 替换 2 项旧逐词加入用例，新增 2 项。
+- 未做：自定义壁纸。仍未验证：iPhone 真机 Safari/主屏幕 App、VoiceOver。

@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ArrowLeft, BookOpen, Check, ChevronRight, Lock, Volume2 } from 'lucide-react';
-import type { AppState } from './lib';
+import type { AppState, Density, GroupPick, Settings } from './lib';
 import { BOOK, BOOK_GROUPS, type BookGroup } from './bookCatalog';
-import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, getBookWord, checkBookSpelling, type BookAnswer } from './book';
-import { Card, PageHeader, Field, inputCls, primaryBtn, ghostBtn, ExampleBlock } from './ui';
+import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, getBookWord, checkBookSpelling, groupMissed, type BookAnswer, type GroupJoinResult } from './book';
+import { Card, PageHeader, Field, inputCls, primaryBtn, ghostBtn, ExampleBlock, Segmented } from './ui';
 import type { ReviewScope } from './calendar';
 import { nextStep, type DailyReport } from './coach';
 import { TodayCoach } from './Home';
@@ -15,39 +15,65 @@ interface Props {
   onAnswer: (answer: BookAnswer) => Promise<boolean>;
   onSetDailyGroups: (count: number) => void;
   onSpeak: (word: string) => void;
-  onFocus: (word: string, reason?: string) => Promise<boolean>;
-  onUnfocus: (word: string) => Promise<boolean>;
+  onJoinGroup: (groupId: string, pick: GroupPick) => Promise<GroupJoinResult | null>;
+  onSaveSettings: (patch: Partial<Settings>) => Promise<boolean>;
   report?: DailyReport;
   onOpenA4?: (scope: ReviewScope) => void;
   onQuiz?: () => void;
+  more?: ReactNode;
 }
 
-function FocusPicker({ group, state, missed, onFocus, onUnfocus, onSpeak }: { group: BookGroup; state: AppState; missed: string[]; onFocus: Props['onFocus']; onUnfocus: Props['onUnfocus']; onSpeak: Props['onSpeak'] }) {
-  const focused = new Set(state.words.filter(word => word.focus?.active).map(word => word.word.toLowerCase()));
-  const missedSet = new Set(missed.map(word => word.toLowerCase()));
-  const ordered = [...group.words.filter(word => missedSet.has(word.toLowerCase())), ...group.words.filter(word => !missedSet.has(word.toLowerCase()))];
-  const chosen = group.words.filter(word => focused.has(word.toLowerCase())).length;
+const PICK_LABEL: Record<GroupPick, string> = { missed: '本组错词', all: '本组全部' };
+const DENSITY_OPTIONS: { key: Density; label: string }[] = [{ key: 'relaxed', label: '轻松' }, { key: 'standard', label: '标准' }, { key: 'intense', label: '强化' }];
+
+export function joinMessage(r: GroupJoinResult): string {
+  if (!r.total) return '本组没有错词，没有加入任何词';
+  const joined = r.added + r.kept;
+  const extra = [r.already ? `${r.already} 词已在复习中` : '', r.mastered ? `${r.mastered} 词已标记掌握，保持不变` : ''].filter(Boolean).join('；');
+  if (!joined) return `没有新加入：${extra || '这些词都已在复习中'}`;
+  return `已加入 ${joined} 词${r.added ? '，明天开始复习' : ''}${r.kept ? `（其中 ${r.kept} 词保留原复习日期）` : ''}${extra ? `；${extra}` : ''}`;
+}
+
+function GroupReview({ group, state, onJoin, onSpeak }: { group: BookGroup; state: AppState; onJoin: Props['onJoinGroup']; onSpeak: Props['onSpeak'] }) {
+  const [result, setResult] = useState('');
+  const [pending, setPending] = useState(false);
+  const missed = groupMissed(state, group.id);
+  const missedSet = new Set(missed ?? []);
+  const byName = new Map(state.words.map(word => [word.word.toLowerCase(), word]));
+  const inReview = (name: string) => { const w = byName.get(name.toLowerCase()); return Boolean(w && w.review !== 'off' && !w.isMastered && !w.mastered); };
+  const reviewing = group.words.filter(inReview).length;
+  const preferred = state.settings.groupPick ?? 'missed';
+  const run = async (pick: GroupPick) => {
+    if (pending) return;
+    setPending(true);
+    try { const r = await onJoin(group.id, pick); setResult(r ? joinMessage(r) : '保存失败，没有加入任何词'); } finally { setPending(false); }
+  };
+  const options: { pick: GroupPick; count: number | null }[] = [{ pick: 'missed', count: missed ? missed.length : null }, { pick: 'all', count: group.words.length }];
+  if (preferred === 'all') options.reverse();
   return <Card className="p-4 text-left">
-    <h3 className="text-base font-bold">挑出没记牢的词加入 A4</h3>
-    <p className="mt-1 text-xs leading-relaxed text-ink-soft">只有你点选的词进入 A4 攻坚，明天开始复习；其余词按长期 FSRS 安排。{missed.length ? '本次出错的词排在最前。' : ''}</p>
-    <p role="status" className="mt-2 text-sm font-bold text-honey-700">{chosen ? `已选 ${chosen} 词加入 A4 · 明天只复习这些` : '尚未选择 A4 攻坚词'}</p>
-    <ul className="mt-2 divide-y divide-stone-100">{ordered.map(name => {
-      const isFocused = focused.has(name.toLowerCase());
-      const isMissed = missedSet.has(name.toLowerCase());
-      return <li key={name} className="flex items-center gap-3 py-3">
-        <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onSpeak(name)}>
-          <span className="flex flex-wrap items-baseline gap-x-2"><span className="break-words font-serif text-lg font-semibold leading-tight">{name}</span>{isMissed && <span className="rounded bg-rose-50 px-1.5 text-[10px] font-bold text-rose-600">本次出错</span>}</span>
+    <h3 className="text-base font-bold">把这一组加入复习</h3>
+    <p className="mt-1 text-xs leading-relaxed text-ink-soft">选中的词明天出现在 A4；没选的词只记为已学，不安排复习。</p>
+    <div className="mt-3 grid gap-2">
+      {options.map(({ pick, count }) => <button key={pick} type="button" disabled={pending || count === null} aria-describedby={count === null ? `missed-na-${group.id}` : undefined} className={`${pick === preferred ? primaryBtn : ghostBtn} w-full`} onClick={() => void run(pick)}>{count === null ? '本组错词 · 记录不可用' : `${PICK_LABEL[pick]} ${count} 词`}</button>)}
+    </div>
+    {missed === null && <p id={`missed-na-${group.id}`} className="mt-2 text-xs text-ink-soft">历史错词记录不可用：这一组在记录错词之前学习，可以选择本组全部。</p>}
+    <p role="status" className="mt-2 min-h-5 text-sm font-bold text-sage-500">{result}</p>
+    <p className="text-xs font-bold text-ink-soft">已在复习 {reviewing} / {group.words.length} 词</p>
+    <ul className="mt-2 divide-y divide-stone-100">{group.words.map(name => {
+      const isMissed = missedSet.has(name);
+      return <li key={name} className="flex items-center gap-3 py-2.5">
+        <button type="button" className="min-h-11 min-w-0 flex-1 text-left" aria-label={`朗读 ${name}`} onClick={() => onSpeak(name)}>
+          <span className="flex flex-wrap items-baseline gap-x-2"><span className="break-words font-serif text-lg font-semibold leading-tight">{name}</span>{isMissed && <span className="rounded bg-rose-50 px-1.5 text-[11px] font-bold text-rose-600">本次出错</span>}</span>
           <span className="mt-0.5 line-clamp-2 block break-words text-xs text-ink-soft">{getBookWord(name).meaning}</span>
         </button>
-        <button type="button" aria-label={`${isFocused ? '移出' : '加入'} A4：${name}`} onClick={() => void (isFocused ? onUnfocus(name) : onFocus(name, isMissed ? '词书回忆出错' : '词书自选薄弱'))} className={`min-h-11 shrink-0 rounded-xl border px-3 text-xs font-bold ${isFocused ? 'border-sage-200 bg-sage-50 text-sage-500' : 'border-honey-300 bg-honey-50 text-ink'}`}>{isFocused ? <>已加入 ✓<span className="block text-[10px] font-normal">点按撤销</span></> : '加入 A4'}</button>
+        <span className="shrink-0 text-xs font-bold text-ink-soft">{inReview(name) ? '复习中' : '未复习'}</span>
       </li>;
     })}</ul>
   </Card>;
 }
 
-export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onFocus, onUnfocus, report, onOpenA4, onQuiz }: Props) {
+export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onJoinGroup, onSaveSettings, report, onOpenA4, onQuiz, more }: Props) {
   const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study' | 'review'>('library');
-  const [missed, setMissed] = useState<Record<string, string[]>>({});
   const [finishedId, setFinishedId] = useState<string | null>(null);
   const [reviewId, setReviewId] = useState<string | null>(null);
   const [unitId, setUnitId] = useState(BOOK.units[0].id);
@@ -63,20 +89,13 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   const question = getBookQuestion(state);
   useEffect(() => { setRevealed(false); setSpelling(''); setChecked(null); }, [active?.groupId, active?.seen, question?.round, question?.inRetry, question?.wordIndex]);
 
-  const focusedNames = new Set(state.words.filter(word => word.focus?.active).map(word => word.word.toLowerCase()));
   const submitAnswer = async (answer: BookAnswer) => {
     const groupId = active?.groupId;
-    const name = question?.word.word;
-    const wrong = answer.kind === 'recall' ? !answer.remembered : !checkBookSpelling(name ?? '', answer.text);
     if (await onAnswer(answer)) {
-      if (groupId && name && wrong) setMissed(prev => ({ ...prev, [groupId]: [...new Set([...(prev[groupId] ?? []), name])] }));
       if (groupId) setFinishedId(groupId);
       setRevealed(false); setSpelling(''); setChecked(null);
     }
   };
-  const focusButton = (name: string, reason: string) => focusedNames.has(name.toLowerCase())
-    ? <button type="button" disabled className="w-full rounded-2xl border border-sage-200 bg-sage-50 px-4 py-2.5 text-sm font-bold text-sage-500">已加入 A4 · 明天复习 ✓</button>
-    : <button type="button" className="w-full rounded-2xl border border-honey-300 bg-honey-50 px-4 py-2.5 text-sm font-bold text-ink" onClick={() => void onFocus(name, reason)}>加入 A4 攻坚 · 明天复习</button>;
   const go = (next: typeof screen) => { setScreen(next); window.scrollTo({ top: 0 }); };
   const start = async (group: BookGroup) => {
     if (await onBegin(group.id)) go('study');
@@ -95,8 +114,8 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
         <h2 className="text-sm font-extrabold text-ink">第一次使用 · 三步上手</h2>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-ink-soft">
           <li>打开词书，按顺序学一组：先教学，再回忆检查，最后拼写强化。</li>
-          <li>学完一组，只把没记牢的词点“加入 A4”，记得的词不用管。</li>
-          <li>第二天打开“A4 刷词”，只复习你挑的词；逐词评分后自动安排下次复习。</li>
+          <li>学完一组，一键把本组错词（或全部词）加入复习。</li>
+          <li>第二天打开“A4 刷词”，逐词评分，下次复习会自动安排。</li>
         </ol>
         <p className="mt-2 text-[11px] text-ink-faint">这里没有示例词，词库从你学的第一组开始。</p>
       </Card></div>}
@@ -112,14 +131,14 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
           <button type="button" className={`${primaryBtn} w-full`} aria-label="雅思词汇真经" onClick={() => go('book')}>打开词书 <ChevronRight size={16} /></button>
         </div>
       </Card>
-      <p className="px-1 text-xs leading-relaxed text-ink-soft">每天选择学几组，沿着词书顺序前进。已学记录和复习安排会保存在这台设备。</p>
+      {more}
     </div>
   </div>;
 
   if (screen === 'study') {
     if (!active || !activeGroup || !question) {
       const finished = BOOK_GROUPS.find(group => group.id === finishedId && progress.completed[group.id]);
-      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><div aria-hidden="true" className="stamp-in mx-auto flex h-20 w-20 items-center justify-center rounded-full border-[5px] border-double border-sage-500 text-sage-500"><Check size={34} /></div><h2 className="text-2xl font-bold">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度，新词从明天开始长期复习。</p></Card>{finished && <FocusPicker group={finished} state={state} missed={missed[finished.id] ?? []} onFocus={onFocus} onUnfocus={onUnfocus} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
+      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><div aria-hidden="true" className="stamp-in mx-auto flex h-20 w-20 items-center justify-center rounded-full border-[5px] border-double border-sage-500 text-sage-500"><Check size={34} /></div><h2 className="text-2xl font-bold">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度。选择要复习的词：</p></Card>{finished && <GroupReview group={finished} state={state} onJoin={onJoinGroup} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
     }
     const { word, kind, round } = question;
     const mode = ['英文回忆中文', '音标回忆中文', '中文拼写英文'][round];
@@ -149,17 +168,17 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
             </div>}
           </form>}
         </Card>
-        {!spellingMode && revealed && <div className="space-y-3"><div className="grid grid-cols-2 gap-3"><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></div>{focusButton(word.word, '词书回忆模糊/忘记')}</div>}
-        {spellingMode && checked !== null && <div className="space-y-3"><button type="button" className={`${primaryBtn} w-full`} onClick={() => void submitAnswer({kind:'spelling',text:checked})}>继续</button>{focusButton(word.word, checkBookSpelling(word.word, checked) ? '词书拼写不稳' : '词书拼写出错')}</div>}
-        <p className="px-2 text-center text-xs leading-relaxed text-ink-soft">每轮错题会在轮末重练。确认后自动保存，完成三轮后计入已学。</p>
+        {!spellingMode && revealed && <div className="space-y-3"><div className="grid grid-cols-2 gap-3"><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></div></div>}
+        {spellingMode && checked !== null && <div className="space-y-3"><button type="button" className={`${primaryBtn} w-full`} onClick={() => void submitAnswer({kind:'spelling',text:checked})}>继续</button></div>}
+        <p className="px-2 text-center text-xs leading-relaxed text-ink-soft">答错的词会在轮末重练，并记入本组错词。</p>
       </div>
     </div>;
   }
 
   const reviewGroup = BOOK_GROUPS.find(group => group.id === reviewId && progress.completed[group.id]);
   if (screen === 'review' && reviewGroup) return <div className="safe-bottom-pad">
-    <PageHeader title={`${reviewGroup.unitTitle} · 第 ${reviewGroup.index} 组`} subtitle={`已完成 ${progress.completed[reviewGroup.id]} · 选词加入 A4`} left={back('unit')} />
-    <div className="px-4"><FocusPicker group={reviewGroup} state={state} missed={missed[reviewGroup.id] ?? []} onFocus={onFocus} onUnfocus={onUnfocus} onSpeak={onSpeak} /></div>
+    <PageHeader title={`${reviewGroup.unitTitle} · 第 ${reviewGroup.index} 组`} subtitle={`已完成 ${progress.completed[reviewGroup.id]}`} left={back('unit')} />
+    <div className="px-4"><GroupReview group={reviewGroup} state={state} onJoin={onJoinGroup} onSpeak={onSpeak} /></div>
   </div>;
 
   if (screen === 'unit') return <div className="safe-bottom-pad">
@@ -169,7 +188,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
       {unit.groups.map(group => {
         const done = Boolean(progress.completed[group.id]);
         const available = !done && stats.current?.id === group.id && (Boolean(active) || plan.remainingGroups.length > 0);
-        return <Card key={group.id} className="p-4"><button type="button" className="flex w-full items-center justify-between gap-3 text-left disabled:text-ink-faint" disabled={!available && !done} onClick={() => { if (done) { setReviewId(group.id); go('review'); } else void start(group); }}><span><span className="block text-sm font-bold">第 {group.index} 组 · {group.words.length} 词</span><span className="mt-1 block text-xs">{done ? '已完成 · 选词加入 A4' : active?.groupId === group.id ? `学习中 · 第 ${(active.round ?? 0) + 1} / 3 轮` : available ? '待学习' : '待解锁'}</span></span>{done ? <Check size={18} className="text-sage-500" /> : available ? <ChevronRight size={18} /> : <Lock size={16} />}</button><p className="mt-2 text-xs text-ink-faint">{group.words[0]} — {group.words[group.words.length - 1]}</p></Card>;
+        return <Card key={group.id} className="p-4"><button type="button" className="flex w-full items-center justify-between gap-3 text-left disabled:text-ink-faint" disabled={!available && !done} onClick={() => { if (done) { setReviewId(group.id); go('review'); } else void start(group); }}><span><span className="block text-sm font-bold">第 {group.index} 组 · {group.words.length} 词</span><span className="mt-1 block text-xs">{done ? '已完成 · 加入复习' : active?.groupId === group.id ? `学习中 · 第 ${(active.round ?? 0) + 1} / 3 轮` : available ? '待学习' : '待解锁'}</span></span>{done ? <Check size={18} className="text-sage-500" /> : available ? <ChevronRight size={18} /> : <Lock size={16} />}</button><p className="mt-2 text-xs text-ink-faint">{group.words[0]} — {group.words[group.words.length - 1]}</p></Card>;
       })}
     </div>
   </div>;
@@ -189,7 +208,11 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
         <p className="text-sm font-bold">今日计划 {plan.groups.length} 组 · {plan.wordCount} 词</p>
         <p className="text-xs text-ink-soft">今日已完成 {plan.completed} / {progress.dailyGroups} 组</p>
         <button type="button" className={`${primaryBtn} w-full`} disabled={!activeGroup && !plan.remainingGroups.length} onClick={() => { const group = activeGroup || plan.remainingGroups[0]; if (group) void start(group); }}>{activeGroup ? '继续本组学习' : plan.remainingGroups.length ? '开始今日学习' : stats.remaining ? '今日计划已完成' : '全书初学已完成'}</button>
-        <p className="text-xs leading-relaxed text-ink-faint">章末不足 25 词时按实际词数计算。初学完成后，前往 A4 刷词完成到期复习。</p>
+      </Card>
+      <Card className="space-y-4 p-5">
+        <h2 id="study-settings" className="text-sm font-bold">学习设置</h2>
+        <div><p className="mb-1.5 text-xs font-bold text-ink-soft" id="pick-label">学完一组后默认加入</p><div role="group" aria-labelledby="pick-label"><Segmented options={[{ key: 'missed' as GroupPick, label: '本组错词' }, { key: 'all' as GroupPick, label: '本组全部单词' }]} value={state.settings.groupPick ?? 'missed'} onChange={pick => void onSaveSettings({ groupPick: pick })} /></div><p className="mt-1 text-xs text-ink-soft">组完成页会把这个选项放在最前面，点按后才会加入。</p></div>
+        <div><p className="mb-1.5 text-xs font-bold text-ink-soft" id="density-label">复习密度</p><div role="group" aria-labelledby="density-label"><Segmented options={DENSITY_OPTIONS} value={state.settings.density ?? 'standard'} onChange={density => void onSaveSettings({ density })} /></div><p className="mt-1 text-xs leading-relaxed text-ink-soft">越密集，间隔越短、每日任务通常越多。保存后用于之后的每次评分，已经排好的日期不变。</p></div>
       </Card>
       <div className="flex items-center justify-between px-1"><h2 className="text-sm font-bold">单元目录</h2><span className="text-xs text-ink-faint">已完成 {stats.completedGroups} / {BOOK_GROUPS.length} 组</span></div>
       {BOOK.units.map((item, index) => {

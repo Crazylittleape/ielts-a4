@@ -1,6 +1,6 @@
 import { BOOK, BOOK_GROUPS, BOOK_WORD_COUNT, type BookGroup } from './bookCatalog';
 import { allEntries } from './dict';
-import { addToFocus, createWord, isValidDate, type AppState, type BookLearning, type WordExample, type WordFields } from './lib';
+import { addToFocus, createWord, isValidDate, joinReview, type AppState, type BookLearning, type GroupPick, type JoinResult, type WordExample, type WordFields } from './lib';
 import examples from './data/book-examples.json';
 
 export function getBookProgress(state: AppState): BookLearning {
@@ -49,7 +49,7 @@ export function getBookWord(word: string, exampleData: Record<string, BookExampl
 export function beginGroup(state: AppState, groupId: string): AppState {
   const progress = getBookProgress(state);
   if (progress.active || getBookStats(state).current?.id !== groupId) return state;
-  return { ...state, bookLearning: { ...progress, active: { groupId, seen: 0, round: 0, retry: [], inRetry: false } } };
+  return { ...state, bookLearning: { ...progress, missed: { ...progress.missed, [groupId]: [] }, active: { groupId, seen: 0, round: 0, retry: [], inRetry: false } } };
 }
 
 export type BookAnswer = { kind: 'recall'; remembered: boolean } | { kind: 'spelling'; text: string };
@@ -84,6 +84,8 @@ export function answerBookQuestion(state: AppState, today: string, answer: BookA
   let seen = progress.active.seen;
   let retry = [...(progress.active.retry ?? [])];
   let inRetry = question.inRetry;
+  const known = progress.missed?.[group.id];
+  const missed = !correct && known && !known.includes(question.word.word) ? { ...progress.missed, [group.id]: [...known, question.word.word] } : progress.missed;
   if (inRetry) {
     retry.shift();
     if (!correct) retry.push(question.wordIndex);
@@ -97,13 +99,14 @@ export function answerBookQuestion(state: AppState, today: string, answer: BookA
     seen = 0;
     inRetry = false;
   }
-  if (seen < group.words.length || retry.length) return { ...state, bookLearning: { ...progress, active: { groupId: group.id, seen, round, retry, inRetry } } };
+  if (seen < group.words.length || retry.length) return { ...state, bookLearning: { ...progress, ...(missed ? { missed } : {}), active: { groupId: group.id, seen, round, retry, inRetry } } };
   const have = new Set(state.words.map(word => word.word.toLowerCase()));
-  const fresh = group.words.filter(word => !have.has(word.toLowerCase())).map(word => createWord({ ...getBookWord(word), tag: bookGroupTag(group) }, today));
+  // Learned words are recorded but stay out of review until the user picks them on the completion page.
+  const fresh = group.words.filter(word => !have.has(word.toLowerCase())).map(word => ({ ...createWord({ ...getBookWord(word), tag: bookGroupTag(group) }, today), review: 'off' as const }));
   return {
     ...state,
     words: [...state.words, ...fresh],
-    bookLearning: { bookId: BOOK.id, dailyGroups: progress.dailyGroups, completed: { ...progress.completed, [group.id]: today } }
+    bookLearning: { bookId: BOOK.id, dailyGroups: progress.dailyGroups, completed: { ...progress.completed, [group.id]: today }, ...(missed ? { missed } : {}) }
   };
 }
 
@@ -130,4 +133,33 @@ export function focusBookWord(state: AppState, word: string, today: string, reas
   if (!group || !(progress.completed[group.id] || progress.active?.groupId === group.id)) return state;
   const name = group.words.find(item => item.toLowerCase() === key)!;
   return { ...state, words: [...state.words, addToFocus(createWord({ ...getBookWord(name), tag: bookGroupTag(group) }, today), today, reason)] };
+}
+
+/** Words missed in this group, in book order; null when the group was started before missed words were recorded. */
+export function groupMissed(state: AppState, groupId: string): string[] | null {
+  const list = getBookProgress(state).missed?.[groupId];
+  const group = BOOK_GROUPS.find(g => g.id === groupId);
+  return list && group ? group.words.filter(word => list.includes(word)) : null;
+}
+
+export interface GroupJoinResult extends JoinResult { total: number }
+
+/** One atomic batch: the whole finished group, or its recorded missed words, into review/A4. */
+export function joinGroupReview(state: AppState, groupId: string, pick: GroupPick, today: string): GroupJoinResult {
+  if (!isValidDate(today)) throw new Error('无效的学习日期');
+  const group = BOOK_GROUPS.find(g => g.id === groupId);
+  if (!group || !getBookProgress(state).completed[groupId]) throw new Error('只能把已完成的学习组加入复习');
+  const names = pick === 'all' ? group.words : groupMissed(state, groupId);
+  if (!names) throw new Error('这一组的历史错词记录不可用');
+  const byName = new Map(state.words.map(word => [word.word.toLowerCase(), word]));
+  // A word deleted from My Words since the group was finished is recreated on demand.
+  const created = names.filter(name => !byName.has(name.toLowerCase())).map(name => ({ ...createWord({ ...getBookWord(name), tag: bookGroupTag(group) }, today), review: 'off' as const }));
+  const words = [...state.words, ...created];
+  const ids = names.map(name => (byName.get(name.toLowerCase()) ?? created.find(word => word.word === name))!.id);
+  const reason = pick === 'all' ? '词书本组全部' : '词书本组错词';
+  const result = joinReview({ ...state, words }, ids, today, reason);
+  const changed = result.state !== state && (result.added || result.kept);
+  const remember = state.settings.groupPick !== pick;
+  const next = changed || remember ? { ...(changed ? result.state : state), settings: { ...state.settings, groupPick: pick } } : state;
+  return { ...result, state: next, total: names.length };
 }
