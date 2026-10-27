@@ -15,9 +15,10 @@ import { BookView } from './BookView';
 import { beginGroup, answerBookQuestion, getBookProgress, joinGroupReview, type BookAnswer, type GroupJoinResult } from './book';
 import { joinMessage } from './BookView';
 import { BankView } from './BankView';
+import { ContextCloze } from './ContextCloze';
 import { DoneStamp, Field, Toast, inputCls, primaryBtn, ghostBtn } from './ui';
 
-type Tab = 'home' | 'dashboard' | 'a4' | 'add' | 'bank' | 'quiz' | 'stats';
+type Tab = 'home' | 'dashboard' | 'a4' | 'add' | 'bank' | 'quiz' | 'stats' | 'cloze';
 type ToastTone = 'ok' | 'warn' | 'info';
 
 function useToday(): string {
@@ -342,13 +343,14 @@ export default function App() {
     {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 bg-sage-100 p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
     {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><BookView appearance={<WallpaperSettings {...wallpaper} />} more={<div className="flex flex-wrap gap-2"><span className="sr-only">更多练习</span><button className={ghostBtn} onClick={() => changeTab('quiz')}><Zap size={16} className="text-honey-600" aria-hidden="true" />60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}><BarChart3 size={16} className="text-rose-500" aria-hidden="true" />学习统计</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
+      {tab === 'home' && <><BookView appearance={<WallpaperSettings {...wallpaper} />} more={<div className="flex flex-wrap gap-2"><span className="sr-only">更多练习</span><button className={ghostBtn} onClick={() => changeTab('quiz')}><Zap size={16} className="text-honey-600" aria-hidden="true" />60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}><BarChart3 size={16} className="text-rose-500" aria-hidden="true" />学习统计</button><button className={ghostBtn} onClick={() => changeTab('cloze')}><BookOpenText size={16} className="text-lilac-500" aria-hidden="true" />语境填空</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} calendar={calendar} onOpenBook={() => changeTab('home')} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View wallpaperActive={Boolean(wallpaper.url)} words={state.words} revlog={state.revlog} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} allDueCount={reviewIds(calendar.all, today, today).length} onOpenBook={() => changeTab('home')} schedule={calendar[a4Scope]} onBack={() => { setTab(a4Back); window.scrollTo({ top: 0 }); }} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
       {tab === 'bank' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('add')}>录入新词</button></div><BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onUnfocus={onUnfocus} onJoin={onJoinIds} autoBackups={autoBackups} onDownloadBackup={onDownloadBackup} storagePersisted={storagePersisted} onClearAll={onClearAll} toast={showToast} /></>}
       {tab === 'quiz' && <MatchingGame words={gameWords} scopeLabel={todayWords.length ? '今日新词与复习词' : '今天没有任务，使用全部词库加练'} onBack={() => setTab('home')} onSpeak={onSpeak} />}
       {tab === 'stats' && <Statistics state={state} today={today} onBack={() => setTab('home')} />}
+      {tab === 'cloze' && <ContextCloze state={state} onBack={() => changeTab('home')} onA4={() => changeTab('a4')} />}
       <TabBar tab={tab} onChange={changeTab} due={calendar.focus[today]?.due.length ?? 0} />
       {editing && <EditSheet word={editing} onSave={onSaveEdit} onClose={() => setEditing(null)} />}
     </fieldset>

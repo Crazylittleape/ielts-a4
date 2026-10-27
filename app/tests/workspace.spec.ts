@@ -255,11 +255,11 @@ test('today dashboard opens the exact all/focus counts and preserves focus revie
   await start(page, { ...fixture, words });
   await page.getByRole('button', { name: '看板', exact: true }).click();
   await page.getByRole('button', { name: '今日全部复习 · 4 词', exact: true }).click();
-  await expect(page.getByRole('listitem')).toHaveCount(4);
+  await expect(page.locator('.paper').getByRole('listitem')).toHaveCount(4);
   await page.getByRole('button', { name: '当前：全部到期复习 · 切换重点攻坚', exact: true }).click();
-  await expect(page.getByRole('listitem')).toHaveCount(2);
+  await expect(page.locator('.paper').getByRole('listitem')).toHaveCount(2);
   await page.getByRole('button', { name: /^记住：/ }).first().click();
-  await expect(page.getByRole('listitem')).toHaveCount(2);
+  await expect(page.locator('.paper').getByRole('listitem')).toHaveCount(2);
   await expect(page.getByRole('button', { name: /^记住：/ })).toHaveCount(1);
   await page.reload();
   await page.getByRole('button', { name: '看板', exact: true }).click();
@@ -276,7 +276,7 @@ test('readable paper paginates without losing cards or grading other pages', asy
   await expect(page.getByRole('listitem')).toHaveCount(8);
   await expect(page.getByText('今日复习 · 本页 8 词 · 第 1 / 2 页', { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-  expect(await page.getByText('electroencephalographically', { exact: true }).evaluate(element => element.getBoundingClientRect().right <= element.closest('button')!.getBoundingClientRect().right)).toBe(true);
+  expect(await page.locator('.paper').getByText('electroencephalographically', { exact: true }).evaluate(element => element.getBoundingClientRect().right <= element.closest('button')!.getBoundingClientRect().right)).toBe(true);
   await page.getByRole('listitem').first().screenshot({ path: info.outputPath('A4-longword.png') });
   await page.getByRole('button', { name: /只看中/ }).click();
   await expect(page.getByRole('listitem').first().locator('.masked')).toHaveCount(1);
@@ -980,7 +980,7 @@ test('a fresh user is pointed at book group 1 and nothing demo is written', asyn
   const button = page.getByTestId('next-step').getByRole('button', { name: /^开始学习：.+第 1 组$/ });
   await expect(button).toBeVisible();
   await button.click();
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('第 1 组');
+  await expect(page.getByRole('heading', { name: 'atmosphere', exact: true })).toBeVisible();
   expect((await snapshot(page)).words).toHaveLength(0);
 });
 
@@ -1072,6 +1072,48 @@ test('dark and light wallpaper keep A4 on a readable opaque paper surface', asyn
     await page.getByRole('button', { name: '词书库', exact: true }).click();
   }
   expect(await snapshot(page)).toEqual(before);
+});
+
+test('context cloze masks sourced forms, finishes and retries without writing learning data', async ({ page }, testInfo) => {
+  const words = [
+    quizWord('atmosphere', '第一词', 0),
+    { ...quizWord('beta', '第二词', 1), exampleEn: 'The beta appears in another example.', exampleSource: 'Tatoeba #102 https://tatoeba.org/sentences/show/102', focus: { active: true, addedAt: '2026-10-21', nextDate: today } },
+    quizWord('offbookwordone', '第三词', 2),
+    quizWord('offbookwordtwo', '第四词', 3)
+  ];
+  const initial = { ...fixture, words, bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: { 'u01-g01': '2026-10-21' }, missed: { 'u01-g01': ['atmosphere'] } } };
+  await start(page, initial);
+  const before = await snapshot(page);
+  await page.getByRole('button', { name: '语境填空', exact: true }).click();
+  await expect(page.getByText('范围内有例句的词 2 / 2', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '全部已学词', exact: true }).click();
+  await expect(page.getByText('范围内有例句的词 2 / 4', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '错词与 A4 攻坚词', exact: true }).click();
+  await expect(page.getByTestId('cloze-question')).toContainText('____');
+  await expect(page.getByTestId('cloze-question')).not.toContainText('atmosphere');
+  await page.getByRole('button', { name: 'atmosphere', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('回答正确');
+  await expect(page.getByText('This place has a mysterious atmosphere.')).toBeVisible();
+  await expect(page.getByText(/来源：Tatoeba #2105/)).toBeVisible();
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/cloze-375.png', fullPage: true });
+  await page.getByRole('button', { name: '下一题', exact: true }).click();
+  await page.getByRole('button', { name: 'atmosphere', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('正确答案：beta');
+  await page.getByRole('button', { name: '查看本轮总结', exact: true }).click();
+  await expect(page.getByRole('region', { name: '本轮总结' })).toContainText('答对 1 / 2 题');
+  expect(await snapshot(page)).toEqual(before);
+  await page.getByRole('button', { name: '重练本轮', exact: true }).click();
+  await expect(page.getByTestId('cloze-question')).toContainText('____');
+  expect(await snapshot(page)).toEqual(before);
+});
+
+test('context cloze empty state links back to book and A4', async ({ page }) => {
+  await start(page, { ...fixture, words: [] });
+  await page.getByRole('button', { name: '语境填空', exact: true }).click();
+  await expect(page.getByText('范围内有例句的词 0 / 0', { exact: true })).toBeVisible();
+  await expect(page.getByText(/这个范围暂时没有带例句的词/)).toBeVisible();
+  await page.getByRole('button', { name: '去 A4', exact: true }).click();
+  await expect(page.getByRole('heading', { name: /A4/ })).toBeVisible();
 });
 
 test('wallpaper persists across learning saves and offline reload, reset keeps all learning records', async ({ page, context }) => {
