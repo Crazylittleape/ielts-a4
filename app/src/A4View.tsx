@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, Shuffle, Volume2, Flame, Check, Pencil, CheckCircle2 } from 'lucide-react';
-import type { DaySchedule, FocusSummary, WordItem } from './lib';
+import type { DaySchedule, FocusSummary, ReviewEntry, WordItem } from './lib';
 import { diffDays, parseDate, randomMaskSides, shuffle, weekdayCN } from './lib';
 import { reviewIds, type ReviewScope } from './calendar';
 import { Segmented, StageChip, primaryBtn, Empty, ExampleBlock } from './ui';
@@ -16,6 +16,7 @@ const MASK_MODES: { key: MaskMode; emoji: string; label: string; hint: string }[
 
 interface Props {
   words: WordItem[];
+  revlog: ReviewEntry[];
   today: string;
   date: string;
   schedule: Record<string, DaySchedule>;
@@ -33,7 +34,7 @@ interface Props {
   onEdit: (w: WordItem) => void;
 }
 
-export function A4View({ words, today, date, schedule, scope, onScopeChange, allDueCount, onOpenBook, onBack, onHardReset, onCheckout, onLater, focusSummary, onGrade, onSpeak, onEdit }: Props) {
+export function A4View({ words, revlog, today, date, schedule, scope, onScopeChange, allDueCount, onOpenBook, onBack, onHardReset, onCheckout, onLater, focusSummary, onGrade, onSpeak, onEdit }: Props) {
   const isToday = date === today;
   const [practice, setPractice] = useState<string[]>([]);
   const focusOnly = scope === 'focus';
@@ -62,6 +63,16 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
   const pageWords = list.slice(currentPage * 8, currentPage * 8 + 8);
   const doneSet = new Set(schedule[today]?.done ?? []);
   const dueSet = new Set(schedule[today]?.due.map(w => w.id) ?? []);
+  const todayListIds = new Set(list.map(word => word.id));
+  const gradedEntries = new Map<string, ReviewEntry>();
+  if (isToday && !practice.length) {
+    revlog.filter(entry => entry.day === today && todayListIds.has(entry.wordId)).forEach(entry => gradedEntries.set(entry.wordId, entry));
+  }
+  const gradedWords = list.flatMap(word => {
+    const entry = gradedEntries.get(word.id);
+    return entry ? [{ word, entry }] : [];
+  });
+  const unratedToday = list.filter(word => dueSet.has(word.id) && !gradedEntries.has(word.id)).length;
   const live = isToday && !practice.length;
   const pendingIds = live ? pageWords.filter(w => dueSet.has(w.id)).map(w => w.id) : [];
   const pageRated = live ? pageWords.filter(w => doneSet.has(w.id) && !dueSet.has(w.id)).length : 0;
@@ -157,6 +168,7 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
               <p className="mt-2 text-xs text-stone-600">{date > today ? '预计复习' : date < today ? '实际复习记录' : '今日复习'} · 本页 {pageWords.length} 词 · 第 {currentPage + 1} / {pageCount} 页</p>
               <p className="mt-1 break-words text-[11px] text-stone-500">来源：{[...new Set(pageWords.map(w => w.tag || '我的单词'))].join(' / ')}</p>
             </div>
+            {isToday && !practice.length && <p className="mx-5 mb-3 text-[11px] font-semibold leading-relaxed text-stone-700" data-testid="grading-hint">马上想起选「记住」，想了一会儿选「困难」，没想起选「忘记」，很熟选「轻松」</p>}
             <div className="mb-2 grid grid-cols-2 px-6 text-[10px] font-bold tracking-widest text-stone-500"><span>ENGLISH / 英文</span><span>中文 / 同义替换</span></div>
             <ol className="divide-y divide-stone-200/80 mx-3">
               {pageWords.map((w, pageIndex) => {
@@ -195,7 +207,7 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
                     </div>
                     <ExampleBlock word={w} onSpeak={onSpeak} className="w-full pl-7" />
                     <div className="flex w-full flex-wrap items-center justify-end gap-1 pt-2">
-                      {done && <span className="mr-auto pl-7 text-xs font-bold text-sage-500">✓ 今日已评分</span>}
+                      {done && <span className="mr-auto pl-7 text-xs font-bold text-sage-500">✓ 今日复习完成</span>}
                       {isToday && !practice.length && !done && <>
                       {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className={`min-h-11 min-w-11 rounded-lg border bg-white/80 px-2.5 text-xs font-bold ${rating === 3 ? 'border-rose-300 text-rose-600' : rating === 4 ? 'border-sage-300 text-sage-500' : 'border-stone-300 text-stone-700'}`} onClick={() => onGrade(w.id, rating)}>{label}</button>)}
                     </>}
@@ -224,6 +236,20 @@ export function A4View({ words, today, date, schedule, scope, onScopeChange, all
             <footer className="mx-5 mt-auto flex justify-between border-t border-stone-200 pt-3 text-[10px] tracking-widest text-stone-500"><span>IELTS · A4 STUDY NOTES</span><span>{String(currentPage + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</span></footer>
           </div>
         )}
+
+        {isToday && !practice.length && gradedWords.length > 0 && <section data-testid="review-results" aria-labelledby="review-results-title" className="mt-4 rounded-2xl border border-sage-200 bg-white p-4 shadow-card">
+          <h2 id="review-results-title" className="text-base font-extrabold text-ink">今日复习结果</h2>
+          <p className="mt-1 text-sm font-bold text-sage-700">已复习 {gradedWords.length} 词</p>
+          {gradedWords.some(({ entry }) => entry.rating === 1 || entry.rating === 2) && <p className="mt-2 text-xs font-bold text-rose-700">其中忘记/困难：{gradedWords.filter(({ entry }) => entry.rating === 1 || entry.rating === 2).map(({ word }) => word.word).join('、')}</p>}
+          <ul className="mt-2 space-y-1 border-t border-stone-100 pt-2 text-xs text-ink">
+            {gradedWords.map(({ word, entry }) => {
+              const next = parseDate(word.nextReviewDate);
+              const rating = entry.rating === 1 ? '忘记' : entry.rating === 2 ? '困难' : entry.rating === 3 ? '记住' : '轻松';
+              return <li key={word.id} className="flex flex-wrap justify-between gap-x-3"><span>{word.word} · {rating}</span><span className="font-semibold text-ink-soft">下次 {next.getMonth() + 1} 月 {next.getDate()} 日</span></li>;
+            })}
+          </ul>
+          {unratedToday > 0 && <p className="mt-2 text-xs font-bold text-honey-700">还有 {unratedToday} 词未评分，仍在今日待复习</p>}
+        </section>}
 
         {pageCount > 1 && <div className="mt-4 flex items-center justify-between text-sm">
           <button type="button" disabled={currentPage === 0} className="min-h-11 rounded-xl bg-white px-4 font-bold shadow-card disabled:opacity-40" onClick={() => { setPage(currentPage - 1); window.scrollTo({ top: 0 }); }}>上一张</button>

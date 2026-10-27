@@ -38,6 +38,56 @@ export type BookExample = Required<Pick<WordExample, 'exampleEn' | 'exampleSourc
 /** Sourced example sentences keyed by headword; see docs/BOOK-SOURCE.md. Empty until a licensed source is added. */
 export const BOOK_EXAMPLES: Record<string, BookExample> = examples;
 
+export function exampleFor(word: { word: string } & WordExample): BookExample | null {
+  if (word.exampleEn && word.exampleSource) {
+    return { exampleEn: word.exampleEn, exampleSource: word.exampleSource, ...(word.exampleZh ? { exampleZh: word.exampleZh } : {}) };
+  }
+  const exact = BOOK_EXAMPLES[word.word];
+  if (exact) return exact;
+  const key = Object.keys(BOOK_EXAMPLES).find(name => name.toLowerCase() === word.word.toLowerCase());
+  return key ? BOOK_EXAMPLES[key] : null;
+}
+
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function inflections(token: string): string[] {
+  const roots = new Set([token]);
+  if (/ise$/i.test(token)) roots.add(token.replace(/ise$/i, 'ize'));
+  if (/ize$/i.test(token)) roots.add(token.replace(/ize$/i, 'ise'));
+  const forms = new Set<string>();
+  for (const root of roots) {
+    forms.add(root);
+    forms.add(`${root}s`);
+    forms.add(`${root}es`);
+    forms.add(`${root}ed`);
+    forms.add(`${root}d`);
+    forms.add(`${root}ing`);
+    if (/[^aeiou]y$/i.test(root)) {
+      forms.add(root.replace(/y$/i, 'ies'));
+      forms.add(root.replace(/y$/i, 'ied'));
+    }
+    if (/e$/i.test(root)) forms.add(root.slice(0, -1) + 'ing');
+  }
+  return [...forms].sort((a, b) => b.length - a.length);
+}
+
+export function highlightParts(sentence: string, word: string): { text: string; hit: boolean }[] {
+  const tokens = word.trim().split(/\s+/);
+  if (!sentence || !tokens.length || !tokens.some(Boolean)) return [{ text: sentence, hit: false }];
+  const phrase = [...tokens.slice(0, -1).map(escapeRegExp), `(?:${inflections(tokens[tokens.length - 1]).map(escapeRegExp).join('|')})`].join('\\s+');
+  const expression = new RegExp(`(?<![\\p{L}\\p{N}\\p{M}_-])${phrase}(?![\\p{L}\\p{N}\\p{M}_-])`, 'giu');
+  const parts: { text: string; hit: boolean }[] = [];
+  let last = 0;
+  for (const match of sentence.matchAll(expression)) {
+    const index = match.index ?? 0;
+    if (index > last) parts.push({ text: sentence.slice(last, index), hit: false });
+    parts.push({ text: match[0], hit: true });
+    last = index + match[0].length;
+  }
+  if (last < sentence.length || !parts.length) parts.push({ text: sentence.slice(last), hit: false });
+  return parts;
+}
+
 export function getBookWord(word: string, exampleData: Record<string, BookExample> = BOOK_EXAMPLES): WordFields {
   dictionary ??= new Map(allEntries().map(entry => [entry.word.toLowerCase(), entry]));
   const entry = dictionary.get(word.toLowerCase());

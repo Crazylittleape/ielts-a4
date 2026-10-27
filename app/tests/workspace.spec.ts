@@ -96,13 +96,17 @@ test('invalid and cancelled backup recovery preserve input and database',async({
   page.once('dialog',dialog=>dialog.dismiss());await page.getByRole('button',{name:'覆盖恢复',exact:true}).click();
   await expect(input).toHaveValue(JSON.stringify(fixture));expect(await snapshot(page)).toEqual(before);
 });
-test('three rounds hide cues, retry errors, resume and complete only after spelling',async({page})=>{
+test('three rounds hide cues, retry errors, resume and complete only after spelling',async({page}, testInfo)=>{
   test.setTimeout(120000);
+  await page.setViewportSize({ width: 375, height: 812 });
   await start(page);await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
   await page.getByRole('button',{name:'开始今日学习',exact:true}).click();
-  await expect(page.getByText('第 1 / 3 轮 · 英文回忆中文',{exact:true})).toBeVisible();
+  await expect(page.getByText('第 1/3 轮 · 1/25',{exact:true})).toBeVisible();
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-before-reveal-375.png', fullPage: true });
+  await expect(page.getByTestId('example')).toHaveCount(0);
   for(let i=0;i<25;i++){
     await page.getByRole('button',{name:'显示答案',exact:true}).click();
+    if (i === 0 && testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-after-reveal-375.png', fullPage: true });
     await page.getByRole('button',{name:i===0?'没想起':'想起来了',exact:true}).click();
   }
   await expect(page.getByText('错题重练 · 剩余 1 题',{exact:true})).toBeVisible();
@@ -116,7 +120,7 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
   await expect(page.getByRole('button',{name:'显示答案',exact:true})).toBeVisible();
   await page.getByRole('button',{name:'显示答案',exact:true}).click();
   await page.getByRole('button',{name:'想起来了',exact:true}).click();
-  await expect(page.getByText('第 2 / 3 轮 · 音标回忆中文',{exact:true})).toBeVisible();
+  await expect(page.getByText('第 2/3 轮 · 1/25',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'atmosphere',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/atmosphere/})).toHaveCount(0);
   await expect(page.getByRole('button',{name:'朗读提示',exact:true})).toBeVisible();
@@ -124,7 +128,8 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
     await page.getByRole('button',{name:'显示答案',exact:true}).click();
     await page.getByRole('button',{name:'想起来了',exact:true}).click();
   }
-  await expect(page.getByText('第 3 / 3 轮 · 中文拼写英文',{exact:true})).toBeVisible();
+  await expect(page.getByText('第 3/3 轮 · 1/25',{exact:true})).toBeVisible();
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-spelling-375.png', fullPage: true });
   await expect(page.getByRole('heading',{name:'atmosphere',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/朗读/})).toHaveCount(0);
   await page.getByLabel('英文拼写',{exact:true}).fill('atmospher');
@@ -148,7 +153,7 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
   await page.getByLabel('英文拼写',{exact:true}).fill(' ATMOSPHERE ');
   await page.getByRole('button',{name:'检查拼写',exact:true}).click();
   await page.getByRole('button',{name:'继续',exact:true}).click();
-  await expect(page.getByText('本组学习完成',{exact:true})).toBeVisible();
+  await expect(page.getByText('本组初学完成',{exact:true})).toBeVisible();
   expect((await snapshot(page)).words).toHaveLength(29);
   expect((await snapshot(page)).revlog).toHaveLength(0);
   await page.getByRole('button',{name:'返回词书',exact:true}).click();
@@ -300,7 +305,7 @@ test('group completion: one-tap missed/all batch with real counts, missed words 
     await page.getByRole('button', { name: '检查拼写', exact: true }).click();
     await page.getByRole('button', { name: '继续', exact: true }).click();
   }
-  await expect(page.getByText('本组学习完成', { exact: true })).toBeVisible();
+  await expect(page.getByText('本组初学完成', { exact: true })).toBeVisible();
   await expect(page.getByRole('listitem')).toHaveCount(25);
   await expect(page.getByRole('listitem').filter({ hasText: '本次出错' })).toHaveCount(2);
   await expect(page.getByRole('button', { name: /^加入 A4/ })).toHaveCount(0);
@@ -800,6 +805,49 @@ test('60s challenge time does not extend while the page is hidden', async ({ pag
 });
 
 const a4Words = (n: number) => Array.from({ length: n }, (_, i) => ({ ...fixture.words[0], id: `a4-${i}`, word: `aword${i}`, meaning: `释义${i}`, focus: { active: true, addedAt: '2026-10-21', nextDate: today } }));
+
+test('A4 review results reflect saved grades, next dates, remaining words and dashboard totals', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await start(page, { ...fixture, words: a4Words(3) });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await expect(page.getByTestId('grading-hint')).toHaveText('马上想起选「记住」，想了一会儿选「困难」，没想起选「忘记」，很熟选「轻松」');
+  await page.getByRole('button', { name: '忘记：aword0', exact: true }).click();
+  await page.getByRole('button', { name: '困难：aword1', exact: true }).click();
+  const panel = page.getByTestId('review-results');
+  await expect(panel).toContainText('已复习 2 词');
+  await expect(panel).toContainText('其中忘记/困难：aword0、aword1');
+  await expect(panel).toContainText('还有 1 词未评分，仍在今日待复习');
+  const saved = await snapshot(page);
+  const words = saved.words as { word: string; nextReviewDate: string }[];
+  const nextDate = words.find(word => word.word === 'aword0')!.nextReviewDate;
+  const [year, month, day] = nextDate.split('-').map(Number);
+  await expect(panel).toContainText(`下次 ${month} 月 ${day} 日`);
+  const beforeReload = await panel.innerText();
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/review-results-375.png', fullPage: true });
+  await page.reload();
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  expect(await page.getByTestId('review-results').innerText()).toBe(beforeReload);
+  await page.getByRole('button', { name: '词书库', exact: true }).click();
+  await expect(page.getByTestId('daily-report')).toContainText('已复习2 词');
+});
+
+test('A4 shows no review result or success when the IndexedDB grade write fails', async ({ page }) => {
+  await start(page, { ...fixture, words: a4Words(2) });
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  const before = await snapshot(page);
+  await page.evaluate(() => {
+    const original = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function (this: IDBObjectStore, value, key) {
+      if (this.name === 'cards') throw new DOMException('fixture write failed', 'QuotaExceededError');
+      return key === undefined ? original.call(this, value) : original.call(this, value, key);
+    };
+  });
+  await page.getByRole('button', { name: '忘记：aword0', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('保存未完成');
+  await expect(page.getByTestId('review-results')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '好的', exact: true })).toHaveCount(0);
+  expect(await snapshot(page)).toEqual(before);
+});
 
 test('A4 keeps ticks and peeks across pages and modes, and one submit grades every ticked word once', async ({ page }) => {
   await start(page, { ...fixture, words: a4Words(10) });

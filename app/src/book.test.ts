@@ -2,7 +2,7 @@ import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import sequence from './data/book-sequence.json';
 import { BOOK, BOOK_GROUPS, BOOK_WORD_COUNT } from './bookCatalog';
-import { answerBookQuestion, beginGroup, bookGroupTag, checkBookSpelling, focusBookWord, dailyPlan, getBookProgress, getBookQuestion, getBookStats, getBookWord } from './book';
+import { answerBookQuestion, beginGroup, bookGroupTag, checkBookSpelling, focusBookWord, dailyPlan, getBookProgress, getBookQuestion, getBookStats, getBookWord, highlightParts } from './book';
 import { backupJson, createWord, gradeWord, mergeStates, parseBackup, type AppState } from './lib';
 import { db, openWorkspace, persistWorkspace } from './db';
 
@@ -317,5 +317,26 @@ describe('book weak words to A4', () => {
     expect(focusBookWord(started, 'not-a-book-word', today)).toBe(started);
     expect(focusBookWord(started, BOOK_GROUPS[1].words[0], today)).toBe(started);
     expect(() => focusBookWord(started, 'atmosphere', 'bad-day')).toThrow();
+  });
+});
+
+describe('example sentence highlighting', () => {
+  const hits = (sentence: string, word: string) => highlightParts(sentence, word).filter(part => part.hit).map(part => part.text);
+
+  it('matches supported inflections without substring or hyphen matches', () => {
+    expect(hits('The ore was eroded; ores and ore-rich rock differ.', 'ore')).toEqual(['ore', 'ores']);
+    expect(hits('The core was scored, and the mantle is dismantled.', 'core')).toEqual(['core']);
+    expect(hits('The rock is dismantled.', 'mantle')).toEqual([]);
+    expect(hits('Walked, walks, and walking.', 'walk')).toEqual(['Walked', 'walks', 'walking']);
+    expect(hits('The boxes and box were here.', 'box')).toEqual(['boxes', 'box']);
+    expect(hits('Studies were studied by a study group.', 'study')).toEqual(['Studies', 'studied', 'study']);
+    expect(hits('Eroded rock is eroding.', 'erode')).toEqual(['Eroded', 'eroding']);
+  });
+
+  it('matches multiword entries, spelling variants, case, and Unicode words', () => {
+    expect(hits('Carbon dioxide and carbon-dioxide-like mixtures.', 'carbon dioxide')).toEqual(['Carbon dioxide']);
+    expect(hits('They organised and are organizing the activity.', 'organise')).toEqual(['organised', 'organizing']);
+    expect(hits('EL NIÑO affects the coast, but Niñoish is unrelated.', 'El Niño')).toEqual(['EL NIÑO']);
+    expect(highlightParts('No match here.', 'not-here')).toEqual([{ text: 'No match here.', hit: false }]);
   });
 });

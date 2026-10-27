@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import sequence from './data/book-sequence.json';
-import { BOOK_EXAMPLES, getBookWord } from './book';
+import { BOOK_EXAMPLES, exampleFor, getBookWord } from './book';
 import { addToFocus, backupJson, createWord, gradeWord, initialState, mergeStates, parseBackup, type AppState } from './lib';
 import { db, openWorkspace, persistWorkspace } from './db';
 
@@ -76,5 +76,22 @@ describe('book example data', () => {
     const fields = getBookWord('atmosphere', { atmosphere: example });
     expect(fields).toMatchObject({ word: 'atmosphere', ...example });
     expect(createWord(fields, day)).toMatchObject(example);
+  });
+
+  it('prefers a word-owned example and falls back to a case-insensitive book example without mutation', () => {
+    const key = 'FixtureHeadword';
+    const fallback = { exampleEn: 'Book fixture sentence.', exampleSource: 'book fixture' };
+    BOOK_EXAMPLES[key] = fallback;
+    try {
+      expect(exampleFor({ word: key })).toBe(fallback);
+      const own = { word: 'fixtureheadword', exampleEn: 'My sentence.', exampleSource: 'my source' };
+      expect(exampleFor(own)).toEqual({ exampleEn: 'My sentence.', exampleSource: 'my source' });
+      const incomplete = { word: 'fixtureheadword', exampleEn: 'Unsourced sentence.' };
+      expect(exampleFor(incomplete)).toBe(fallback);
+      expect(exampleFor({ word: 'missing' })).toBeNull();
+      expect(incomplete).toEqual({ word: 'fixtureheadword', exampleEn: 'Unsourced sentence.' });
+    } finally {
+      delete BOOK_EXAMPLES[key];
+    }
   });
 });

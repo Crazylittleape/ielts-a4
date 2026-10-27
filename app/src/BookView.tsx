@@ -42,6 +42,7 @@ function GroupReview({ group, state, onJoin, onSpeak }: { group: BookGroup; stat
   const missedSet = new Set(missed ?? []);
   const byName = new Map(state.words.map(word => [word.word.toLowerCase(), word]));
   const inReview = (name: string) => { const w = byName.get(name.toLowerCase()); return Boolean(w && w.review !== 'off' && !w.isMastered && !w.mastered); };
+  const mastered = (name: string) => { const w = byName.get(name.toLowerCase()); return Boolean(w && (w.isMastered || w.mastered)); };
   const reviewing = group.words.filter(inReview).length;
   const preferred = state.settings.groupPick ?? 'missed';
   const run = async (pick: GroupPick) => {
@@ -67,7 +68,7 @@ function GroupReview({ group, state, onJoin, onSpeak }: { group: BookGroup; stat
           <span className="flex flex-wrap items-baseline gap-x-2"><span className="break-words font-serif text-lg font-semibold leading-tight">{name}</span>{isMissed && <span className="rounded bg-rose-50 px-1.5 text-[11px] font-bold text-rose-600">本次出错</span>}</span>
           <span className="mt-0.5 line-clamp-2 block break-words text-xs text-ink-soft">{getBookWord(name).meaning}</span>
         </button>
-        <span className="shrink-0 text-xs font-bold text-ink-soft">{inReview(name) ? '复习中' : '未复习'}</span>
+        <span className="shrink-0 text-xs font-bold text-ink-soft">{mastered(name) ? '已标记掌握' : inReview(name) ? '已加入复习' : '未加入复习'}</span>
       </li>;
     })}</ul>
   </Card>;
@@ -140,40 +141,46 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   if (screen === 'study') {
     if (!active || !activeGroup || !question) {
       const finished = BOOK_GROUPS.find(group => group.id === finishedId && progress.completed[group.id]);
-      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><div aria-hidden="true" className="stamp-in mx-auto flex h-20 w-20 items-center justify-center rounded-full border-[5px] border-double border-sage-500 text-sage-500"><Check size={34} /></div><h2 className="text-2xl font-bold">本组学习完成</h2><p className="text-sm text-ink-soft">已计入词书进度。选择要复习的词：</p></Card>{finished && <GroupReview group={finished} state={state} onJoin={onJoinGroup} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
+      return <div className="safe-bottom-pad"><PageHeader title="初学完成" /><div className="space-y-4 px-4"><Card className="space-y-4 p-6 text-center"><div aria-hidden="true" className="stamp-in mx-auto flex h-20 w-20 items-center justify-center rounded-full border-[5px] border-double border-sage-500 text-sage-500"><Check size={34} /></div><h2 className="text-2xl font-bold">本组初学完成</h2><p className="text-sm text-ink-soft">已计入词书初学进度。选择要复习的词：</p></Card>{finished && <GroupReview group={finished} state={state} onJoin={onJoinGroup} onSpeak={onSpeak} />}<button type="button" className={`${primaryBtn} w-full`} onClick={() => go('book')}>返回词书</button></div></div>;
     }
     const { word, kind, round } = question;
     const mode = ['英文回忆中文', '音标回忆中文', '中文拼写英文'][round];
     const spellingMode = kind === 'spelling';
     const showTarget = kind === 'english' || (kind === 'phonetic' && !word.phonetic) || revealed || checked !== null;
-    return <div className="safe-bottom-pad">
-      <PageHeader title={`${activeGroup.unitTitle} · 第 ${activeGroup.index} 组`} subtitle={question.inRetry ? `错题重练 · 剩余 ${question.pendingRetries} 题` : `本轮第 ${active.seen + 1} / ${activeGroup.words.length} 词`} left={back('book')} />
-      <div className="space-y-4 px-4">
-        <Card className="space-y-5 px-6 py-8 text-center">
-          <div>
-            <p className="text-xs font-bold text-lilac-500">第 {round + 1} / 3 轮 · {mode}</p>
-            <ol aria-hidden="true" className="mx-auto mt-2 flex max-w-[220px] gap-1.5">{['教学', '回忆', '拼写'].map((label, i) => <li key={label} className={`flex-1 rounded-full py-0.5 text-[10px] font-bold ${i < round ? 'bg-sage-100 text-sage-500' : i === round ? 'bg-rose-500 text-white' : 'bg-stone-100 text-ink-soft'}`}>{i < round ? '✓ ' : ''}{label}</li>)}</ol>
-          </div>
-          {spellingMode ? <p className="whitespace-pre-line text-left text-lg leading-relaxed">{word.meaning}</p> : <>
-            {showTarget && <h2 className="break-words font-serif text-4xl font-semibold">{word.word}</h2>}
-            {word.phonetic && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft`}>{word.phonetic}</p>}
+    return <div className="safe-bottom-pad flex min-h-[calc(100dvh-3.5rem)] flex-col">
+      <header className="safe-top flex items-center gap-3 px-4 pb-3 pt-2">
+        {back('book')}
+        <div className="min-w-0 flex-1">
+          <p aria-label={`第 ${round + 1} / 3 轮 · ${mode}`} className="text-sm font-extrabold tabular-nums text-ink">第 {round + 1}/3 轮 · {Math.min(active.seen + 1, activeGroup.words.length)}/{activeGroup.words.length}</p>
+          {question.inRetry && <p className="text-[11px] font-bold text-rose-600">错题重练 · 剩余 {question.pendingRetries} 题</p>}
+        </div>
+      </header>
+      <main className="flex flex-1 flex-col justify-center px-4">
+        <Card className="flex min-h-[34vh] flex-col justify-center space-y-5 bg-white px-6 py-8 text-center">
+          {spellingMode ? <p className="whitespace-pre-line text-center text-xl leading-relaxed text-ink">{word.meaning}</p> : <>
+            {showTarget && <h2 className="break-words font-serif text-4xl font-semibold text-ink">{word.word}</h2>}
+            {word.phonetic && (kind === 'phonetic' || revealed) && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft`}>{word.phonetic}</p>}
             {kind === 'phonetic' && !word.phonetic && <p className="text-xs text-ink-soft">暂无音标，本题使用英文提示</p>}
-            <button type="button" className={ghostBtn} onClick={() => onSpeak(word.word)} aria-label={showTarget ? `朗读 ${word.word}` : '朗读提示'}><Volume2 size={17} /> 朗读</button>
-            {revealed ? <><p className="whitespace-pre-line border-t border-rose-50 pt-5 text-left text-base leading-relaxed">{word.meaning}</p><ExampleBlock word={word} onSpeak={onSpeak} /></> : <button type="button" className={`${ghostBtn} w-full`} onClick={() => setRevealed(true)}>显示答案</button>}
+            <button type="button" className={`${ghostBtn} self-center`} onClick={() => onSpeak(word.word)} aria-label={showTarget ? `朗读 ${word.word}` : '朗读提示'}><Volume2 size={17} /> 朗读</button>
+            {revealed ? <><p className="whitespace-pre-line border-t border-rose-50 pt-5 text-left text-base leading-relaxed text-ink">{word.meaning}</p><ExampleBlock word={word} onSpeak={onSpeak} expanded /></> : <p className="text-sm text-ink-soft">回想中文释义</p>}
           </>}
-          {spellingMode && <form className="space-y-4" onSubmit={event => { event.preventDefault(); if (checked === null && spelling.trim()) setChecked(spelling); }}>
+          {spellingMode && <form id="study-spelling" className="space-y-4" onSubmit={event => { event.preventDefault(); if (checked === null && spelling.trim()) setChecked(spelling); }}>
             <Field label="英文拼写"><input className={inputCls} aria-label="英文拼写" value={spelling} onChange={event => setSpelling(event.target.value)} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="off" readOnly={checked !== null} placeholder="输入英文" /></Field>
-            {checked === null ? <><button type="submit" className={`${primaryBtn} w-full`} disabled={!spelling.trim()}>检查拼写</button><button type="button" className={`${ghostBtn} w-full`} onClick={() => setChecked('')}>想不起来</button></> : <div role="status" className="space-y-2 text-left text-sm">
+            {checked !== null && <div role="status" className="space-y-2 text-left text-sm">
               <p className={checkBookSpelling(word.word, checked) ? 'font-bold text-sage-500' : 'font-bold text-rose-500'}>{checkBookSpelling(word.word, checked) ? '拼写正确' : '拼写有误，稍后重练'}</p>
               <p>你的答案：{checked || '未作答'}</p><p>正确答案：{word.word}</p>
-              <ExampleBlock word={word} onSpeak={onSpeak} />
+              <ExampleBlock word={word} onSpeak={onSpeak} expanded />
             </div>}
           </form>}
         </Card>
-        {!spellingMode && revealed && <div className="space-y-3"><div className="grid grid-cols-2 gap-3"><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></div></div>}
-        {spellingMode && checked !== null && <div className="space-y-3"><button type="button" className={`${primaryBtn} w-full`} onClick={() => void submitAnswer({kind:'spelling',text:checked})}>继续</button></div>}
-        <p className="px-2 text-center text-xs leading-relaxed text-ink-soft">答错的词会在轮末重练，并记入本组错词。</p>
-      </div>
+      </main>
+      <footer className="mt-auto space-y-2 px-4 pb-3 pt-3">
+        {!spellingMode && <div className="grid grid-cols-2 gap-3">
+          {revealed ? <><button type="button" className={ghostBtn} onClick={() => void submitAnswer({kind:'recall',remembered:false})}>没想起</button><button type="button" className={primaryBtn} onClick={() => void submitAnswer({kind:'recall',remembered:true})}>想起来了</button></> : <button type="button" className={`${primaryBtn} col-span-2 w-full`} onClick={() => setRevealed(true)}>显示答案</button>}
+        </div>}
+        {spellingMode && checked === null && <div className="grid grid-cols-2 gap-3"><button type="submit" form="study-spelling" className={primaryBtn} disabled={!spelling.trim()}>检查拼写</button><button type="button" className={ghostBtn} onClick={() => setChecked('')}>想不起来</button></div>}
+        {spellingMode && checked !== null && <button type="button" className={`${primaryBtn} w-full`} onClick={() => void submitAnswer({kind:'spelling',text:checked})}>继续</button>}
+      </footer>
     </div>;
   }
 
@@ -190,7 +197,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
       {unit.groups.map(group => {
         const done = Boolean(progress.completed[group.id]);
         const available = !done && stats.current?.id === group.id && (Boolean(active) || plan.remainingGroups.length > 0);
-        return <Card key={group.id} className="p-4"><button type="button" className="flex w-full items-center justify-between gap-3 text-left disabled:text-ink-faint" disabled={!available && !done} onClick={() => { if (done) { setReviewId(group.id); go('review'); } else void start(group); }}><span><span className="block text-sm font-bold">第 {group.index} 组 · {group.words.length} 词</span><span className="mt-1 block text-xs">{done ? '已完成 · 加入复习' : active?.groupId === group.id ? `学习中 · 第 ${(active.round ?? 0) + 1} / 3 轮` : available ? '待学习' : '待解锁'}</span></span>{done ? <Check size={18} className="text-sage-500" /> : available ? <ChevronRight size={18} /> : <Lock size={16} />}</button><p className="mt-2 text-xs text-ink-faint">{group.words[0]} — {group.words[group.words.length - 1]}</p></Card>;
+        return <Card key={group.id} className="p-4"><button type="button" className="flex w-full items-center justify-between gap-3 text-left disabled:text-ink-faint" disabled={!available && !done} onClick={() => { if (done) { setReviewId(group.id); go('review'); } else void start(group); }}><span><span className="block text-sm font-bold">第 {group.index} 组 · {group.words.length} 词</span><span className="mt-1 block text-xs">{done ? '本组初学完成' : active?.groupId === group.id ? `学习中 · 第 ${(active.round ?? 0) + 1} / 3 轮` : available ? '待学习' : '待解锁'}</span></span>{done ? <Check size={18} className="text-sage-500" /> : available ? <ChevronRight size={18} /> : <Lock size={16} />}</button><p className="mt-2 text-xs text-ink-faint">{group.words[0]} — {group.words[group.words.length - 1]}</p></Card>;
       })}
     </div>
   </div>;
