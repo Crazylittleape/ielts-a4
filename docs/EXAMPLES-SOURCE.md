@@ -1,0 +1,219 @@
+# 词书例句来源（2026-10-27）
+
+来源：Tatoeba（https://tatoeba.org ）2026-10-27 下载的官方导出：`per_language/eng/eng_sentences_detailed.tsv.bz2`、`per_language/cmn/cmn_sentences_detailed.tsv.bz2`、`per_language/eng/eng-cmn_links.tsv.bz2`、`sentences_CC0.tar.bz2`。句子默认许可 CC BY 2.0 FR（https://creativecommons.org/licenses/by/2.0/fr/ ），出现在 CC0 清单中的标为 CC0 1.0。每条例句的 `exampleSource` 保留句子 ID、作者用户名、许可和原始链接；有中文翻译时同样保留中文句子 ID、作者和许可。
+
+## 选择方法
+- 范围：词书顺序前 200 个去重词（第 1 单元起）。
+- 候选：英文句 4–16 个词，作者非空，目标词按整词匹配（支持的词形：原形、+s/+es、+ed/+d、+ing、y→ies/ied、去 e 加 ing、-ise/-ize 拼写变体；多词词条只变化最后一个词；不匹配其他词内部的子串）。优先有中文翻译的句子，再取较短的。
+- 人工审核：每个词从最多 4 条候选中人工挑选一条与释义相符、简短易懂的句子；明显错义、俚语、不当内容或翻译错误的候选不采用（例如 lunar 的中文把“月全食”译成“日全食”，改选“农历”句）。flooding 的中文翻译不准确，只保留英文。
+- 没有合格候选时不收录，也不编造。
+
+## 覆盖率
+- 前 200 词：197/200 有例句，其中 135 条带中文翻译。
+- 全书：197/3630。
+- 缺口：hydrosphere, source, toxic（hydrosphere 无候选；source、toxic 的候选句义不符或不合适）。
+
+## 使用规则
+- 例句只读：显示时用户自有例句优先，其次按词书词头回退到 `app/src/data/book-examples.json`；不改写已有 WordItem、排期或日志。
+- “朗读例句”是浏览器 speechSynthesis 合成语音，不是原声。
+- 这些是 Tatoeba 社区句子，不是《雅思词汇真经》原书例句，也不是雅思真题。
+
+## 明细（词序号 · 词 · 英文句 ID · 作者 · 中文句 ID · 作者）
+
+- 1 · atmosphere · #2105 · CK · #1778272 · sadhen
+- 3 · lithosphere · #12330806 · Miktsoanit · —
+- 4 · oxygen · #278753 · shekitten · #343294 · nickyeow
+- 5 · oxide · #11746696 · Solana · —
+- 6 · carbon dioxide · #266244 · CK · #380720 · sherryyyf
+- 7 · hydrogen · #1345299 · marcelostockle · #5670790 · verdastelo9604
+- 8 · core · #749157 · modelqueen13 · #755848 · U2FS
+- 9 · crust · #1582791 · eastasiastudent · #1582753 · GlossaMatik
+- 10 · mantle · #8800831 · Amastan · —
+- 11 · longitude · #58100 · WestofEden · #1151491 · cherylting
+- 12 · latitude · #502802 · blay_paul · —
+- 13 · horizon · #275149 · CK · #868417 · Martha
+- 14 · altitude · #318034 · CM · #618102 · nickyeow
+- 15 · disaster · #45126 · rul · #13894739 · jan_OkulaJu
+- 16 · mishap · #1466718 · Eldad · —
+- 17 · catastrophic · #5730822 · CM · —
+- 18 · calamity · #275701 · CM · —
+- 19 · endanger · #797152 · U2FS · #797541 · fucongcong
+- 20 · jeopardise · #1872151 · sixtynine · #1872166 · sixtynine
+- 29 · marble · #12043694 · Cangarejo · #13578074 · LeviHighway
+- 30 · quartz · #8938235 · Solana · —
+- 31 · granite · #2833406 · VCatmur · #10555778 · DaoSeng
+- 32 · gust · #27599 · Objectivesea · —
+- 33 · breeze · #12568705 · omerfarukckmk · #12568703 · omerfarukckmk
+- 34 · monsoon · #480312 · minshirui · #480314 · minshirui
+- 35 · gale · #25574 · xrchz · —
+- 36 · hurricane · #682498 · Source_VOA · #816508 · fucongcong
+- 37 · tornado · #3855458 · Amastan · —
+- 38 · typhoon · #275427 · CK · #834327 · Martha
+- 39 · volcano · #28742 · CN · #801306 · Martha
+- 40 · erupt · #49236 · CK · #431578 · aliene
+- 41 · magma · #11122114 · CM · —
+- 42 · thermodynamic · #10600501 · carlosalberto · —
+- 43 · smog · #51416 · CM · —
+- 44 · fume · #10543744 · CK · —
+- 45 · mist · #322862 · Dejo · #431497 · fucongcong
+- 46 · tsunami · #13537404 · LeviHighway · #13519472 · LeviHighway
+- 47 · drought · #1577224 · eastasiastudent · #1577186 · eastasiastudent
+- 48 · flooding · #7837601 · sharris123 · —
+- 49 · torrent · #3727620 · CM · —
+- 50 · earthquake · #281600 · CK · #824630 · Martha
+- 51 · seismic · #2575707 · sans · —
+- 52 · avalanche · #8233857 · Amastan · —
+- 53 · terrain · #10540362 · sundown · #5370741 · xjjAstrus
+- 54 · landscape · #42415 · CK · #9965474 · GlossaMatik
+- 55 · continent · #271117 · CM · #2109213 · sadhen
+- 56 · cave · #8967901 · CK · #10305639 · DaoSeng
+- 57 · cliff · #305351 · Luornu · #333278 · fucongcong
+- 58 · glacier · #4660305 · Hybrid · —
+- 59 · swamp · #4751743 · Barra · #10459888 · DaoSeng
+- 60 · delta · #11828522 · yue_dongchen · —
+- 61 · plain · #304129 · CK · #909453 · Martha
+- 62 · plateau · #10078056 · Amastan · —
+- 63 · oasis · #9401944 · BobbyLee · #6142325 · GlossaMatik
+- 64 · globe · #315774 · mamat · #856394 · Martha
+- 65 · hemisphere · #281608 · CM · #798334 · Martha
+- 66 · equator · #1008611 · CK · #746060 · fucongcong
+- 67 · arctic · #73021 · CK · #346147 · nickyeow
+- 21 · destructive · #939733 · CM · —
+- 22 · El Niño · #5747773 · CM · —
+- 23 · greenhouse · #306209 · CK · #802027 · Martha
+- 24 · phenomenon · #281038 · CM · #565438 · nickyeow
+- 25 · pebble · #315226 · kebukebu · #761266 · Martha
+- 26 · magnet · #7884597 · AlanF_US · #12497641 · DaoSeng
+- 27 · ore · #9851052 · AlanF_US · —
+- 28 · mineral · #270760 · CM · #534289 · nickyeow
+- 68 · Antarctic · #307262 · CK · #397545 · fucongcong
+- 69 · pole · #321293 · shekitten · #9958353 · GlossaMatik
+- 70 · polar · #65116 · patgfisher · #358494 · nickyeow
+- 71 · axis · #689751 · ulyssemc1 · #689822 · nickyeow
+- 72 · deteriorate · #18242 · CK · #426309 · fucongcong
+- 73 · aggravate · #3327910 · _undertoad · —
+- 74 · degrade · #6566679 · Hybrid · —
+- 75 · upgrade · #9479447 · DJ_Saidez · —
+- 76 · erode · #5607287 · mailohilohi · #8743560 · slo_oth
+- 77 · Mediterranean · #9188957 · DJ_Saidez · —
+- 78 · Atlantic · #13247549 · Dozyjones · —
+- 79 · pacific · #275026 · CK · #668895 · nickyeow
+- 80 · ocean · #681757 · Source_VOA · #844135 · fucongcong
+- 81 · marine · #3419949 · CK · #5617228 · verdastelo9604
+- 82 · navigation · #272150 · CK · #779859 · nickyeow
+- 83 · gulf · #13009069 · rul · —
+- 84 · beach · #34867 · CK · #834808 · Martha
+- 85 · coast · #320320 · CK · #847772 · fucongcong
+- 86 · shore · #256744 · CK · #1358441 · sadhen
+- 87 · tide · #11968678 · Amastan · —
+- 88 · current · #8923429 · iiujik · #2052113 · Gustav249
+- 89 · brook · #2230009 · CM · #2221100 · sadhen
+- 90 · stream · #495618 · CK · #868280 · Martha
+- 92 · shallow · #3583324 · mikecash · #10484060 · BobbyLee
+- 93 · superficial · #302242 · CM · #387605 · nickyeow
+- 94 · flat · #8478514 · CH · #13108741 · LeviHighway
+- 95 · smooth · #309622 · CK · #892495 · Martha
+- 96 · rough · #44132 · CM · #759701 · nickyeow
+- 97 · sandy · #12424418 · Miktsoanit · —
+- 98 · stony · #12470497 · katix824 · —
+- 99 · vertical · #48970 · CK · —
+- 100 · steep · #327880 · CK · #876188 · Martha
+- 101 · parallel · #44667 · CK · #6477585 · xjjAstrus
+- 102 · narrow · #44680 · CK · #895139 · Martha
+- 103 · Oceania · #1815532 · Amastan · #1944843 · bigfatpanda
+- 104 · mainland · #7819395 · sharris123 · #6319014 · xjjAstrus
+- 105 · peninsula · #690740 · sysko · #690735 · sysko
+- 106 · climate · #320208 · CK · #759768 · Martha
+- 107 · weather · #1766693 · AlanF_US · #13252715 · atitarev
+- 108 · meteorology · #13260610 · Lumi · —
+- 109 · mild · #59251 · CK · #372183 · nickyeow
+- 110 · heating · #453201 · FeuDRenais · #3767567 · cienias
+- 111 · moderate · #542831 · CK · #891044 · Martha
+- 112 · warm · #13064242 · sundown · #10040336 · verdastelo9604
+- 113 · thermal · #12568755 · omerfarukckmk · #12568754 · omerfarukckmk
+- 114 · tropics · #2268676 · _undertoad · —
+- 115 · arid · #4817809 · AlanF_US · #10011733 · GlossaMatik
+- 116 · moist · #22267 · CK · #2513895 · fenfang557
+- 117 · damp · #35850 · Dejo · #798040 · Martha
+- 118 · humid · #268552 · CK · #798245 · Martha
+- 119 · snowy · #9133964 · soliloquist · —
+- 120 · frost · #242216 · CK · #796073 · Martha
+- 121 · hail · #326657 · CK · #918456 · layu
+- 122 · thaw · #10317987 · terrywallwork · —
+- 123 · chill · #13175472 · Nuel · #13933597 · LeviHighway
+- 124 · freeze · #681016 · Source_VOA · #899965 · kanaorange
+- 125 · frigid · #4728117 · paper1n0 · #4547211 · murr
+- 126 · tremble · #249065 · CK · #342433 · nickyeow
+- 127 · shiver · #10657438 · sundown · #8800808 · crescat
+- 128 · thunder · #246088 · CK · #838508 · Martha
+- 129 · lightning · #681360 · Source_VOA · #9955853 · GlossaMatik
+- 130 · stormy · #1582787 · eastasiastudent · #1582760 · eastasiastudent
+- 131 · downpour · #35866 · Jesse · #8920786 · crescat
+- 132 · rainfall · #512177 · blay_paul · #796072 · Martha
+- 133 · sprinkle · #10534817 · sundown · #6937166 · xjjAstrus
+- 134 · rainbow · #4753134 · AlanF_US · #4757592 · ryanwoo
+- 135 · shower · #3126551 · lavenir · #5624915 · verdastelo9604
+- 136 · Celsius · #270789 · CK · #868077 · Martha
+- 137 · temperature · #13994878 · Aghanim · #13994941 · zweisamkeit
+- 138 · forecast · #71846 · CK · #844559 · kooler
+- 139 · peak · #2889407 · astynk · #349929 · fucongcong
+- 140 · mount · #2656989 · Joseph · #13575861 · LeviHighway
+- 141 · mountain · #2330008 · CK · #4464879 · kaenif
+- 142 · range · #13139599 · rul · #13575791 · LeviHighway
+- 143 · ridge · #11801807 · Amastan · —
+- 144 · slope · #327880 · CK · #876188 · Martha
+- 145 · valley · #19880 · mccarras · #336884 · fucongcong
+- 146 · hillside · #20785 · Zifre · —
+- 147 · overlook · #7834145 · sharris123 · #884666 · Tajfun
+- 148 · southern · #727969 · eastasiastudent · #727971 · GlossaMatik
+- 149 · southeast · #13892623 · frpzzd · —
+- 150 · southwest · #4255968 · orcrist · —
+- 151 · northeast · #13892627 · frpzzd · —
+- 152 · northwest · #10410204 · CN · —
+- 153 · eastern · #281592 · CK · —
+- 154 · oriental · #1023151 · ellasevia · #4761589 · DrWinters
+- 155 · inevitable · #273316 · CM · #335257 · fucongcong
+- 156 · irreversible · #5737932 · CM · —
+- 157 · irregularly · #6708738 · Hybrid · —
+- 158 · inappropriate · #4664702 · CK · #6535850 · verdastelo9604
+- 159 · abnormal · #21016 · CK · #797018 · Martha
+- 160 · sediment · #9518287 · CM · —
+- 161 · silt · #273213 · orcrist · —
+- 162 · muddy · #265443 · CM · #1345617 · nickyeow
+- 163 · clay · #37044 · Catriona · #662819 · nickyeow
+- 164 · dirt · #681107 · Source_VOA · #5556193 · verdastelo9604
+- 165 · rural · #3962699 · JSakuragi · #3739217 · egg0073
+- 166 · suburb · #301928 · CK · #881296 · Martha
+- 167 · outskirts · #259667 · CK · #889312 · Martha
+- 168 · remote · #13713955 · sundown · #11706409 · Jokubas
+- 169 · desolate · #8543235 · Amastan · —
+- 170 · distant · #25857 · AlanF_US · #780341 · Martha
+- 171 · adjacent · #48721 · CK · #13513759 · LeviHighway
+- 173 · pollution · #265533 · CS · #5715189 · verdastelo9604
+- 174 · pollutant · #3718918 · Hybrid · —
+- 175 · contaminate · #11736351 · Amastan · —
+- 176 · geology · #7926340 · CK · —
+- 177 · border · #7834173 · sharris123 · #5951353 · xjjAstrus
+- 178 · margin · #13547474 · kiryopi · —
+- 179 · fringe · #8567624 · Amastan · —
+- 180 · plate · #8822122 · CK · #8930222 · iiujik
+- 181 · debris · #11813396 · CK · —
+- 182 · crack · #2054011 · AlanF_US · #13543771 · LeviHighway
+- 183 · gap · #472882 · nickyeow · #472884 · nickyeow
+- 184 · splendid · #54772 · Ivanovb · #346126 · fucongcong
+- 185 · grand · #2038382 · JarHead54321 · #2027950 · ydcok
+- 186 · magnificent · #11377100 · chaule3 · #13575790 · LeviHighway
+- 187 · super · #2468917 · Hybrid · #13552134 · LeviHighway
+- 188 · interesting · #287476 · CK · #1313748 · vicch
+- 189 · dramatic · #8509463 · CK · —
+- 190 · wilderness · #12650143 · anzart · —
+- 191 · desert · #54060 · CM · #1454464 · sadhen
+- 192 · deforest · #6035812 · mailohilohi · —
+- 193 · barren · #8799316 · Amastan · —
+- 194 · fertile · #61621 · sundown · #778745 · Martha
+- 195 · fertilise · #12909853 · Ergulis · —
+- 196 · solar · #3955417 · Hybrid · #5419058 · egg0073
+- 197 · lunar · #737780 · eastasiastudent · #737779 · eastasiastudent
+- 198 · calendar · #8704662 · chanchan · #2806369 · cienias
+- 199 · sunrise · #36001 · mailohilohi · #5617146 · verdastelo9604
+- 200 · sunset · #2045 · Swift · #503066 · fucongcong

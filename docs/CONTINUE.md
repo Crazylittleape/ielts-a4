@@ -219,3 +219,17 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - 验证：104 项单元测试、96 项移动 Chromium/WebKit E2E、生产构建、diff 检查通过。新增 E2E 覆盖批量写入失败整组回滚；壁纸缩放、学习设置保存后保留、离线刷新、恢复默认、非法/损坏/超大图片和空间不足。
 - 排版复核：48 张截图覆盖 320/375/390/1280px，包括批量加入页、学习设置、壁纸、A4、挑战和看板，批量页另检查 200% 字号；无横向溢出或页面脚本异常。
 - 尚未验证：iPhone 真机 Safari/主屏幕 App、VoiceOver，以及真机长期存储。
+
+## 2026-10-27 · 语境内容 / 学习页 / 复习结果 / 打印 / 语境填空（基线 bcd213f）
+
+设计、竞品证据边界与实现见 `docs/superpowers/specs/2026-10-27-rea-context-design.md`；例句来源与覆盖见 `docs/EXAMPLES-SOURCE.md`。
+
+- 例句：Tatoeba 社区句子，前 200 词收录 197 词（135 条带中文），全书 197/3630；缺 hydrosphere、source、toxic。每条保留句子 ID、作者、许可（CC BY 2.0 FR / CC0）和链接，NOTICE 已补。用户自有例句优先，词书例句只读回退，不改写已有词卡、排期、日志。
+- 学习页：返回 + 轮次进度、单张词卡、固定底部主操作；例句（高亮目标词形、朗读、来源）只在揭示答案 / 拼写检查后出现。三轮规则不变。
+- A4：“今日复习结果”只读已保存的评分，逐词显示评分和下次日期，未评分词提示仍待复习；评分说明一句。“打印 / 另存 PDF”只打印当前日期 + 范围列表，可隐藏英文或中文，210×297mm，打印不写任何数据。
+- 首页“更多”→“语境填空”：错词与攻坚词 / 全部已学词范围，挖空四选一，显示来源，无例句有空状态；不写 FSRS、日志、日期。
+- 自定义壁纸：加柔和遮罩，阅读面不透明。
+- Service Worker 缓存版本 `ielts-a4-v3-20261027-rea-1`。
+- 数据：没有新增持久化字段，Dexie 表结构、备份格式未变。
+- 可复现验收：`cd app && npm ci && npm test && npm run build && npx playwright test && git diff --check`；E2E 覆盖例句揭示前不出现、保存失败无结果、刷新一致、打印/填空快照不变。
+- 仍未验证：iPhone 真机 Safari / 主屏幕 App（只有 WebKit 模拟）、VoiceOver、真实纸张打印。

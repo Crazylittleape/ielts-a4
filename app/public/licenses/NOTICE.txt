@@ -16,3 +16,6 @@ Runtime libraries: React/ReactDOM/scheduler, Dexie, ts-fsrs — MIT; lucide-reac
 This prototype is local-first. Learning records stay in this browser's IndexedDB. Manual full JSON backup includes words, cards, logs, buckets, settings and explicit book-study progress. It does not include a cloud account or synchronization.
 
 Learning-flow source study: TypeWords (GPL-3.0), Qwerty Learner (GPL-3.0), Anki (AGPL-3.0-or-later), and MuJing (GPL-3.0). Their application source was read to compare stages, recall directions, spelling checks and retry/resume behavior. The three-round implementation here was independently written; no application code from these projects is bundled. Pinned commits and source locations are documented in docs/LEARNING-MODES-RESEARCH.md.
+
+Tatoeba example sentences: https://tatoeba.org
+197 English sentences (and 135 linked Mandarin translations) for the first 200 book words, selected from the official Tatoeba exports downloaded 2026-10-27. Licensed CC BY 2.0 FR (https://creativecommons.org/licenses/by/2.0/fr/) unless listed in the Tatoeba CC0 export (CC0 1.0). Each sentence keeps its Tatoeba ID, contributor username, license and link in app/src/data/book-examples.json; see docs/EXAMPLES-SOURCE.md. They are community sentences, not text from the book or IELTS exams.
