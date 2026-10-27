@@ -27,7 +27,7 @@ export function ExampleBlock({ word, onSpeak, className = '', expanded = false }
     <p lang="en" className="mt-1 break-words font-serif text-[15px] leading-snug text-ink">{highlightParts(example.exampleEn, word.word).map((part, index) => part.hit ? <mark key={index} className="rounded-sm bg-[#FDE68A] px-0.5 text-[#332000]">{part.text}</mark> : part.text)}</p>
     {example.exampleZh && <p className="mt-0.5 break-words text-xs text-ink-soft">{example.exampleZh}</p>}
     <div className="mt-1 flex flex-wrap items-center gap-2">
-      <button type="button" aria-label={`朗读例句：${word.word}`} className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-stone-200 bg-white px-2 text-xs font-bold text-ink-soft" onClick={() => onSpeak(example.exampleEn)}><Volume2 size={13} /> 朗读例句</button>
+      <button type="button" aria-label={`朗读例句：${word.word}`} className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-stone-200 bg-white px-2 text-xs font-bold text-ink-soft" onClick={() => onSpeak(example.exampleEn)}><Volume2 size={13} /> 朗读例句</button>
       <span className="break-words text-[10px] text-ink-soft">来源：{example.exampleSource}</span>
     </div>
   </>;

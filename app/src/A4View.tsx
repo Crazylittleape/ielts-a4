@@ -245,7 +245,7 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
                       {isToday && !practice.length && !done && <>
                       {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className={`min-h-11 min-w-11 rounded-lg border bg-white/80 px-2.5 text-xs font-bold ${rating === 3 ? 'border-rose-300 text-rose-600' : rating === 4 ? 'border-sage-300 text-sage-500' : 'border-stone-300 text-stone-700'}`} onClick={() => onGrade(w.id, rating)}>{label}</button>)}
                     </>}
-                      <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} title={`顽固词重置：${w.word}`} className={`flex h-11 w-10 items-center justify-center rounded-xl active:bg-honey-100 disabled:opacity-40 ${w.isHard ? 'text-honey-500' : 'text-ink-soft'}`} aria-label={`顽固词重置：${w.word}`}>
+                      <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} title={`顽固词重置：${w.word}`} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl active:bg-honey-100 disabled:opacity-40 ${w.isHard ? 'text-honey-500' : 'text-ink-soft'}`} aria-label={`顽固词重置：${w.word}`}>
                         <Flame size={16} />
                       </button>
                       <button

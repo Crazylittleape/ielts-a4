@@ -103,6 +103,9 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
   await page.getByRole('button',{name:'开始今日学习',exact:true}).click();
   await expect(page.getByText('第 1/3 轮 · 1/25',{exact:true})).toBeVisible();
   await expect(page.getByText('ˈætməsfɪə', { exact: false })).toBeVisible();
+  const studyBack = await page.getByRole('button', { name: '返回', exact: true }).boundingBox();
+  expect(studyBack?.width).toBeGreaterThanOrEqual(44);
+  expect(studyBack?.height).toBeGreaterThanOrEqual(44);
   if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-before-reveal-375.png', fullPage: true });
   await expect(page.getByTestId('example')).toHaveCount(0);
   for(let i=0;i<25;i++){
@@ -110,6 +113,9 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
     if (i === 0) {
       await expect(page.getByTestId('example')).toContainText('This place has a mysterious atmosphere.');
       await expect(page.getByTestId('example')).toContainText('来源：');
+      const exampleAudio = await page.getByRole('button', { name: '朗读例句：atmosphere', exact: true }).boundingBox();
+      expect(exampleAudio?.width).toBeGreaterThanOrEqual(44);
+      expect(exampleAudio?.height).toBeGreaterThanOrEqual(44);
       if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-after-reveal-375.png', fullPage: true });
     }
     await page.getByRole('button',{name:i===0?'没想起':'想起来了',exact:true}).click();
@@ -860,6 +866,9 @@ test('A4 review results reflect saved grades, next dates, remaining words and da
   await start(page, { ...fixture, words: a4Words(3) });
   await page.getByRole('button', { name: /A4 刷词/ }).click();
   await expect(page.getByTestId('grading-hint')).toHaveText('马上想起选「记住」，想了一会儿选「困难」，没想起选「忘记」，很熟选「轻松」');
+  const hardReset = await page.getByRole('button', { name: '顽固词重置：aword0', exact: true }).boundingBox();
+  expect(hardReset?.width).toBeGreaterThanOrEqual(44);
+  expect(hardReset?.height).toBeGreaterThanOrEqual(44);
   await page.getByRole('button', { name: '忘记：aword0', exact: true }).click();
   await page.getByRole('button', { name: '困难：aword1', exact: true }).click();
   const panel = page.getByTestId('review-results');

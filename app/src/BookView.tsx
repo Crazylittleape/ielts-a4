@@ -102,7 +102,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   const start = async (group: BookGroup) => {
     if (await onBegin(group.id)) go('study');
   };
-  const back = (next: typeof screen) => <button type="button" className="rounded-xl p-2 text-ink-soft" aria-label="返回" onClick={() => go(next)}><ArrowLeft size={20} /></button>;
+  const back = (next: typeof screen) => <button type="button" className="min-h-11 min-w-11 shrink-0 rounded-xl p-2 text-ink-soft" aria-label="返回" onClick={() => go(next)}><ArrowLeft size={20} /></button>;
   const bar = <div role="progressbar" aria-label="词书学习进度" aria-valuemin={0} aria-valuemax={stats.total} aria-valuenow={stats.learned} className="h-2 overflow-hidden rounded-full bg-rose-50"><div className="h-full rounded-full bg-gradient-to-r from-rose-400 to-lilac-400" style={{ width: `${stats.percent}%` }} /></div>;
   const firstRun = !state.words.length && !Object.keys(progress.completed).length;
   const step = report ? nextStep(state, report, today) : null;
