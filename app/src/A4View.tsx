@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, Shuffle, Volume2, Flame, Check, Pencil, CheckCircle2 } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ChevronLeft, Shuffle, Volume2, Flame, Check, Pencil, CheckCircle2, Printer, X } from 'lucide-react';
 import type { DaySchedule, FocusSummary, ReviewEntry, WordItem } from './lib';
 import { diffDays, parseDate, randomMaskSides, shuffle, weekdayCN } from './lib';
 import { reviewIds, type ReviewScope } from './calendar';
+import { BOOK } from './bookCatalog';
 import { Segmented, StageChip, primaryBtn, Empty, ExampleBlock } from './ui';
 
 type MaskMode = 'all' | 'en' | 'cn' | 'random';
@@ -14,7 +16,21 @@ const MASK_MODES: { key: MaskMode; emoji: string; label: string; hint: string }[
   { key: 'random', emoji: '🎲', label: '随机', hint: '每页英文、中文各遮约一半 · 乱序后重新分配 · 轻点可偷看' }
 ];
 
+function PrintSheet({ date, scope, words, showEnglish, showChinese }: { date: string; scope: string; words: WordItem[]; showEnglish: boolean; showChinese: boolean }) {
+  return createPortal(<section className="print-sheet" data-testid="print-sheet">
+    <header className="print-sheet-header"><h1>{BOOK.title} · {scope}</h1><p>{date}</p></header>
+    <ol className="print-rows">{words.map(word => <li key={word.id} data-testid="print-row">
+      <span className="print-checkbox" aria-hidden="true" />
+      <div className="print-columns">
+        <div className="print-cell" data-testid="print-english">{showEnglish ? <span data-testid="print-word">{word.word}</span> : <span className="print-writing-lines" aria-hidden="true" />}</div>
+        <div className="print-cell">{showChinese ? word.meaning : <span className="print-writing-lines" aria-hidden="true" />}</div>
+      </div>
+    </li>)}</ol>
+  </section>, document.body);
+}
+
 interface Props {
+  wallpaperActive?: boolean;
   words: WordItem[];
   revlog: ReviewEntry[];
   today: string;
@@ -34,12 +50,27 @@ interface Props {
   onEdit: (w: WordItem) => void;
 }
 
-export function A4View({ words, revlog, today, date, schedule, scope, onScopeChange, allDueCount, onOpenBook, onBack, onHardReset, onCheckout, onLater, focusSummary, onGrade, onSpeak, onEdit }: Props) {
+export function A4View({ wallpaperActive = false, words, revlog, today, date, schedule, scope, onScopeChange, allDueCount, onOpenBook, onBack, onHardReset, onCheckout, onLater, focusSummary, onGrade, onSpeak, onEdit }: Props) {
   const isToday = date === today;
   const [practice, setPractice] = useState<string[]>([]);
   const focusOnly = scope === 'focus';
   const [page, setPage] = useState(0);
+  const [printOpen, setPrintOpen] = useState(false);
+  const [printEnglish, setPrintEnglish] = useState(true);
+  const [printChinese, setPrintChinese] = useState(true);
+  const printTrigger = useRef<HTMLButtonElement>(null);
+  const printDialog = useRef<HTMLDivElement>(null);
+  const firstPrintOption = useRef<HTMLInputElement>(null);
+  const wasPrintOpen = useRef(false);
   useEffect(() => { setPractice([]); setChecked(new Set()); setRevealed(new Set()); setPage(0); }, [date, today, scope]);
+  useEffect(() => {
+    if (printOpen) {
+      if (firstPrintOption.current?.disabled) printDialog.current?.querySelector<HTMLElement>('button:not(:disabled), input:not(:disabled)')?.focus();
+      else firstPrintOption.current?.focus();
+    }
+    else if (wasPrintOpen.current) printTrigger.current?.focus();
+    wasPrintOpen.current = printOpen;
+  }, [printOpen]);
   const byId = useMemo(() => new Map(words.map((w) => [w.id, w])), [words]);
   const baseIds = useMemo(() => practice.length ? practice : reviewIds(schedule, date, today), [schedule, date, today, practice]);
 
@@ -117,7 +148,8 @@ export function A4View({ words, revlog, today, date, schedule, scope, onScopeCha
   const hint = MASK_MODES.find((m) => m.key === mode)?.hint;
 
   return (
-    <div className="paper-desk safe-bottom-pad">
+    <>
+    <div className={`paper-desk safe-bottom-pad ${wallpaperActive ? 'paper-desk-wallpaper' : ''}`}>
       <header className="safe-top sticky top-0 z-20 border-b border-blush bg-cream/95 px-3 pb-2 shadow-card backdrop-blur-md">
         <div className="flex items-center gap-2">
           <button type="button" onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ink shadow-card" aria-label="返回">
@@ -147,6 +179,7 @@ export function A4View({ words, revlog, today, date, schedule, scope, onScopeCha
           <Segmented options={MASK_MODES} value={mode} onChange={setMode} />
           <p className="mt-1 text-center text-[11px] font-bold text-ink-soft">{hint}</p>
             <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-bold text-rose-600" onClick={() => onScopeChange(focusOnly ? 'all' : 'focus')}>{focusOnly ? '当前：重点攻坚 · 切换全部到期复习' : '当前：全部到期复习 · 切换重点攻坚'}</button>
+          <button ref={printTrigger} type="button" disabled={!list.length} className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 text-sm font-bold text-ink disabled:opacity-40" onClick={() => setPrintOpen(true)}><Printer size={16} />打印 / 另存 PDF</button>
         </div>
       </header>
 
@@ -287,5 +320,26 @@ export function A4View({ words, revlog, today, date, schedule, scope, onScopeCha
         )}
       </div>
     </div>
+    {printOpen && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-ink/45 p-4" onClick={() => setPrintOpen(false)}>
+      <div ref={printDialog} role="dialog" aria-modal="true" aria-labelledby="print-options-title" className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-paper" onClick={event => event.stopPropagation()} onKeyDown={event => {
+        if (event.key === 'Escape') setPrintOpen(false);
+        if (event.key !== 'Tab') return;
+        const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)'));
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }}>
+        <div className="flex items-center justify-between gap-3"><h2 id="print-options-title" className="text-lg font-extrabold text-ink">打印选项</h2><button type="button" aria-label="关闭打印选项" className="flex h-11 w-11 items-center justify-center rounded-xl bg-cream text-ink-soft" onClick={() => setPrintOpen(false)}><X size={18} /></button></div>
+        <p className="mt-1 text-sm text-ink-soft">选择要显示的语言；隐藏的一栏会留空供书写。</p>
+        <div className="mt-4 space-y-2">
+          <label className="flex min-h-11 items-center gap-3 rounded-xl border border-blush px-3 text-sm font-bold text-ink"><input ref={firstPrintOption} type="checkbox" checked={printEnglish} disabled={printEnglish && !printChinese} onChange={event => setPrintEnglish(event.target.checked)} />英文</label>
+          <label className="flex min-h-11 items-center gap-3 rounded-xl border border-blush px-3 text-sm font-bold text-ink"><input type="checkbox" checked={printChinese} disabled={printChinese && !printEnglish} onChange={event => setPrintChinese(event.target.checked)} />中文</label>
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-2"><button type="button" className="min-h-11 rounded-xl border border-stone-200 px-3 text-sm font-bold text-ink-soft" onClick={() => setPrintOpen(false)}>取消</button><button type="button" className={`${primaryBtn} px-3`} onClick={() => { setPrintOpen(false); window.setTimeout(() => window.print(), 0); }}>打印 / 另存 PDF</button></div>
+      </div>
+    </div>}
+    <PrintSheet date={date} scope={practice.length ? '自由加练' : focusOnly ? '重点攻坚 A4' : '全部复习 A4'} words={list} showEnglish={printEnglish} showChinese={printChinese} />
+    </>
   );
 }

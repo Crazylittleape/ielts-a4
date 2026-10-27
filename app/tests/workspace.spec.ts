@@ -811,6 +811,46 @@ test('60s challenge time does not extend while the page is hidden', async ({ pag
 
 const a4Words = (n: number) => Array.from({ length: n }, (_, i) => ({ ...fixture.words[0], id: `a4-${i}`, word: `aword${i}`, meaning: `释义${i}`, focus: { active: true, addedAt: '2026-10-21', nextDate: today } }));
 
+test('A4 print options preserve one language, print only the current list, and write nothing', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.addInitScript(() => {
+    (window as Window & { __printCalls?: number }).__printCalls = 0;
+    window.print = () => { (window as Window & { __printCalls?: number }).__printCalls! += 1; };
+  });
+  await start(page, { ...fixture, words: a4Words(10) });
+  const before = await snapshot(page);
+  await page.getByRole('button', { name: /A4 刷词/ }).click();
+  await page.getByRole('button', { name: '打印 / 另存 PDF', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: '打印选项' });
+  const english = dialog.getByLabel('英文', { exact: true });
+  const chinese = dialog.getByLabel('中文', { exact: true });
+  await expect(english).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(dialog.getByRole('button', { name: '关闭打印选项', exact: true })).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(dialog.getByRole('button', { name: '打印 / 另存 PDF', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(dialog.getByRole('button', { name: '关闭打印选项', exact: true })).toBeFocused();
+  await english.uncheck();
+  await expect(chinese).toBeChecked();
+  await expect(chinese).toBeDisabled();
+  await expect(page.getByTestId('print-english').first().locator('.print-writing-lines')).toHaveCount(1);
+  await english.check();
+  await expect(chinese).toBeEnabled();
+  await dialog.getByRole('button', { name: '打印 / 另存 PDF', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => (window as Window & { __printCalls?: number }).__printCalls)).toBe(1);
+  await expect(page.getByTestId('print-row')).toHaveCount(10);
+  const printedWords = await page.getByTestId('print-word').allTextContents();
+  expect(printedWords.sort()).toEqual(Array.from({ length: 10 }, (_, index) => `aword${index}`).sort());
+  expect(await snapshot(page)).toEqual(before);
+  await page.emulateMedia({ media: 'print' });
+  await expect(page.getByTestId('print-sheet')).toBeVisible();
+  await expect(page.getByTestId('print-sheet')).toContainText('雅思词汇真经 · 重点攻坚 A4');
+  await expect(page.getByTestId('print-sheet')).toContainText(today);
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/print-375.png', fullPage: true });
+});
+
 test('A4 review results reflect saved grades, next dates, remaining words and dashboard totals', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await start(page, { ...fixture, words: a4Words(3) });
@@ -1002,16 +1042,37 @@ test('batch review save failure rolls back every word and reports no success', a
   expect(await snapshot(page)).toEqual(before);
 });
 
-async function wallpaperFile(page: Page) {
-  const png = await page.evaluate(() => {
+async function wallpaperFile(page: Page, color = '#206050') {
+  const png = await page.evaluate((fillColor) => {
     const canvas = document.createElement('canvas');
     canvas.width = 1800; canvas.height = 900;
     const ctx = canvas.getContext('2d')!;
-    ctx.fillStyle = '#206050'; ctx.fillRect(0, 0, 1800, 900);
+    ctx.fillStyle = fillColor; ctx.fillRect(0, 0, 1800, 900);
     return canvas.toDataURL('image/png').split(',')[1];
-  });
+  }, color);
   return { name: 'wallpaper.png', mimeType: 'image/png', buffer: Buffer.from(png, 'base64') };
 }
+
+test('dark and light wallpaper keep A4 on a readable opaque paper surface', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await start(page, { ...fixture, words: a4Words(3) });
+  const before = await snapshot(page);
+  const input = page.getByLabel('选择壁纸图片');
+  for (const [color, screenshot] of [['#111111', 'wallpaper-dark-375.png'], ['#fefefe', 'wallpaper-light-375.png']] as const) {
+    await page.getByText('外观设置', { exact: true }).click();
+    await input.setInputFiles(await wallpaperFile(page, color));
+    await expect(page.getByTestId('wallpaper-overlay')).toBeVisible();
+    await expect(page.getByText('壁纸已保存，离线也可使用', { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: /A4 刷词/ }).click();
+    await expect(page.locator('.paper')).toBeVisible();
+    await expect(page.locator('.paper-desk')).toHaveClass(/paper-desk-wallpaper/);
+    expect(await page.locator('.paper-desk').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+    expect(await page.getByTestId('wallpaper').evaluate(element => getComputedStyle(element).backgroundImage)).toContain('blob:');
+    if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: `/home/ubuntu/shots/rea/${screenshot}`, fullPage: true });
+    await page.getByRole('button', { name: '词书库', exact: true }).click();
+  }
+  expect(await snapshot(page)).toEqual(before);
+});
 
 test('wallpaper persists across learning saves and offline reload, reset keeps all learning records', async ({ page, context }) => {
   await start(page);
