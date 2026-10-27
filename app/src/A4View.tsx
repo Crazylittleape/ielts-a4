@@ -18,7 +18,7 @@ const MASK_MODES: { key: MaskMode; emoji: string; label: string; hint: string }[
 
 function PrintSheet({ date, scope, words, showEnglish, showChinese }: { date: string; scope: string; words: WordItem[]; showEnglish: boolean; showChinese: boolean }) {
   return createPortal(<section className="print-sheet" data-testid="print-sheet">
-    <header className="print-sheet-header"><h1>{BOOK.title} · {scope}</h1><p>{date}</p></header>
+    <header className="print-sheet-header"><h1>{BOOK.title} · {scope}</h1><p>{date} · 共 {words.length} 词</p></header>
     <ol className="print-rows">{words.map(word => <li key={word.id} data-testid="print-row">
       <span className="print-checkbox" aria-hidden="true" />
       <div className="print-columns">
@@ -26,6 +26,7 @@ function PrintSheet({ date, scope, words, showEnglish, showChinese }: { date: st
         <div className="print-cell">{showChinese ? word.meaning : <span className="print-writing-lines" aria-hidden="true" />}</div>
       </div>
     </li>)}</ol>
+    <footer className="print-sheet-footer">IELTS A4 · {date}</footer>
   </section>, document.body);
 }
 

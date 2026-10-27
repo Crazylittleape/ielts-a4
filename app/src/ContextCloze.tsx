@@ -30,17 +30,17 @@ export function ContextCloze({ state, onBack, onA4 }: { state: AppState; onBack:
   const choices = useMemo(() => {
     if (!question) return [];
     const seen = new Set([question.word.word.toLowerCase()]);
-    const distractors = [
+    const distractors = shuffle([
       ...questions.map(item => item.word),
       ...state.words
-    ].filter(word => {
+    ]).filter(word => {
       const key = word.word.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     }).slice(0, 3);
     return shuffle([question.word, ...distractors]);
-  }, [question, questions, state.words]);
+  }, [question]);
   const canStart = Boolean(question && choices.length >= 2);
 
   const changeScope = (next: Scope) => {
@@ -91,7 +91,7 @@ export function ContextCloze({ state, onBack, onA4 }: { state: AppState; onBack:
         <p className="text-xs font-bold text-ink-soft">第 {index + 1} / {questions.length} 题 · 选出句中空缺的词</p>
         <p data-testid="cloze-question" className="break-words font-serif text-lg leading-relaxed text-ink">{question.parts.map((part, i) => part.hit ? <span key={i}>____</span> : part.text)}</p>
         {question.example.exampleZh && <p className="text-sm leading-relaxed text-ink-soft">{question.example.exampleZh}</p>}
-        <div className="grid grid-cols-2 gap-2">{choices.map(choice => {
+        <div data-testid="cloze-choices" className="grid grid-cols-2 gap-2">{choices.map(choice => {
           const isAnswer = choice.word.toLowerCase() === question.word.word.toLowerCase();
           const chosen = selected?.toLowerCase() === choice.word.toLowerCase();
           const style = selected === null ? ghostBtn : isAnswer ? 'inline-flex min-h-11 items-center justify-center rounded-2xl border border-sage-500 bg-sage-100 px-4 py-2.5 text-sm font-bold text-sage-700' : chosen ? 'inline-flex min-h-11 items-center justify-center rounded-2xl border border-rose-400 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600' : ghostBtn;

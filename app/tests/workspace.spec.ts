@@ -102,6 +102,7 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
   await start(page);await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
   await page.getByRole('button',{name:'开始今日学习',exact:true}).click();
   await expect(page.getByText('第 1/3 轮 · 1/25',{exact:true})).toBeVisible();
+  await expect(page.getByText('ˈætməsfɪə', { exact: false })).toBeVisible();
   if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-before-reveal-375.png', fullPage: true });
   await expect(page.getByTestId('example')).toHaveCount(0);
   for(let i=0;i<25;i++){
@@ -127,6 +128,7 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
   await expect(page.getByText('第 2/3 轮 · 1/25',{exact:true})).toBeVisible();
   await expect(page.getByRole('heading',{name:'atmosphere',exact:true})).toHaveCount(0);
   await expect(page.getByRole('button',{name:/atmosphere/})).toHaveCount(0);
+  await expect(page.getByText('ˈætməsfɪə', { exact: false })).toBeVisible();
   await expect(page.getByRole('button',{name:'朗读提示',exact:true})).toBeVisible();
   for(let i=0;i<25;i++){
     await page.getByRole('button',{name:'显示答案',exact:true}).click();
@@ -135,6 +137,7 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
   await expect(page.getByText('第 3/3 轮 · 1/25',{exact:true})).toBeVisible();
   if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-spelling-375.png', fullPage: true });
   await expect(page.getByRole('heading',{name:'atmosphere',exact:true})).toHaveCount(0);
+  await expect(page.getByText('ˈætməsfɪə', { exact: false })).toHaveCount(0);
   await expect(page.getByRole('button',{name:/朗读/})).toHaveCount(0);
   await page.getByLabel('英文拼写',{exact:true}).fill('atmospher');
   await page.getByRole('button',{name:'检查拼写',exact:true}).click();
@@ -847,7 +850,8 @@ test('A4 print options preserve one language, print only the current list, and w
   await page.emulateMedia({ media: 'print' });
   await expect(page.getByTestId('print-sheet')).toBeVisible();
   await expect(page.getByTestId('print-sheet')).toContainText('雅思词汇真经 · 重点攻坚 A4');
-  await expect(page.getByTestId('print-sheet')).toContainText(today);
+  await expect(page.getByTestId('print-sheet')).toContainText(`${today} · 共 10 词`);
+  await expect(page.getByTestId('print-sheet')).toContainText(`IELTS A4 · ${today}`);
   if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/print-375.png', fullPage: true });
 });
 
@@ -1079,24 +1083,37 @@ test('context cloze masks sourced forms, finishes and retries without writing le
     quizWord('atmosphere', '第一词', 0),
     { ...quizWord('beta', '第二词', 1), exampleEn: 'The beta appears in another example.', exampleSource: 'Tatoeba #102 https://tatoeba.org/sentences/show/102', focus: { active: true, addedAt: '2026-10-21', nextDate: today } },
     quizWord('offbookwordone', '第三词', 2),
-    quizWord('offbookwordtwo', '第四词', 3)
+    quizWord('offbookwordtwo', '第四词', 3),
+    quizWord('offbookwordthree', '第五词', 4),
+    quizWord('offbookwordfour', '第六词', 5)
   ];
   const initial = { ...fixture, words, bookLearning: { bookId: 'ielts-bible-core-v1', dailyGroups: 2, completed: { 'u01-g01': '2026-10-21' }, missed: { 'u01-g01': ['atmosphere'] } } };
   await start(page, initial);
   const before = await snapshot(page);
+  await page.evaluate(() => {
+    const values = [0.13, 0.71, 0.32, 0.91, 0.55, 0.04, 0.83, 0.27, 0.63, 0.46, 0.12, 0.98, 0.34, 0.77, 0.19, 0.58, 0.23, 0.87, 0.41, 0.66, 0.09, 0.92, 0.49, 0.14, 0.73, 0.26, 0.95, 0.37, 0.61, 0.05];
+    let index = 0;
+    Math.random = () => values[index++ % values.length];
+  });
   await page.getByRole('button', { name: '语境填空', exact: true }).click();
   await expect(page.getByText('范围内有例句的词 2 / 2', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '全部已学词', exact: true }).click();
-  await expect(page.getByText('范围内有例句的词 2 / 4', { exact: true })).toBeVisible();
+  await expect(page.getByText('范围内有例句的词 2 / 6', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '错词与 A4 攻坚词', exact: true }).click();
   await expect(page.getByTestId('cloze-question')).toContainText('____');
   await expect(page.getByTestId('cloze-question')).not.toContainText('atmosphere');
+  const firstChoices = await page.getByTestId('cloze-choices').getByRole('button').allTextContents();
+  expect(firstChoices).toHaveLength(4);
   await page.getByRole('button', { name: 'atmosphere', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('回答正确');
+  expect(await page.getByTestId('cloze-choices').getByRole('button').allTextContents()).toEqual(firstChoices);
   await expect(page.getByText('This place has a mysterious atmosphere.')).toBeVisible();
   await expect(page.getByText(/来源：Tatoeba #2105/)).toBeVisible();
   if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/cloze-375.png', fullPage: true });
   await page.getByRole('button', { name: '下一题', exact: true }).click();
+  const secondChoices = await page.getByTestId('cloze-choices').getByRole('button').allTextContents();
+  expect(secondChoices).toHaveLength(4);
+  expect([...new Set(secondChoices)].sort()).not.toEqual([...new Set(firstChoices)].sort());
   await page.getByRole('button', { name: 'atmosphere', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('正确答案：beta');
   await page.getByRole('button', { name: '查看本轮总结', exact: true }).click();

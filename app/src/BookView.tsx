@@ -159,7 +159,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
         <Card className="flex min-h-[34vh] flex-col justify-center space-y-5 bg-white px-6 py-8 text-center">
           {spellingMode ? <p className="whitespace-pre-line text-center text-xl leading-relaxed text-ink">{word.meaning}</p> : <>
             {showTarget && <h2 className="break-words font-serif text-4xl font-semibold text-ink">{word.word}</h2>}
-            {word.phonetic && (kind === 'phonetic' || revealed) && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft`}>{word.phonetic}</p>}
+            {word.phonetic && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft`}>{word.phonetic}</p>}
             {kind === 'phonetic' && !word.phonetic && <p className="text-xs text-ink-soft">暂无音标，本题使用英文提示</p>}
             <button type="button" className={`${ghostBtn} self-center`} onClick={() => onSpeak(word.word)} aria-label={showTarget ? `朗读 ${word.word}` : '朗读提示'}><Volume2 size={17} /> 朗读</button>
             {revealed ? <><p className="whitespace-pre-line border-t border-rose-50 pt-5 text-left text-base leading-relaxed text-ink">{word.meaning}</p><ExampleBlock word={word} onSpeak={onSpeak} expanded /></> : <p className="text-sm text-ink-soft">回想中文释义</p>}

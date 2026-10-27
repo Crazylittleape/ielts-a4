@@ -153,6 +153,7 @@ button { -webkit-touch-callout: none; }
   .print-sheet-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8mm; border-bottom: 1px solid #999; margin-bottom: 4mm; padding-bottom: 3mm; }
   .print-sheet-header h1 { margin: 0; font-size: 14pt; }
   .print-sheet-header p { margin: 0; font-size: 10pt; }
+  .print-sheet-footer { position: fixed; right: 0; bottom: 0; left: 0; padding: 2mm 0; background: #fff; color: #625D53; font: 9pt Calibri, sans-serif; text-align: center; }
   .print-rows { list-style: none; margin: 0; padding: 0; }
   .print-rows > li { display: flex; align-items: stretch; gap: 3mm; min-height: 16mm; border-bottom: 0.2mm solid #d5d5d5; padding: 2.5mm 0; break-inside: avoid; page-break-inside: avoid; }
   .print-checkbox { width: 4mm; height: 4mm; flex: 0 0 4mm; margin-top: 1mm; border: 0.35mm solid #333; }
