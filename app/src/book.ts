@@ -35,7 +35,7 @@ let dictionary: Map<string, ReturnType<typeof allEntries>[number]> | undefined;
 const definitions: Record<string, string> = { 'El Niño': 'n. 厄尔尼诺现象', 'shade-tolerant': 'adj. 耐阴的' };
 
 export type BookExample = Required<Pick<WordExample, 'exampleEn' | 'exampleSource'>> & Pick<WordExample, 'exampleZh'>;
-/** Sourced example sentences keyed by headword; see docs/BOOK-SOURCE.md. Empty until a licensed source is added. */
+/** Sourced example sentences keyed by exact book headword. */
 export const BOOK_EXAMPLES: Record<string, BookExample> = examples;
 
 export function exampleFor(word: { word: string } & WordExample): BookExample | null {

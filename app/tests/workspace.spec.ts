@@ -106,7 +106,11 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
   await expect(page.getByTestId('example')).toHaveCount(0);
   for(let i=0;i<25;i++){
     await page.getByRole('button',{name:'显示答案',exact:true}).click();
-    if (i === 0 && testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-after-reveal-375.png', fullPage: true });
+    if (i === 0) {
+      await expect(page.getByTestId('example')).toContainText('This place has a mysterious atmosphere.');
+      await expect(page.getByTestId('example')).toContainText('来源：');
+      if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-after-reveal-375.png', fullPage: true });
+    }
     await page.getByRole('button',{name:i===0?'没想起':'想起来了',exact:true}).click();
   }
   await expect(page.getByText('错题重练 · 剩余 1 题',{exact:true})).toBeVisible();
@@ -705,14 +709,15 @@ test('A4 shows a collapsed, sourced example with read-aloud only for words that 
   expect(saved.find(w => w.word === 'maskword1')?.exampleEn).toBeUndefined();
 });
 
-test('book study cards show no invented example sentence', async ({ page }) => {
+test('book study cards reveal their sourced example only after the answer', async ({ page }) => {
   await start(page, { ...fixture, words: [] });
   await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
   await page.getByRole('button', { name: '开始今日学习', exact: true }).click();
+  await expect(page.getByTestId('example')).toHaveCount(0);
   await page.getByRole('button', { name: '显示答案', exact: true }).click();
   await expect(page.getByRole('button', { name: '想起来了', exact: true })).toBeVisible();
-  await expect(page.getByTestId('example')).toHaveCount(0);
-  await expect(page.getByText(/^例句/)).toHaveCount(0);
+  await expect(page.getByTestId('example')).toContainText('This place has a mysterious atmosphere.');
+  await expect(page.getByTestId('example')).toContainText('来源：Tatoeba #2105');
 });
 
 const quizWord = (word: string, meaning: string, i: number) => ({ ...fixture.words[0], id: `quiz-${i}`, word, meaning });

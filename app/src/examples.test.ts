@@ -1,7 +1,7 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import sequence from './data/book-sequence.json';
-import { BOOK_EXAMPLES, exampleFor, getBookWord } from './book';
+import { BOOK_EXAMPLES, exampleFor, getBookWord, highlightParts } from './book';
 import { addToFocus, backupJson, createWord, gradeWord, initialState, mergeStates, parseBackup, type AppState } from './lib';
 import { db, openWorkspace, persistWorkspace } from './db';
 
@@ -62,14 +62,20 @@ describe('optional example fields', () => {
 });
 
 describe('book example data', () => {
-  it('ships only sourced examples for real book headwords (none are bundled yet), and never invents one', () => {
-    const names = new Set((sequence as string[]).map(w => w.toLowerCase()));
+  it('ships sourced Tatoeba examples for exact book headwords with a matching highlighted form', () => {
+    const names = new Set(sequence as string[]);
     for (const [word, entry] of Object.entries(BOOK_EXAMPLES)) {
-      expect(names.has(word.toLowerCase())).toBe(true);
-      expect(entry.exampleEn.trim() && entry.exampleSource.trim()).toBeTruthy();
+      expect(names.has(word), word).toBe(true);
+      expect(entry.exampleEn.trim(), word).toBeTruthy();
+      expect(entry.exampleSource.trim(), word).toBeTruthy();
+      expect(entry.exampleSource, word).toContain('Tatoeba #');
+      expect(entry.exampleSource, word).toContain('https://tatoeba.org/sentences/show/');
+      if (entry.exampleZh !== undefined) {
+        expect(entry.exampleZh.trim(), word).toBeTruthy();
+        expect(entry.exampleSource, word).toContain('中文 Tatoeba #');
+      }
+      expect(highlightParts(entry.exampleEn, word).some(part => part.hit), word).toBe(true);
     }
-    expect(Object.keys(BOOK_EXAMPLES)).toHaveLength(0);
-    expect((sequence as string[]).filter(w => getBookWord(w).exampleEn)).toEqual([]);
   });
 
   it('passes a sourced example from the book data into the shared WordItem', () => {

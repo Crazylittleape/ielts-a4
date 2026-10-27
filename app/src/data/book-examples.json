@@ -1,1 +1,925 @@
-{}
+{
+ "atmosphere": {
+  "exampleEn": "This place has a mysterious atmosphere.",
+  "exampleSource": "Tatoeba #2105 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2105；中文 Tatoeba #1778272 · 作者 sadhen · CC BY 2.0 FR",
+  "exampleZh": "这个地方有一种神秘的气氛。"
+ },
+ "lithosphere": {
+  "exampleEn": "The earth's crust can also be called the lithosphere.",
+  "exampleSource": "Tatoeba #12330806 · 作者 Miktsoanit · CC BY 2.0 FR · https://tatoeba.org/sentences/show/12330806"
+ },
+ "oxygen": {
+  "exampleEn": "Iron and oxygen are elements.",
+  "exampleSource": "Tatoeba #278753 · 作者 shekitten · CC BY 2.0 FR · https://tatoeba.org/sentences/show/278753；中文 Tatoeba #343294 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "鐵和氧都是化學元素。"
+ },
+ "oxide": {
+  "exampleEn": "Corundum is a form of aluminum oxide.",
+  "exampleSource": "Tatoeba #11746696 · 作者 Solana · CC BY 2.0 FR · https://tatoeba.org/sentences/show/11746696"
+ },
+ "carbon dioxide": {
+  "exampleEn": "Trees give off oxygen and absorb carbon dioxide.",
+  "exampleSource": "Tatoeba #266244 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/266244；中文 Tatoeba #380720 · 作者 sherryyyf · CC BY 2.0 FR",
+  "exampleZh": "树木排出氧气，吸收二氧化碳。"
+ },
+ "hydrogen": {
+  "exampleEn": "Hydrogen is the lightest element.",
+  "exampleSource": "Tatoeba #1345299 · 作者 marcelostockle · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1345299；中文 Tatoeba #5670790 · 作者 verdastelo9604 · CC BY 2.0 FR",
+  "exampleZh": "氢是最轻的元素。"
+ },
+ "core": {
+  "exampleEn": "I don't eat the apple core.",
+  "exampleSource": "Tatoeba #749157 · 作者 modelqueen13 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/749157；中文 Tatoeba #755848 · 作者 U2FS · CC BY 2.0 FR",
+  "exampleZh": "我不吃苹果核。"
+ },
+ "crust": {
+  "exampleEn": "The snow lay on the ground, frozen into a thick, hard crust.",
+  "exampleSource": "Tatoeba #1582791 · 作者 eastasiastudent · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1582791；中文 Tatoeba #1582753 · 作者 GlossaMatik · CC BY 2.0 FR",
+  "exampleZh": "地上覆盖着积雪，冻成了又硬又厚的壳。"
+ },
+ "mantle": {
+  "exampleEn": "Mercury has three main geological layers: a core, a mantle, and a crust.",
+  "exampleSource": "Tatoeba #8800831 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8800831"
+ },
+ "longitude": {
+  "exampleEn": "This line represents the longitude.",
+  "exampleSource": "Tatoeba #58100 · 作者 WestofEden · CC BY 2.0 FR · https://tatoeba.org/sentences/show/58100；中文 Tatoeba #1151491 · 作者 cherylting · CC BY 2.0 FR",
+  "exampleZh": "這條線代表經度。"
+ },
+ "latitude": {
+  "exampleEn": "Tasmania is on the 40 degrees South latitude.",
+  "exampleSource": "Tatoeba #502802 · 作者 blay_paul · CC BY 2.0 FR · https://tatoeba.org/sentences/show/502802"
+ },
+ "horizon": {
+  "exampleEn": "The sun rose over the horizon.",
+  "exampleSource": "Tatoeba #275149 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/275149；中文 Tatoeba #868417 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "太陽升出了地平線。"
+ },
+ "altitude": {
+  "exampleEn": "The plane flew at an altitude of 3,000 meters.",
+  "exampleSource": "Tatoeba #318034 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/318034；中文 Tatoeba #618102 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "飛機在三千米的高空飛行。"
+ },
+ "disaster": {
+  "exampleEn": "The earthquake brought about disaster.",
+  "exampleSource": "Tatoeba #45126 · 作者 rul · CC BY 2.0 FR · https://tatoeba.org/sentences/show/45126；中文 Tatoeba #13894739 · 作者 jan_OkulaJu · CC BY 2.0 FR",
+  "exampleZh": "地震带来了灾难。"
+ },
+ "mishap": {
+  "exampleEn": "I had a small mishap.",
+  "exampleSource": "Tatoeba #1466718 · 作者 Eldad · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1466718"
+ },
+ "catastrophic": {
+  "exampleEn": "I've made a catastrophic error.",
+  "exampleSource": "Tatoeba #5730822 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/5730822"
+ },
+ "calamity": {
+  "exampleEn": "A calamity was avoided by sheer luck.",
+  "exampleSource": "Tatoeba #275701 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/275701"
+ },
+ "endanger": {
+  "exampleEn": "It is an endangered species.",
+  "exampleSource": "Tatoeba #797152 · 作者 U2FS · CC BY 2.0 FR · https://tatoeba.org/sentences/show/797152；中文 Tatoeba #797541 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "这是一个濒临灭绝的物种。"
+ },
+ "jeopardise": {
+  "exampleEn": "Will this stuff jeopardize my health?",
+  "exampleSource": "Tatoeba #1872151 · 作者 sixtynine · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1872151；中文 Tatoeba #1872166 · 作者 sixtynine · CC BY 2.0 FR",
+  "exampleZh": "这些东西对健康有害吗？"
+ },
+ "destructive": {
+  "exampleEn": "Tornadoes are very destructive.",
+  "exampleSource": "Tatoeba #939733 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/939733"
+ },
+ "El Niño": {
+  "exampleEn": "El Niño will continue.",
+  "exampleSource": "Tatoeba #5747773 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/5747773"
+ },
+ "greenhouse": {
+  "exampleEn": "They grow strawberries in their greenhouse.",
+  "exampleSource": "Tatoeba #306209 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/306209；中文 Tatoeba #802027 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "他們在他們的溫室裡種植草莓。"
+ },
+ "phenomenon": {
+  "exampleEn": "A rainbow is a natural phenomenon.",
+  "exampleSource": "Tatoeba #281038 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/281038；中文 Tatoeba #565438 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "彩虹是一種自然現象。"
+ },
+ "pebble": {
+  "exampleEn": "She stooped to pick up a pebble.",
+  "exampleSource": "Tatoeba #315226 · 作者 kebukebu · CC BY 2.0 FR · https://tatoeba.org/sentences/show/315226；中文 Tatoeba #761266 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "她撿起了一塊鵝卵石。"
+ },
+ "magnet": {
+  "exampleEn": "The earth is like a big magnet.",
+  "exampleSource": "Tatoeba #7884597 · 作者 AlanF_US · CC BY 2.0 FR · https://tatoeba.org/sentences/show/7884597；中文 Tatoeba #12497641 · 作者 DaoSeng · CC BY 2.0 FR",
+  "exampleZh": "地球像一块大吸铁石一样。"
+ },
+ "ore": {
+  "exampleEn": "This location is rich in iron ore.",
+  "exampleSource": "Tatoeba #9851052 · 作者 AlanF_US · CC BY 2.0 FR · https://tatoeba.org/sentences/show/9851052"
+ },
+ "mineral": {
+  "exampleEn": "Water, forests, and minerals are important natural resources.",
+  "exampleSource": "Tatoeba #270760 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/270760；中文 Tatoeba #534289 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "水、森林和礦物都是重要的天然資源。"
+ },
+ "marble": {
+  "exampleEn": "Thousands of laborers and craftsmen toiled for 22 years to craft the stunning white marble edifice.",
+  "exampleSource": "Tatoeba #12043694 · 作者 Cangarejo · CC0 1.0 · https://tatoeba.org/sentences/show/12043694；中文 Tatoeba #13578074 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "數千名工人和工匠辛勤工作了 22 年，才打造出這座令人驚嘆的白色大理石建築。"
+ },
+ "quartz": {
+  "exampleEn": "Sometimes rocks contain quartz.",
+  "exampleSource": "Tatoeba #8938235 · 作者 Solana · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8938235"
+ },
+ "granite": {
+  "exampleEn": "The washbasin is made of granite.",
+  "exampleSource": "Tatoeba #2833406 · 作者 VCatmur · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2833406；中文 Tatoeba #10555778 · 作者 DaoSeng · CC BY 2.0 FR",
+  "exampleZh": "水池是花崗岩做的。"
+ },
+ "gust": {
+  "exampleEn": "A gust of wind swelled the sails.",
+  "exampleSource": "Tatoeba #27599 · 作者 Objectivesea · CC BY 2.0 FR · https://tatoeba.org/sentences/show/27599"
+ },
+ "breeze": {
+  "exampleEn": "A gentle breeze is blowing.",
+  "exampleSource": "Tatoeba #12568705 · 作者 omerfarukckmk · CC BY 2.0 FR · https://tatoeba.org/sentences/show/12568705；中文 Tatoeba #12568703 · 作者 omerfarukckmk · CC BY 2.0 FR",
+  "exampleZh": "微风习习。"
+ },
+ "monsoon": {
+  "exampleEn": "This is the monsoon season.",
+  "exampleSource": "Tatoeba #480312 · 作者 minshirui · CC BY 2.0 FR · https://tatoeba.org/sentences/show/480312；中文 Tatoeba #480314 · 作者 minshirui · CC BY 2.0 FR",
+  "exampleZh": "这是季风季节。"
+ },
+ "gale": {
+  "exampleEn": "The roof was torn off by the gale.",
+  "exampleSource": "Tatoeba #25574 · 作者 xrchz · CC BY 2.0 FR · https://tatoeba.org/sentences/show/25574"
+ },
+ "hurricane": {
+  "exampleEn": "After the hurricane, their house was a wreck.",
+  "exampleSource": "Tatoeba #682498 · 作者 Source_VOA · CC BY 2.0 FR · https://tatoeba.org/sentences/show/682498；中文 Tatoeba #816508 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "暴风雨过后，他们的房子成了废墟。"
+ },
+ "tornado": {
+  "exampleEn": "The tornado died out.",
+  "exampleSource": "Tatoeba #3855458 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3855458"
+ },
+ "typhoon": {
+  "exampleEn": "A typhoon is approaching Japan.",
+  "exampleSource": "Tatoeba #275427 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/275427；中文 Tatoeba #834327 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "颱風正接近日本。"
+ },
+ "volcano": {
+  "exampleEn": "Mt. Aso is an active volcano.",
+  "exampleSource": "Tatoeba #28742 · 作者 CN · CC BY 2.0 FR · https://tatoeba.org/sentences/show/28742；中文 Tatoeba #801306 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "阿蘇山是一座活火山。"
+ },
+ "erupt": {
+  "exampleEn": "The volcano has erupted twice this year.",
+  "exampleSource": "Tatoeba #49236 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/49236；中文 Tatoeba #431578 · 作者 aliene · CC BY 2.0 FR",
+  "exampleZh": "这座火山在这年内爆发了两次。"
+ },
+ "magma": {
+  "exampleEn": "Magma from the mantle or lower crust rises through its crust towards the surface.",
+  "exampleSource": "Tatoeba #11122114 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/11122114"
+ },
+ "thermodynamic": {
+  "exampleEn": "A singularity is a thermodynamic dead end and does not explain the origin of the universe.",
+  "exampleSource": "Tatoeba #10600501 · 作者 carlosalberto · CC BY 2.0 FR · https://tatoeba.org/sentences/show/10600501"
+ },
+ "smog": {
+  "exampleEn": "Smog hung over Tokyo.",
+  "exampleSource": "Tatoeba #51416 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/51416"
+ },
+ "fume": {
+  "exampleEn": "Tom came home fuming.",
+  "exampleSource": "Tatoeba #10543744 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/10543744"
+ },
+ "mist": {
+  "exampleEn": "A boat suddenly appeared out of the mist.",
+  "exampleSource": "Tatoeba #322862 · 作者 Dejo · CC BY 2.0 FR · https://tatoeba.org/sentences/show/322862；中文 Tatoeba #431497 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "一艘船突然从雾中出现。"
+ },
+ "tsunami": {
+  "exampleEn": "A tsunami hit Japan.",
+  "exampleSource": "Tatoeba #13537404 · 作者 LeviHighway · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13537404；中文 Tatoeba #13519472 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "海嘯襲擊日本。"
+ },
+ "drought": {
+  "exampleEn": "Last year the region was visited by the worst drought in 60 years.",
+  "exampleSource": "Tatoeba #1577224 · 作者 eastasiastudent · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1577224；中文 Tatoeba #1577186 · 作者 eastasiastudent · CC BY 2.0 FR",
+  "exampleZh": "去年那个地区遭受了60年来最严重的干旱。"
+ },
+ "flooding": {
+  "exampleEn": "The hillside had torrential flooding from the west.",
+  "exampleSource": "Tatoeba #7837601 · 作者 sharris123 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/7837601"
+ },
+ "torrent": {
+  "exampleEn": "The rains came in torrents.",
+  "exampleSource": "Tatoeba #3727620 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3727620"
+ },
+ "earthquake": {
+  "exampleEn": "Earthquakes frequently hit Japan.",
+  "exampleSource": "Tatoeba #281600 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/281600；中文 Tatoeba #824630 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "地震頻繁地襲擊日本。"
+ },
+ "seismic": {
+  "exampleEn": "Due to constant seismic activity, Japanese engineers have come up with novel construction techniques.",
+  "exampleSource": "Tatoeba #2575707 · 作者 sans · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2575707"
+ },
+ "avalanche": {
+  "exampleEn": "He died in an avalanche.",
+  "exampleSource": "Tatoeba #8233857 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8233857"
+ },
+ "terrain": {
+  "exampleEn": "The rugged terrain made the troops' advance difficult.",
+  "exampleSource": "Tatoeba #10540362 · 作者 sundown · CC BY 2.0 FR · https://tatoeba.org/sentences/show/10540362；中文 Tatoeba #5370741 · 作者 xjjAstrus · CC BY 2.0 FR",
+  "exampleZh": "地面高低不平，給部隊前進帶來了困難。"
+ },
+ "landscape": {
+  "exampleEn": "The landscape is unfamiliar to me.",
+  "exampleSource": "Tatoeba #42415 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/42415；中文 Tatoeba #9965474 · 作者 GlossaMatik · CC BY 2.0 FR",
+  "exampleZh": "风景对我来说很陌生。"
+ },
+ "continent": {
+  "exampleEn": "There are seven continents on the earth.",
+  "exampleSource": "Tatoeba #271117 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/271117；中文 Tatoeba #2109213 · 作者 sadhen · CC BY 2.0 FR",
+  "exampleZh": "地球上有七大洲。"
+ },
+ "cave": {
+  "exampleEn": "We got lost in the cave.",
+  "exampleSource": "Tatoeba #8967901 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8967901；中文 Tatoeba #10305639 · 作者 DaoSeng · CC BY 2.0 FR",
+  "exampleZh": "我們在山洞裡迷了路。"
+ },
+ "cliff": {
+  "exampleEn": "They climbed to the top of a cliff.",
+  "exampleSource": "Tatoeba #305351 · 作者 Luornu · CC BY 2.0 FR · https://tatoeba.org/sentences/show/305351；中文 Tatoeba #333278 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "他们一直爬到悬崖顶上。"
+ },
+ "glacier": {
+  "exampleEn": "The glaciers are melting.",
+  "exampleSource": "Tatoeba #4660305 · 作者 Hybrid · CC BY 2.0 FR · https://tatoeba.org/sentences/show/4660305"
+ },
+ "swamp": {
+  "exampleEn": "He lives alone in a little cottage in the swamp.",
+  "exampleSource": "Tatoeba #4751743 · 作者 Barra · CC BY 2.0 FR · https://tatoeba.org/sentences/show/4751743；中文 Tatoeba #10459888 · 作者 DaoSeng · CC BY 2.0 FR",
+  "exampleZh": "他獨自一人住在沼澤地裡的一棟小屋裡。"
+ },
+ "delta": {
+  "exampleEn": "The Nile Delta is situated north of Cairo.",
+  "exampleSource": "Tatoeba #11828522 · 作者 yue_dongchen · CC BY 2.0 FR · https://tatoeba.org/sentences/show/11828522"
+ },
+ "plain": {
+  "exampleEn": "He made a speech in plain English.",
+  "exampleSource": "Tatoeba #304129 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/304129；中文 Tatoeba #909453 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "他用淺顯的英語演講。"
+ },
+ "plateau": {
+  "exampleEn": "Algeria's high plateaus are very arid.",
+  "exampleSource": "Tatoeba #10078056 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/10078056"
+ },
+ "oasis": {
+  "exampleEn": "There is an oasis in the desert.",
+  "exampleSource": "Tatoeba #9401944 · 作者 BobbyLee · CC BY 2.0 FR · https://tatoeba.org/sentences/show/9401944；中文 Tatoeba #6142325 · 作者 GlossaMatik · CC BY 2.0 FR",
+  "exampleZh": "沙漠中有綠洲。"
+ },
+ "globe": {
+  "exampleEn": "She has traveled all over the globe.",
+  "exampleSource": "Tatoeba #315774 · 作者 mamat · CC BY 2.0 FR · https://tatoeba.org/sentences/show/315774；中文 Tatoeba #856394 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "她周遊世界各地。"
+ },
+ "hemisphere": {
+  "exampleEn": "Japan is located in the Northern Hemisphere.",
+  "exampleSource": "Tatoeba #281608 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/281608；中文 Tatoeba #798334 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "日本位於北半球。"
+ },
+ "equator": {
+  "exampleEn": "The equator divides the earth into two hemispheres.",
+  "exampleSource": "Tatoeba #1008611 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1008611；中文 Tatoeba #746060 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "赤道把地球分为两个半球。"
+ },
+ "arctic": {
+  "exampleEn": "A few months later they return to their breeding grounds in the Arctic.",
+  "exampleSource": "Tatoeba #73021 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/73021；中文 Tatoeba #346147 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "數月後，牠們回到了北極的繁殖地。"
+ },
+ "Antarctic": {
+  "exampleEn": "They went on an expedition to the Antarctic.",
+  "exampleSource": "Tatoeba #307262 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/307262；中文 Tatoeba #397545 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "他们出发去南极探险。"
+ },
+ "pole": {
+  "exampleEn": "To reach the North Pole is not easy.",
+  "exampleSource": "Tatoeba #321293 · 作者 shekitten · CC BY 2.0 FR · https://tatoeba.org/sentences/show/321293；中文 Tatoeba #9958353 · 作者 GlossaMatik · CC BY 2.0 FR",
+  "exampleZh": "到北极可不容易。"
+ },
+ "polar": {
+  "exampleEn": "The aurora is a phenomenon characteristic of the polar regions.",
+  "exampleSource": "Tatoeba #65116 · 作者 patgfisher · CC BY 2.0 FR · https://tatoeba.org/sentences/show/65116；中文 Tatoeba #358494 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "極光是極地特有的自然現象。"
+ },
+ "axis": {
+  "exampleEn": "The earth revolves on its axis once every 24 hours.",
+  "exampleSource": "Tatoeba #689751 · 作者 ulyssemc1 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/689751；中文 Tatoeba #689822 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "地球每二十四小時就會繞軸自轉一周。"
+ },
+ "deteriorate": {
+  "exampleEn": "Air quality has deteriorated these past few years.",
+  "exampleSource": "Tatoeba #18242 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/18242；中文 Tatoeba #426309 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "这些年空气质量恶化了。"
+ },
+ "aggravate": {
+  "exampleEn": "You aggravated the situation.",
+  "exampleSource": "Tatoeba #3327910 · 作者 _undertoad · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3327910"
+ },
+ "degrade": {
+  "exampleEn": "Batteries degrade over time.",
+  "exampleSource": "Tatoeba #6566679 · 作者 Hybrid · CC BY 2.0 FR · https://tatoeba.org/sentences/show/6566679"
+ },
+ "upgrade": {
+  "exampleEn": "Tom upgraded his phone.",
+  "exampleSource": "Tatoeba #9479447 · 作者 DJ_Saidez · CC BY 2.0 FR · https://tatoeba.org/sentences/show/9479447"
+ },
+ "erode": {
+  "exampleEn": "This will erode our credibility.",
+  "exampleSource": "Tatoeba #5607287 · 作者 mailohilohi · CC BY 2.0 FR · https://tatoeba.org/sentences/show/5607287；中文 Tatoeba #8743560 · 作者 slo_oth · CC BY 2.0 FR",
+  "exampleZh": "这会损害我们的信誉。"
+ },
+ "Mediterranean": {
+  "exampleEn": "Mediterranean weather is mild.",
+  "exampleSource": "Tatoeba #9188957 · 作者 DJ_Saidez · CC BY 2.0 FR · https://tatoeba.org/sentences/show/9188957"
+ },
+ "Atlantic": {
+  "exampleEn": "They crossed the Atlantic.",
+  "exampleSource": "Tatoeba #13247549 · 作者 Dozyjones · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13247549"
+ },
+ "pacific": {
+  "exampleEn": "The Pacific is the largest ocean in the world.",
+  "exampleSource": "Tatoeba #275026 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/275026；中文 Tatoeba #668895 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "太平洋是世界上最大的海洋。"
+ },
+ "ocean": {
+  "exampleEn": "Sewage often pollutes the ocean.",
+  "exampleSource": "Tatoeba #681757 · 作者 Source_VOA · CC BY 2.0 FR · https://tatoeba.org/sentences/show/681757；中文 Tatoeba #844135 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "废水经常污染海洋。"
+ },
+ "marine": {
+  "exampleEn": "Tom is studying to become a marine biologist.",
+  "exampleSource": "Tatoeba #3419949 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3419949；中文 Tatoeba #5617228 · 作者 verdastelo9604 · CC BY 2.0 FR",
+  "exampleZh": "湯姆爲了當海洋生物學家學習。"
+ },
+ "navigation": {
+  "exampleEn": "Early explorers used the stars for navigation.",
+  "exampleSource": "Tatoeba #272150 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/272150；中文 Tatoeba #779859 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "古代的探險家用星星來辨別方向。"
+ },
+ "gulf": {
+  "exampleEn": "Where's the Gulf of Mexico?",
+  "exampleSource": "Tatoeba #13009069 · 作者 rul · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13009069"
+ },
+ "beach": {
+  "exampleEn": "Let's go to the beach.",
+  "exampleSource": "Tatoeba #34867 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/34867；中文 Tatoeba #834808 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "讓我們去海邊吧。"
+ },
+ "coast": {
+  "exampleEn": "His cottage is on the coast.",
+  "exampleSource": "Tatoeba #320320 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/320320；中文 Tatoeba #847772 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "他的村屋在海岸上。"
+ },
+ "shore": {
+  "exampleEn": "I found a beautiful shell on the shore.",
+  "exampleSource": "Tatoeba #256744 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/256744；中文 Tatoeba #1358441 · 作者 sadhen · CC BY 2.0 FR",
+  "exampleZh": "我在海滩上发现了一个漂亮的贝壳。"
+ },
+ "tide": {
+  "exampleEn": "The tide was rising.",
+  "exampleSource": "Tatoeba #11968678 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/11968678"
+ },
+ "current": {
+  "exampleEn": "They swam against the current.",
+  "exampleSource": "Tatoeba #8923429 · 作者 iiujik · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8923429；中文 Tatoeba #2052113 · 作者 Gustav249 · CC BY 2.0 FR",
+  "exampleZh": "他们逆流而上。"
+ },
+ "brook": {
+  "exampleEn": "The murmur of the brook lulls me to sleep.",
+  "exampleSource": "Tatoeba #2230009 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2230009；中文 Tatoeba #2221100 · 作者 sadhen · CC BY 2.0 FR",
+  "exampleZh": "溪流潺潺，催我入眠。"
+ },
+ "stream": {
+  "exampleEn": "The stream flows into the pond.",
+  "exampleSource": "Tatoeba #495618 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/495618；中文 Tatoeba #868280 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "溪水流進這個池塘裡。"
+ },
+ "shallow": {
+  "exampleEn": "Is this river shallow?",
+  "exampleSource": "Tatoeba #3583324 · 作者 mikecash · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3583324；中文 Tatoeba #10484060 · 作者 BobbyLee · CC BY 2.0 FR",
+  "exampleZh": "这条河浅吗？"
+ },
+ "superficial": {
+  "exampleEn": "He has only a superficial knowledge of Japanese.",
+  "exampleSource": "Tatoeba #302242 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/302242；中文 Tatoeba #387605 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "他對日文只是略懂皮毛。"
+ },
+ "flat": {
+  "exampleEn": "He has flat feet.",
+  "exampleSource": "Tatoeba #8478514 · 作者 CH · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8478514；中文 Tatoeba #13108741 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "他是扁平足。"
+ },
+ "smooth": {
+  "exampleEn": "Her skin is smooth.",
+  "exampleSource": "Tatoeba #309622 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/309622；中文 Tatoeba #892495 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "她的皮膚光滑。"
+ },
+ "rough": {
+  "exampleEn": "The surface of the object is fairly rough.",
+  "exampleSource": "Tatoeba #44132 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/44132；中文 Tatoeba #759701 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "這件物件的表面頗為粗糙。"
+ },
+ "sandy": {
+  "exampleEn": "The sandy beach was white.",
+  "exampleSource": "Tatoeba #12424418 · 作者 Miktsoanit · CC BY 2.0 FR · https://tatoeba.org/sentences/show/12424418"
+ },
+ "stony": {
+  "exampleEn": "The stony beach was painful to walk on.",
+  "exampleSource": "Tatoeba #12470497 · 作者 katix824 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/12470497"
+ },
+ "vertical": {
+  "exampleEn": "The cliff is almost vertical.",
+  "exampleSource": "Tatoeba #48970 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/48970"
+ },
+ "steep": {
+  "exampleEn": "The path zigzagged up the steep slope.",
+  "exampleSource": "Tatoeba #327880 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/327880；中文 Tatoeba #876188 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "這條小路沿著陡峭的斜坡蜿蜒而上。"
+ },
+ "parallel": {
+  "exampleEn": "The road is parallel to the river.",
+  "exampleSource": "Tatoeba #44667 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/44667；中文 Tatoeba #6477585 · 作者 xjjAstrus · CC BY 2.0 FR",
+  "exampleZh": "這條路與河流平行。"
+ },
+ "narrow": {
+  "exampleEn": "The road is too narrow for cars.",
+  "exampleSource": "Tatoeba #44680 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/44680；中文 Tatoeba #895139 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "這條路對汽車來說太窄了。"
+ },
+ "Oceania": {
+  "exampleEn": "Australia is the largest country in Oceania.",
+  "exampleSource": "Tatoeba #1815532 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1815532；中文 Tatoeba #1944843 · 作者 bigfatpanda · CC BY 2.0 FR",
+  "exampleZh": "澳大利亚是大洋洲最大的国家。"
+ },
+ "mainland": {
+  "exampleEn": "Tomorrow, I am coming back from Hong Kong to the mainland.",
+  "exampleSource": "Tatoeba #7819395 · 作者 sharris123 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/7819395；中文 Tatoeba #6319014 · 作者 xjjAstrus · CC BY 2.0 FR",
+  "exampleZh": "明天我要從香港去趟內地。"
+ },
+ "peninsula": {
+  "exampleEn": "Italy is a peninsula.",
+  "exampleSource": "Tatoeba #690740 · 作者 sysko · CC BY 2.0 FR · https://tatoeba.org/sentences/show/690740；中文 Tatoeba #690735 · 作者 sysko · CC BY 2.0 FR",
+  "exampleZh": "意大利是一个半岛。"
+ },
+ "climate": {
+  "exampleEn": "Rice grows in warm climates.",
+  "exampleSource": "Tatoeba #320208 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/320208；中文 Tatoeba #759768 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "水稻生長在溫暖的氣候。"
+ },
+ "weather": {
+  "exampleEn": "The weather is hot.",
+  "exampleSource": "Tatoeba #1766693 · 作者 AlanF_US · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1766693；中文 Tatoeba #13252715 · 作者 atitarev · CC BY 2.0 FR",
+  "exampleZh": "天氣很熱。"
+ },
+ "meteorology": {
+  "exampleEn": "Meteorology has always fascinated me.",
+  "exampleSource": "Tatoeba #13260610 · 作者 Lumi · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13260610"
+ },
+ "mild": {
+  "exampleEn": "This country has a mild climate.",
+  "exampleSource": "Tatoeba #59251 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/59251；中文 Tatoeba #372183 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "這個國家的氣候很溫和。"
+ },
+ "heating": {
+  "exampleEn": "The heating doesn't work.",
+  "exampleSource": "Tatoeba #453201 · 作者 FeuDRenais · CC BY 2.0 FR · https://tatoeba.org/sentences/show/453201；中文 Tatoeba #3767567 · 作者 cienias · CC BY 2.0 FR",
+  "exampleZh": "暖氣壞了。"
+ },
+ "moderate": {
+  "exampleEn": "Moderate exercise is necessary for good health.",
+  "exampleSource": "Tatoeba #542831 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/542831；中文 Tatoeba #891044 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "適度運動對身體健康是必要的。"
+ },
+ "warm": {
+  "exampleEn": "It's a warm day.",
+  "exampleSource": "Tatoeba #13064242 · 作者 sundown · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13064242；中文 Tatoeba #10040336 · 作者 verdastelo9604 · CC BY 2.0 FR",
+  "exampleZh": "天氣暖和。"
+ },
+ "thermal": {
+  "exampleEn": "The atomic reactor generates enormous amounts of thermal energy.",
+  "exampleSource": "Tatoeba #12568755 · 作者 omerfarukckmk · CC BY 2.0 FR · https://tatoeba.org/sentences/show/12568755；中文 Tatoeba #12568754 · 作者 omerfarukckmk · CC BY 2.0 FR",
+  "exampleZh": "原子反应堆发出大量的热能。"
+ },
+ "tropics": {
+  "exampleEn": "There are only two seasons in the tropics.",
+  "exampleSource": "Tatoeba #2268676 · 作者 _undertoad · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2268676"
+ },
+ "arid": {
+  "exampleEn": "It is an arid region, almost a desert.",
+  "exampleSource": "Tatoeba #4817809 · 作者 AlanF_US · CC BY 2.0 FR · https://tatoeba.org/sentences/show/4817809；中文 Tatoeba #10011733 · 作者 GlossaMatik · CC BY 2.0 FR",
+  "exampleZh": "这是片干燥地区，几乎是一片荒漠。"
+ },
+ "moist": {
+  "exampleEn": "Winds from the sea are moist.",
+  "exampleSource": "Tatoeba #22267 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/22267；中文 Tatoeba #2513895 · 作者 fenfang557 · CC BY 2.0 FR",
+  "exampleZh": "从海洋吹来的风感觉湿漉漉的。"
+ },
+ "damp": {
+  "exampleEn": "Clean the window with a damp cloth.",
+  "exampleSource": "Tatoeba #35850 · 作者 Dejo · CC BY 2.0 FR · https://tatoeba.org/sentences/show/35850；中文 Tatoeba #798040 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "用濕布清潔窗戶。"
+ },
+ "humid": {
+  "exampleEn": "Hot and humid weather makes us lazy.",
+  "exampleSource": "Tatoeba #268552 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/268552；中文 Tatoeba #798245 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "炎熱潮濕的天氣使我們變得懶散。"
+ },
+ "snowy": {
+  "exampleEn": "It was a snowy day.",
+  "exampleSource": "Tatoeba #9133964 · 作者 soliloquist · CC BY 2.0 FR · https://tatoeba.org/sentences/show/9133964"
+ },
+ "frost": {
+  "exampleEn": "We had a heavy frost this morning.",
+  "exampleSource": "Tatoeba #242216 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/242216；中文 Tatoeba #796073 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "今天早上下厚霜了。"
+ },
+ "hail": {
+  "exampleEn": "Have you ever seen it hail?",
+  "exampleSource": "Tatoeba #326657 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/326657；中文 Tatoeba #918456 · 作者 layu · CC BY 2.0 FR",
+  "exampleZh": "你什么时候看见过冰雹吗？"
+ },
+ "thaw": {
+  "exampleEn": "The snow will thaw soon.",
+  "exampleSource": "Tatoeba #10317987 · 作者 terrywallwork · CC BY 2.0 FR · https://tatoeba.org/sentences/show/10317987"
+ },
+ "chill": {
+  "exampleEn": "A chill ran down his spine as he crossed the park.",
+  "exampleSource": "Tatoeba #13175472 · 作者 Nuel · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13175472；中文 Tatoeba #13933597 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "他穿過公園時，一陣寒意順著脊背蔓延而下。"
+ },
+ "freeze": {
+  "exampleEn": "When water freezes it becomes ice.",
+  "exampleSource": "Tatoeba #681016 · 作者 Source_VOA · CC BY 2.0 FR · https://tatoeba.org/sentences/show/681016；中文 Tatoeba #899965 · 作者 kanaorange · CC BY 2.0 FR",
+  "exampleZh": "水結凍後，變成冰。"
+ },
+ "frigid": {
+  "exampleEn": "The weather is exceptionally frigid.",
+  "exampleSource": "Tatoeba #4728117 · 作者 paper1n0 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/4728117；中文 Tatoeba #4547211 · 作者 murr · CC BY 2.0 FR",
+  "exampleZh": "天气非常寒冷。"
+ },
+ "tremble": {
+  "exampleEn": "We felt the ground trembling.",
+  "exampleSource": "Tatoeba #249065 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/249065；中文 Tatoeba #342433 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "我們感覺到地面在搖晃。"
+ },
+ "shiver": {
+  "exampleEn": "I'm shivering with cold.",
+  "exampleSource": "Tatoeba #10657438 · 作者 sundown · CC BY 2.0 FR · https://tatoeba.org/sentences/show/10657438；中文 Tatoeba #8800808 · 作者 crescat · CC BY 2.0 FR",
+  "exampleZh": "我的身体被冻得瑟瑟发抖。"
+ },
+ "thunder": {
+  "exampleEn": "The thunder scared the children.",
+  "exampleSource": "Tatoeba #246088 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/246088；中文 Tatoeba #838508 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "雷聲嚇到孩子了。"
+ },
+ "lightning": {
+  "exampleEn": "The lightning lit up the sky.",
+  "exampleSource": "Tatoeba #681360 · 作者 Source_VOA · CC BY 2.0 FR · https://tatoeba.org/sentences/show/681360；中文 Tatoeba #9955853 · 作者 GlossaMatik · CC BY 2.0 FR",
+  "exampleZh": "闪电照亮了天空。"
+ },
+ "stormy": {
+  "exampleEn": "It was a stormy day, and the snow was falling fast.",
+  "exampleSource": "Tatoeba #1582787 · 作者 eastasiastudent · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1582787；中文 Tatoeba #1582760 · 作者 eastasiastudent · CC BY 2.0 FR",
+  "exampleZh": "这天刮着暴风雪，雪下得很大。"
+ },
+ "downpour": {
+  "exampleEn": "I was utterly soaked by the downpour.",
+  "exampleSource": "Tatoeba #35866 · 作者 Jesse · CC BY 2.0 FR · https://tatoeba.org/sentences/show/35866；中文 Tatoeba #8920786 · 作者 crescat · CC BY 2.0 FR",
+  "exampleZh": "我被雨淋成了落汤鸡。"
+ },
+ "rainfall": {
+  "exampleEn": "We had a heavy rainfall last night.",
+  "exampleSource": "Tatoeba #512177 · 作者 blay_paul · CC BY 2.0 FR · https://tatoeba.org/sentences/show/512177；中文 Tatoeba #796072 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "昨晚雨勢很大。"
+ },
+ "sprinkle": {
+  "exampleEn": "I'll sauté a few sweet potatoes and sprinkle them with sugar.",
+  "exampleSource": "Tatoeba #10534817 · 作者 sundown · CC BY 2.0 FR · https://tatoeba.org/sentences/show/10534817；中文 Tatoeba #6937166 · 作者 xjjAstrus · CC BY 2.0 FR",
+  "exampleZh": "我去炸一點紅薯，然後在上面撒上糖。"
+ },
+ "rainbow": {
+  "exampleEn": "A rainbow has seven colors.",
+  "exampleSource": "Tatoeba #4753134 · 作者 AlanF_US · CC BY 2.0 FR · https://tatoeba.org/sentences/show/4753134；中文 Tatoeba #4757592 · 作者 ryanwoo · CC BY 2.0 FR",
+  "exampleZh": "彩虹有七种颜色。"
+ },
+ "shower": {
+  "exampleEn": "I took a shower.",
+  "exampleSource": "Tatoeba #3126551 · 作者 lavenir · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3126551；中文 Tatoeba #5624915 · 作者 verdastelo9604 · CC BY 2.0 FR",
+  "exampleZh": "我洗了澡。"
+ },
+ "Celsius": {
+  "exampleEn": "Water boils at 100 degrees Celsius.",
+  "exampleSource": "Tatoeba #270789 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/270789；中文 Tatoeba #868077 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "水在攝氏100度沸騰。"
+ },
+ "temperature": {
+  "exampleEn": "The temperature has dropped.",
+  "exampleSource": "Tatoeba #13994878 · 作者 Aghanim · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13994878；中文 Tatoeba #13994941 · 作者 zweisamkeit · CC BY 2.0 FR",
+  "exampleZh": "气温下降了。"
+ },
+ "forecast": {
+  "exampleEn": "What's the forecast for tomorrow?",
+  "exampleSource": "Tatoeba #71846 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/71846；中文 Tatoeba #844559 · 作者 kooler · CC BY 2.0 FR",
+  "exampleZh": "明天的天气预报怎么说？"
+ },
+ "peak": {
+  "exampleEn": "The peak of Fujiyama was covered with snow.",
+  "exampleSource": "Tatoeba #2889407 · 作者 astynk · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2889407；中文 Tatoeba #349929 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "富士山顶盖满了雪。"
+ },
+ "mount": {
+  "exampleEn": "He climbed Mount Fuji four times.",
+  "exampleSource": "Tatoeba #2656989 · 作者 Joseph · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2656989；中文 Tatoeba #13575861 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "他曾四次攀登富士山。"
+ },
+ "mountain": {
+  "exampleEn": "I grew up in the mountains.",
+  "exampleSource": "Tatoeba #2330008 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2330008；中文 Tatoeba #4464879 · 作者 kaenif · CC BY 2.0 FR",
+  "exampleZh": "我在山區長大。"
+ },
+ "range": {
+  "exampleEn": "The Himalayas are a mountain range located on the Asian continent.",
+  "exampleSource": "Tatoeba #13139599 · 作者 rul · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13139599；中文 Tatoeba #13575791 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "喜馬拉雅山脈是位於亞洲大陸的山脈。"
+ },
+ "ridge": {
+  "exampleEn": "Dmitri hiked up the ridge.",
+  "exampleSource": "Tatoeba #11801807 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/11801807"
+ },
+ "slope": {
+  "exampleEn": "The path zigzagged up the steep slope.",
+  "exampleSource": "Tatoeba #327880 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/327880；中文 Tatoeba #876188 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "這條小路沿著陡峭的斜坡蜿蜒而上。"
+ },
+ "valley": {
+  "exampleEn": "A beautiful valley lies behind the hill.",
+  "exampleSource": "Tatoeba #19880 · 作者 mccarras · CC BY 2.0 FR · https://tatoeba.org/sentences/show/19880；中文 Tatoeba #336884 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "小山后面有个美丽的山谷。"
+ },
+ "hillside": {
+  "exampleEn": "The rock rolled down the hillside.",
+  "exampleSource": "Tatoeba #20785 · 作者 Zifre · CC BY 2.0 FR · https://tatoeba.org/sentences/show/20785"
+ },
+ "overlook": {
+  "exampleEn": "The window overlooks the courtyard.",
+  "exampleSource": "Tatoeba #7834145 · 作者 sharris123 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/7834145；中文 Tatoeba #884666 · 作者 Tajfun · CC BY 2.0 FR",
+  "exampleZh": "窗戶俯瞰著院子。"
+ },
+ "southern": {
+  "exampleEn": "In Southern China, the qipao is also known as \"changshan\".",
+  "exampleSource": "Tatoeba #727969 · 作者 eastasiastudent · CC BY 2.0 FR · https://tatoeba.org/sentences/show/727969；中文 Tatoeba #727971 · 作者 GlossaMatik · CC BY 2.0 FR",
+  "exampleZh": "在中国南方，旗袍又称“长衫”。"
+ },
+ "southeast": {
+  "exampleEn": "The wind is coming from the southeast.",
+  "exampleSource": "Tatoeba #13892623 · 作者 frpzzd · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13892623"
+ },
+ "southwest": {
+  "exampleEn": "The river flows southwest to the sea.",
+  "exampleSource": "Tatoeba #4255968 · 作者 orcrist · CC BY 2.0 FR · https://tatoeba.org/sentences/show/4255968"
+ },
+ "northeast": {
+  "exampleEn": "The wind is coming from the northeast.",
+  "exampleSource": "Tatoeba #13892627 · 作者 frpzzd · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13892627"
+ },
+ "northwest": {
+  "exampleEn": "Pskov is in the northwest of Russia.",
+  "exampleSource": "Tatoeba #10410204 · 作者 CN · CC BY 2.0 FR · https://tatoeba.org/sentences/show/10410204"
+ },
+ "eastern": {
+  "exampleEn": "Japan is in eastern Asia.",
+  "exampleSource": "Tatoeba #281592 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/281592"
+ },
+ "oriental": {
+  "exampleEn": "I'm interested in oriental pottery.",
+  "exampleSource": "Tatoeba #1023151 · 作者 ellasevia · CC BY 2.0 FR · https://tatoeba.org/sentences/show/1023151；中文 Tatoeba #4761589 · 作者 DrWinters · CC BY 2.0 FR",
+  "exampleZh": "我对東方陶瓷有兴趣。"
+ },
+ "inevitable": {
+  "exampleEn": "War is not inevitable.",
+  "exampleSource": "Tatoeba #273316 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/273316；中文 Tatoeba #335257 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "战争并非不可避免。"
+ },
+ "irreversible": {
+  "exampleEn": "The damage is irreversible.",
+  "exampleSource": "Tatoeba #5737932 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/5737932"
+ },
+ "irregularly": {
+  "exampleEn": "The Earth is an irregularly shaped ellipsoid.",
+  "exampleSource": "Tatoeba #6708738 · 作者 Hybrid · CC BY 2.0 FR · https://tatoeba.org/sentences/show/6708738"
+ },
+ "inappropriate": {
+  "exampleEn": "Tom's comment was inappropriate.",
+  "exampleSource": "Tatoeba #4664702 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/4664702；中文 Tatoeba #6535850 · 作者 verdastelo9604 · CC BY 2.0 FR",
+  "exampleZh": "湯姆的評論不合適。"
+ },
+ "abnormal": {
+  "exampleEn": "Environmental pollution is causing abnormal weather conditions.",
+  "exampleSource": "Tatoeba #21016 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/21016；中文 Tatoeba #797018 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "環境污染正造成異常的天氣情況。"
+ },
+ "sediment": {
+  "exampleEn": "Layers of sediment lay at the bottom of the riverbed.",
+  "exampleSource": "Tatoeba #9518287 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/9518287"
+ },
+ "silt": {
+  "exampleEn": "The river was cloudy with silt.",
+  "exampleSource": "Tatoeba #273213 · 作者 orcrist · CC BY 2.0 FR · https://tatoeba.org/sentences/show/273213"
+ },
+ "muddy": {
+  "exampleEn": "The passing car splashed muddy water on me.",
+  "exampleSource": "Tatoeba #265443 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/265443；中文 Tatoeba #1345617 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "車子經過的時候把泥水濺到了我的身上。"
+ },
+ "clay": {
+  "exampleEn": "Tom worked the clay into a vase.",
+  "exampleSource": "Tatoeba #37044 · 作者 Catriona · CC BY 2.0 FR · https://tatoeba.org/sentences/show/37044；中文 Tatoeba #662819 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "湯姆把黏土塑成了一個花瓶。"
+ },
+ "dirt": {
+  "exampleEn": "You can dig dirt from the ground.",
+  "exampleSource": "Tatoeba #681107 · 作者 Source_VOA · CC BY 2.0 FR · https://tatoeba.org/sentences/show/681107；中文 Tatoeba #5556193 · 作者 verdastelo9604 · CC BY 2.0 FR",
+  "exampleZh": "你可以在地上挖土。"
+ },
+ "rural": {
+  "exampleEn": "Asia has many rural villages.",
+  "exampleSource": "Tatoeba #3962699 · 作者 JSakuragi · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3962699；中文 Tatoeba #3739217 · 作者 egg0073 · CC BY 2.0 FR",
+  "exampleZh": "亞洲有許多鄉村。"
+ },
+ "suburb": {
+  "exampleEn": "He lives in the suburbs of Tokyo.",
+  "exampleSource": "Tatoeba #301928 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/301928；中文 Tatoeba #881296 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "他住在東京郊區。"
+ },
+ "outskirts": {
+  "exampleEn": "I live on the outskirts of Tokyo.",
+  "exampleSource": "Tatoeba #259667 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/259667；中文 Tatoeba #889312 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "我住在東京郊區。"
+ },
+ "remote": {
+  "exampleEn": "It's quite a remote spot.",
+  "exampleSource": "Tatoeba #13713955 · 作者 sundown · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13713955；中文 Tatoeba #11706409 · 作者 Jokubas · CC BY 2.0 FR",
+  "exampleZh": "那个位置很偏僻。"
+ },
+ "desolate": {
+  "exampleEn": "Mars is a cold desolate planet.",
+  "exampleSource": "Tatoeba #8543235 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8543235"
+ },
+ "distant": {
+  "exampleEn": "We saw the gleam of a distant lighthouse.",
+  "exampleSource": "Tatoeba #25857 · 作者 AlanF_US · CC BY 2.0 FR · https://tatoeba.org/sentences/show/25857；中文 Tatoeba #780341 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "我們看到了遠方燈塔的微光。"
+ },
+ "adjacent": {
+  "exampleEn": "The stadium is adjacent to the school.",
+  "exampleSource": "Tatoeba #48721 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/48721；中文 Tatoeba #13513759 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "體育場毗鄰學校。"
+ },
+ "pollution": {
+  "exampleEn": "Car exhaust causes serious pollution in towns.",
+  "exampleSource": "Tatoeba #265533 · 作者 CS · CC BY 2.0 FR · https://tatoeba.org/sentences/show/265533；中文 Tatoeba #5715189 · 作者 verdastelo9604 · CC BY 2.0 FR",
+  "exampleZh": "汽车尾气在城镇里造成了严重的污染。"
+ },
+ "pollutant": {
+  "exampleEn": "Lead is a common environmental pollutant.",
+  "exampleSource": "Tatoeba #3718918 · 作者 Hybrid · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3718918"
+ },
+ "contaminate": {
+  "exampleEn": "The water was contaminated.",
+  "exampleSource": "Tatoeba #11736351 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/11736351"
+ },
+ "geology": {
+  "exampleEn": "Tom majored in geology.",
+  "exampleSource": "Tatoeba #7926340 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/7926340"
+ },
+ "border": {
+  "exampleEn": "This is a small border town.",
+  "exampleSource": "Tatoeba #7834173 · 作者 sharris123 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/7834173；中文 Tatoeba #5951353 · 作者 xjjAstrus · CC BY 2.0 FR",
+  "exampleZh": "這是一座邊境小城。"
+ },
+ "margin": {
+  "exampleEn": "I won by a very small margin.",
+  "exampleSource": "Tatoeba #13547474 · 作者 kiryopi · CC BY 2.0 FR · https://tatoeba.org/sentences/show/13547474"
+ },
+ "fringe": {
+  "exampleEn": "He lives on the fringes of Algiers.",
+  "exampleSource": "Tatoeba #8567624 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8567624"
+ },
+ "plate": {
+  "exampleEn": "I need a plate.",
+  "exampleSource": "Tatoeba #8822122 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8822122；中文 Tatoeba #8930222 · 作者 iiujik · CC BY 2.0 FR",
+  "exampleZh": "我需要盘子。"
+ },
+ "debris": {
+  "exampleEn": "We cleared away the debris.",
+  "exampleSource": "Tatoeba #11813396 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/11813396"
+ },
+ "crack": {
+  "exampleEn": "He cracked the walnut with his teeth.",
+  "exampleSource": "Tatoeba #2054011 · 作者 AlanF_US · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2054011；中文 Tatoeba #13543771 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "他用牙齒咬碎了核桃。"
+ },
+ "gap": {
+  "exampleEn": "Please mind the gap between the train and the platform.",
+  "exampleSource": "Tatoeba #472882 · 作者 nickyeow · CC BY 2.0 FR · https://tatoeba.org/sentences/show/472882；中文 Tatoeba #472884 · 作者 nickyeow · CC BY 2.0 FR",
+  "exampleZh": "請小心月台與車廂之間的空隙。"
+ },
+ "splendid": {
+  "exampleEn": "I never saw such a splendid sunset.",
+  "exampleSource": "Tatoeba #54772 · 作者 Ivanovb · CC BY 2.0 FR · https://tatoeba.org/sentences/show/54772；中文 Tatoeba #346126 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "我从没见过那么壮丽的日落景色。"
+ },
+ "grand": {
+  "exampleEn": "The grand prize is a kiss from the princess.",
+  "exampleSource": "Tatoeba #2038382 · 作者 JarHead54321 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2038382；中文 Tatoeba #2027950 · 作者 ydcok · CC BY 2.0 FR",
+  "exampleZh": "一等奖是公主的香吻。"
+ },
+ "magnificent": {
+  "exampleEn": "Tomorrow, I'll fly over the magnificent Himalayas.",
+  "exampleSource": "Tatoeba #11377100 · 作者 chaule3 · CC BY 2.0 FR · https://tatoeba.org/sentences/show/11377100；中文 Tatoeba #13575790 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "明天，我將飛越雄偉的喜馬拉雅山脈。"
+ },
+ "super": {
+  "exampleEn": "I only buy super soft toilet paper.",
+  "exampleSource": "Tatoeba #2468917 · 作者 Hybrid · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2468917；中文 Tatoeba #13552134 · 作者 LeviHighway · CC BY 2.0 FR",
+  "exampleZh": "我只買超柔軟的衛生紙。"
+ },
+ "interesting": {
+  "exampleEn": "His story was interesting.",
+  "exampleSource": "Tatoeba #287476 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/287476；中文 Tatoeba #1313748 · 作者 vicch · CC BY 2.0 FR",
+  "exampleZh": "他的故事很有意思。"
+ },
+ "dramatic": {
+  "exampleEn": "It was very dramatic.",
+  "exampleSource": "Tatoeba #8509463 · 作者 CK · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8509463"
+ },
+ "wilderness": {
+  "exampleEn": "Fire spread in the wilderness.",
+  "exampleSource": "Tatoeba #12650143 · 作者 anzart · CC BY 2.0 FR · https://tatoeba.org/sentences/show/12650143"
+ },
+ "desert": {
+  "exampleEn": "The Sahara is a vast desert.",
+  "exampleSource": "Tatoeba #54060 · 作者 CM · CC BY 2.0 FR · https://tatoeba.org/sentences/show/54060；中文 Tatoeba #1454464 · 作者 sadhen · CC BY 2.0 FR",
+  "exampleZh": "撒哈拉沙漠广袤无垠。"
+ },
+ "deforest": {
+  "exampleEn": "This area is gradually being deforested.",
+  "exampleSource": "Tatoeba #6035812 · 作者 mailohilohi · CC BY 2.0 FR · https://tatoeba.org/sentences/show/6035812"
+ },
+ "barren": {
+  "exampleEn": "Mars is a barren desert.",
+  "exampleSource": "Tatoeba #8799316 · 作者 Amastan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8799316"
+ },
+ "fertile": {
+  "exampleEn": "The soil here is fertile.",
+  "exampleSource": "Tatoeba #61621 · 作者 sundown · CC BY 2.0 FR · https://tatoeba.org/sentences/show/61621；中文 Tatoeba #778745 · 作者 Martha · CC BY 2.0 FR",
+  "exampleZh": "這裡的土壤肥沃。"
+ },
+ "fertilise": {
+  "exampleEn": "Tom fertilized some of his fields.",
+  "exampleSource": "Tatoeba #12909853 · 作者 Ergulis · CC BY 2.0 FR · https://tatoeba.org/sentences/show/12909853"
+ },
+ "solar": {
+  "exampleEn": "The Sun is in the center of the solar system.",
+  "exampleSource": "Tatoeba #3955417 · 作者 Hybrid · CC BY 2.0 FR · https://tatoeba.org/sentences/show/3955417；中文 Tatoeba #5419058 · 作者 egg0073 · CC BY 2.0 FR",
+  "exampleZh": "太陽在太陽系的中心。"
+ },
+ "lunar": {
+  "exampleEn": "2010 was the Year of the Tiger in the Chinese lunar calendar.",
+  "exampleSource": "Tatoeba #737780 · 作者 eastasiastudent · CC BY 2.0 FR · https://tatoeba.org/sentences/show/737780；中文 Tatoeba #737779 · 作者 eastasiastudent · CC BY 2.0 FR",
+  "exampleZh": "2010年是農曆的虎年。"
+ },
+ "calendar": {
+  "exampleEn": "I hang the calendar on the wall.",
+  "exampleSource": "Tatoeba #8704662 · 作者 chanchan · CC BY 2.0 FR · https://tatoeba.org/sentences/show/8704662；中文 Tatoeba #2806369 · 作者 cienias · CC BY 2.0 FR",
+  "exampleZh": "我把日曆掛在牆上。"
+ },
+ "sunrise": {
+  "exampleEn": "What a beautiful sunrise it is!",
+  "exampleSource": "Tatoeba #36001 · 作者 mailohilohi · CC BY 2.0 FR · https://tatoeba.org/sentences/show/36001；中文 Tatoeba #5617146 · 作者 verdastelo9604 · CC BY 2.0 FR",
+  "exampleZh": "多美的日出啊！"
+ },
+ "sunset": {
+  "exampleEn": "We could see the sunset from the window.",
+  "exampleSource": "Tatoeba #2045 · 作者 Swift · CC BY 2.0 FR · https://tatoeba.org/sentences/show/2045；中文 Tatoeba #503066 · 作者 fucongcong · CC BY 2.0 FR",
+  "exampleZh": "我们能从窗户看到日落。"
+ }
+}
