@@ -48,11 +48,11 @@ function EditSheet({ word, onSave, onClose }: { word: WordItem; onSave: (w: Word
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
     <div className="fixed inset-0 z-[60] flex items-end bg-ink/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="sheet-up w-full rounded-t-[28px] bg-white px-5 pb-8 pt-3 shadow-sheet" style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }} onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-rose-100" />
+      <div className="sheet-up w-full rounded-t-[32px] bg-[#FCFAF6] px-5 pb-8 pt-3 shadow-sheet border-t border-stone-200/50" style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }} onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-stone-200" />
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-serif text-xl font-semibold text-ink">编辑单词</h3>
-          <button type="button" onClick={onClose} className="rounded-xl bg-rose-50 p-1.5 text-ink-soft" aria-label="关闭"><X size={18} /></button>
+          <button type="button" onClick={onClose} className="rounded-xl bg-stone-100 p-1.5 text-ink-soft hover:bg-stone-200 transition" aria-label="关闭"><X size={18} /></button>
         </div>
         <div className="space-y-3">
           <Field label="英文单词"><input className={inputCls} value={f.word} onChange={(e) => set('word', e.target.value)} autoCapitalize="none" /></Field>
@@ -87,17 +87,17 @@ function TabBar({ tab, onChange, due }: { tab: Tab; onChange: (t: Tab) => void; 
     { key: 'bank', label: '我的单词', Icon: BookOpenText }
   ];
   return (
-    <nav aria-label="主导航" className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-blush bg-white/95 backdrop-blur-md">
+    <nav aria-label="主导航" className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-blush/80 bg-[#FCFAF5]/92 backdrop-blur-lg shadow-[0_-4px_20px_rgba(26,29,41,0.03)]">
       <div className="mx-auto flex max-w-[480px]">
         {items.map(({ key, label, Icon }) => {
           const active = tab === key;
           return (
-            <button key={key} type="button" aria-current={active ? 'page' : undefined} onClick={() => onChange(key)} className="relative flex min-h-14 flex-1 flex-col items-center gap-0.5 pb-1 pt-2">
-              <span className={`relative rounded-2xl px-4 py-1 transition ${active ? 'bg-rose-100 text-rose-600' : 'text-ink-soft'}`}>
-                <Icon size={22} strokeWidth={active ? 2.4 : 2} />
-                {key === 'a4' && due > 0 && <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-rose-500 px-1 text-center text-[10px] font-extrabold leading-[18px] text-white">{due}</span>}
+            <button key={key} type="button" aria-current={active ? 'page' : undefined} onClick={() => onChange(key)} className="relative flex min-h-14 flex-1 flex-col items-center gap-0.5 pb-1 pt-2 transition active:scale-95">
+              <span className={`relative rounded-2xl px-3.5 py-1 transition ${active ? 'bg-rose-100/80 text-rose-600' : 'text-ink-soft/75 hover:text-ink'}`}>
+                <Icon size={20} strokeWidth={active ? 2.4 : 1.8} />
+                {key === 'a4' && due > 0 && <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-[18px] text-white shadow-xs">{due}</span>}
               </span>
-              <span className={`text-[11px] font-extrabold ${active ? 'text-rose-600' : 'text-ink-soft'}`}>{label}</span>
+              <span className={`text-[11px] ${active ? 'font-bold text-rose-600' : 'font-medium text-ink-soft/75'}`}>{label}</span>
             </button>
           );
         })}

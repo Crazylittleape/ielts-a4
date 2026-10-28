@@ -1,8 +1,13 @@
 import { test, expect, type Page } from '@playwright/test';
-import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 const sequence: string[] = JSON.parse(readFileSync(new URL('../src/data/book-sequence.json', import.meta.url), 'utf8'));
 const today = '2026-10-22';
 const fixture = {words:[['alpha','第一个'],['beta','第二个'],['gamma','第三个'],['delta','第四个']].map(([word,meaning],i)=>({id:`word-${i}`,word,meaning,phonetic:'',synonyms:'',createdAt:'2026-10-20',stage:1,nextReviewDate:today,reviewHistory:['2026-10-20'],isHard:false})), skipped:[],settings:{dailyClaim:30,lastClaimDate:''}};
+function shotPath(filename: string): string {
+  const dir = existsSync('/home/ubuntu/shots/rea') ? '/home/ubuntu/shots/rea' : '/tmp/shots/rea';
+  mkdirSync(dir, { recursive: true });
+  return `${dir}/${filename}`;
+}
 async function start(page: Page, initial: unknown = fixture) {
   await page.clock.install({time:new Date('2026-10-22T12:00:00+08:00')});
   await page.addInitScript(data=>{if(!localStorage.getItem('fixture')){localStorage.setItem('ielts_a4_workspace_v2',JSON.stringify(data));localStorage.setItem('fixture','1');}},initial);
@@ -106,7 +111,7 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
   const studyBack = await page.getByRole('button', { name: '返回', exact: true }).boundingBox();
   expect(studyBack?.width).toBeGreaterThanOrEqual(44);
   expect(studyBack?.height).toBeGreaterThanOrEqual(44);
-  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-before-reveal-375.png', fullPage: true });
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: shotPath('study-before-reveal-375.png'), fullPage: true });
   await expect(page.getByTestId('example')).toHaveCount(0);
   for(let i=0;i<25;i++){
     await page.getByRole('button',{name:'显示答案',exact:true}).click();
@@ -116,7 +121,7 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
       const exampleAudio = await page.getByRole('button', { name: '朗读例句：atmosphere', exact: true }).boundingBox();
       expect(exampleAudio?.width).toBeGreaterThanOrEqual(44);
       expect(exampleAudio?.height).toBeGreaterThanOrEqual(44);
-      if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-after-reveal-375.png', fullPage: true });
+      if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: shotPath('study-after-reveal-375.png'), fullPage: true });
     }
     await page.getByRole('button',{name:i===0?'没想起':'想起来了',exact:true}).click();
   }
@@ -141,7 +146,7 @@ test('three rounds hide cues, retry errors, resume and complete only after spell
     await page.getByRole('button',{name:'想起来了',exact:true}).click();
   }
   await expect(page.getByText('第 3/3 轮 · 1/25',{exact:true})).toBeVisible();
-  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/study-spelling-375.png', fullPage: true });
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: shotPath('study-spelling-375.png'), fullPage: true });
   await expect(page.getByRole('heading',{name:'atmosphere',exact:true})).toHaveCount(0);
   await expect(page.getByText('ˈætməsfɪə', { exact: false })).toHaveCount(0);
   await expect(page.getByRole('button',{name:/朗读/})).toHaveCount(0);
@@ -858,7 +863,7 @@ test('A4 print options preserve one language, print only the current list, and w
   await expect(page.getByTestId('print-sheet')).toContainText('雅思词汇真经 · 重点攻坚 A4');
   await expect(page.getByTestId('print-sheet')).toContainText(`${today} · 共 10 词`);
   await expect(page.getByTestId('print-sheet')).toContainText(`IELTS A4 · ${today}`);
-  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/print-375.png', fullPage: true });
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: shotPath('print-375.png'), fullPage: true });
 });
 
 test('A4 review results reflect saved grades, next dates, remaining words and dashboard totals', async ({ page }, testInfo) => {
@@ -881,7 +886,7 @@ test('A4 review results reflect saved grades, next dates, remaining words and da
   const [year, month, day] = nextDate.split('-').map(Number);
   await expect(panel).toContainText(`下次 ${month} 月 ${day} 日`);
   const beforeReload = await panel.innerText();
-  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/review-results-375.png', fullPage: true });
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: shotPath('review-results-375.png'), fullPage: true });
   await page.reload();
   await page.getByRole('button', { name: /A4 刷词/ }).click();
   expect(await page.getByTestId('review-results').innerText()).toBe(beforeReload);
@@ -1081,7 +1086,7 @@ test('dark and light wallpaper keep A4 on a readable opaque paper surface', asyn
     await expect(page.locator('.paper-desk')).toHaveClass(/paper-desk-wallpaper/);
     expect(await page.locator('.paper-desk').evaluate(element => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
     expect(await page.getByTestId('wallpaper').evaluate(element => getComputedStyle(element).backgroundImage)).toContain('blob:');
-    if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: `/home/ubuntu/shots/rea/${screenshot}`, fullPage: true });
+    if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: shotPath(screenshot), fullPage: true });
     await page.getByRole('button', { name: '词书库', exact: true }).click();
   }
   expect(await snapshot(page)).toEqual(before);
@@ -1118,7 +1123,7 @@ test('context cloze masks sourced forms, finishes and retries without writing le
   expect(await page.getByTestId('cloze-choices').getByRole('button').allTextContents()).toEqual(firstChoices);
   await expect(page.getByText('This place has a mysterious atmosphere.')).toBeVisible();
   await expect(page.getByText(/来源：Tatoeba #2105/)).toBeVisible();
-  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: '/home/ubuntu/shots/rea/cloze-375.png', fullPage: true });
+  if (testInfo.project.name === 'mobile-chromium') await page.screenshot({ path: shotPath('cloze-375.png'), fullPage: true });
   await page.getByRole('button', { name: '下一题', exact: true }).click();
   const secondChoices = await page.getByTestId('cloze-choices').getByRole('button').allTextContents();
   expect(secondChoices).toHaveLength(4);

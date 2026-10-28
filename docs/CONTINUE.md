@@ -233,3 +233,15 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - 数据：没有新增持久化字段，Dexie 表结构、备份格式未变。
 - 可复现验收：`cd app && npm ci && npm test && npm run build && npx playwright test && git diff --check`；E2E 覆盖例句揭示前不出现、保存失败无结果、刷新一致、打印/填空快照不变。
 - 仍未验证：iPhone 真机 Safari / 主屏幕 App（只有 WebKit 模拟）、VoiceOver、真实纸张打印。
+
+## 2026-10-28 · Web UI 质感与美感全面优化与生产上线部署
+
+- 调色板与材质升级：引入 Warm Cream `#FAF7F0` 底色、FCFAF6 / FCFAF5 纸张层、Deep Ink `#1A1D29` 高质感印刷文字墨色；主色调采用 Editorial Navy `#284378` / `#3B5B99` 与温润淡金 `#B88220`、薄荷鼠尾草 `#287A66`。
+- A4 纸张拟真优化：双层内描边、微网格纹理底图、高保真纤维噪点质感，遮挡模式采用柔和内陷折叠卡取代粗糙暗调蒙层。
+- 消除 AI 套版感：剔除旧式高饱和度渐变和粗重 3D 投影按钮，全站改用符合人体工学的微立体触控按钮（`shadow-button`、`active:scale-[0.985]`）与精致圆角卡片。
+- 学习日历与看板微交互：日历单元格采用精致圆环指示器与彩色状态点；选中日期复习清单重构为高辨识度衬线药丸徽章。
+- 60 秒挑战与练习模块：重构为深邃墨蓝质感舞台（`#161D2B`），配对卡片增加微动效与触觉反馈。
+- 打印对话框无障碍焦点陷阱：跨浏览器补全 Tab 与 Shift+Tab 在 WebKit 与 Chromium 下的双向循环与焦点锁定。
+- Service Worker 缓存版本升级至 `ielts-a4-v3-20261028-polish-1`。
+- 验证：Vitest 107 项全部通过；Playwright 108 项移动端（Chromium + WebKit）端到端测试全绿通过；构建单文件 HTML 产物；`git diff --check` 无语法格式警告。
+- 生产发布：推送到 GitHub 分支 `codex/continue-v3`，打包发布至腾讯云生产服务器并完成热重载，线上地址 `https://ielts.yyd.me/`。

@@ -195,15 +195,15 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
             {focusOnly && isToday && focusSummary.waiting > 0 && focusSummary.nextDate && <p className="mt-2 text-center text-xs font-bold text-honey-700">另有 {focusSummary.waiting} 词攻坚中，最早 {focusSummary.nextDate} 到期</p>}
           </div>
         ) : (
-          <div className="paper relative flex flex-col pb-5 pt-5">
-            <div className="paper-heading mx-5 mb-4 border-b border-stone-300 pb-4">
-              <p className="text-[10px] tracking-[0.22em] text-stone-500">IELTS / PERSONAL WORKSHEET</p>
-              <div className="mt-2 flex items-baseline justify-between gap-2"><h2 className="text-xl font-bold text-stone-800">{practice.length ? '自由加练' : focusOnly ? '重点词攻坚' : '长期复习'}</h2><span className="text-xs tabular-nums text-stone-500">{date}</span></div>
-              <p className="mt-2 text-xs text-stone-600">{date > today ? '预计复习' : date < today ? '实际复习记录' : '今日复习'} · 本页 {pageWords.length} 词 · 第 {currentPage + 1} / {pageCount} 页</p>
-              <p className="mt-1 break-words text-[11px] text-stone-500">来源：{[...new Set(pageWords.map(w => w.tag || '我的单词'))].join(' / ')}</p>
+          <div className="paper relative flex flex-col pb-6 pt-5">
+            <div className="paper-heading mx-5 mb-4 border-b border-[#D8D1C0] pb-4">
+              <p className="text-[10px] font-semibold tracking-[0.24em] text-stone-400 uppercase">CAMBRIDGE IELTS VOCABULARY DRILL SHEET</p>
+              <div className="mt-2 flex items-baseline justify-between gap-2"><h2 className="font-serif text-2xl font-bold tracking-tight text-stone-900">{practice.length ? '自由加练' : focusOnly ? '重点词攻坚' : '长期复习'}</h2><span className="font-mono text-xs text-stone-500">{date}</span></div>
+              <p className="mt-1.5 text-xs text-stone-600 font-medium">{date > today ? '预计复习' : date < today ? '实际复习记录' : '今日复习'} · 本页 {pageWords.length} 词 · 第 {currentPage + 1} / {pageCount} 页</p>
+              <p className="mt-1 break-words text-[11px] text-stone-400">来源：{[...new Set(pageWords.map(w => w.tag || '我的单词'))].join(' / ')}</p>
             </div>
             {isToday && !practice.length && <p className="mx-5 mb-3 text-[11px] font-semibold leading-relaxed text-stone-700" data-testid="grading-hint">马上想起选「记住」，想了一会儿选「困难」，没想起选「忘记」，很熟选「轻松」</p>}
-            <div className="mb-2 grid grid-cols-2 px-6 text-[10px] font-bold tracking-widest text-stone-500"><span>ENGLISH / 英文</span><span>中文 / 同义替换</span></div>
+            <div className="mb-2 grid grid-cols-2 px-6 text-[10px] font-bold tracking-widest text-stone-500"><span>ENGLISH / 英文</span><span>CHINESE / 中文释义</span></div>
             <ol className="divide-y divide-stone-200/80 mx-3">
               {pageWords.map((w, pageIndex) => {
                 const idx = currentPage * 8 + pageIndex;
@@ -243,7 +243,7 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
                     <div className="flex w-full flex-wrap items-center justify-end gap-1 pt-2">
                       {done && <span className="mr-auto pl-7 text-xs font-bold text-sage-500">✓ 今日复习完成</span>}
                       {isToday && !practice.length && !done && <>
-                      {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className={`min-h-11 min-w-11 rounded-lg border bg-white/80 px-2.5 text-xs font-bold ${rating === 3 ? 'border-rose-300 text-rose-600' : rating === 4 ? 'border-sage-300 text-sage-500' : 'border-stone-300 text-stone-700'}`} onClick={() => onGrade(w.id, rating)}>{label}</button>)}
+                      {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className={`min-h-11 min-w-11 rounded-xl border bg-white/95 px-2.5 text-xs font-semibold shadow-xs transition hover:bg-stone-50 active:scale-95 ${rating === 1 ? 'border-red-200 text-red-600 hover:border-red-300' : rating === 2 ? 'border-amber-200 text-amber-700 hover:border-amber-300' : rating === 3 ? 'border-rose-300 text-rose-700 hover:border-rose-400' : 'border-sage-300 text-sage-600 hover:border-sage-400'}`} onClick={() => onGrade(w.id, rating)}>{label}</button>)}
                     </>}
                       <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} title={`顽固词重置：${w.word}`} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl active:bg-honey-100 disabled:opacity-40 ${w.isHard ? 'text-honey-500' : 'text-ink-soft'}`} aria-label={`顽固词重置：${w.word}`}>
                         <Flame size={16} />
@@ -271,7 +271,7 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
           </div>
         )}
 
-        {isToday && !practice.length && gradedWords.length > 0 && <section data-testid="review-results" aria-labelledby="review-results-title" className="mt-4 rounded-2xl border border-sage-200 bg-white p-4 shadow-card">
+        {isToday && !practice.length && gradedWords.length > 0 && <section data-testid="review-results" aria-labelledby="review-results-title" className="mt-4 rounded-3xl border border-sage-200/80 bg-white p-5 shadow-card">
           <h2 id="review-results-title" className="text-base font-extrabold text-ink">今日复习结果</h2>
           <p className="mt-1 text-sm font-bold text-sage-700">已复习 {gradedWords.length} 词</p>
           {gradedWords.some(({ entry }) => entry.rating === 1 || entry.rating === 2) && <p className="mt-2 text-xs font-bold text-rose-700">其中忘记/困难：{gradedWords.filter(({ entry }) => entry.rating === 1 || entry.rating === 2).map(({ word }) => word.word).join('、')}</p>}
@@ -328,8 +328,23 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
         const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)'));
         const first = focusable[0];
         const last = focusable[focusable.length - 1];
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+        if (event.shiftKey) {
+          event.preventDefault();
+          if (document.activeElement === first) last?.focus();
+          else {
+            const idx = focusable.indexOf(document.activeElement as HTMLElement);
+            if (idx > 0) focusable[idx - 1]?.focus();
+            else last?.focus();
+          }
+        } else {
+          event.preventDefault();
+          if (document.activeElement === last) first?.focus();
+          else {
+            const idx = focusable.indexOf(document.activeElement as HTMLElement);
+            if (idx >= 0 && idx < focusable.length - 1) focusable[idx + 1]?.focus();
+            else first?.focus();
+          }
+        }
       }}>
         <div className="flex items-center justify-between gap-3"><h2 id="print-options-title" className="text-lg font-extrabold text-ink">打印选项</h2><button type="button" aria-label="关闭打印选项" className="flex h-11 w-11 items-center justify-center rounded-xl bg-cream text-ink-soft" onClick={() => setPrintOpen(false)}><X size={18} /></button></div>
         <p className="mt-1 text-sm text-ink-soft">选择要显示的语言；隐藏的一栏会留空供书写。</p>

@@ -52,7 +52,7 @@ function GroupReview({ group, state, onJoin, onSpeak }: { group: BookGroup; stat
   };
   const options: { pick: GroupPick; count: number | null }[] = [{ pick: 'missed', count: missed ? missed.length : null }, { pick: 'all', count: group.words.length }];
   if (preferred === 'all') options.reverse();
-  return <Card className="p-4 text-left">
+  return <Card className="p-5 text-left border border-blush/60 shadow-card">
     <h3 className="text-base font-bold">把这一组加入复习</h3>
     <p className="mt-1 text-xs leading-relaxed text-ink-soft">新加入的词明天出现在 A4。已有复习日期保持不变，未选择的新词只记为已学。</p>
     <div className="mt-3 grid gap-2">
@@ -103,7 +103,7 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
     if (await onBegin(group.id)) go('study');
   };
   const back = (next: typeof screen) => <button type="button" className="min-h-11 min-w-11 shrink-0 rounded-xl p-2 text-ink-soft" aria-label="返回" onClick={() => go(next)}><ArrowLeft size={20} /></button>;
-  const bar = <div role="progressbar" aria-label="词书学习进度" aria-valuemin={0} aria-valuemax={stats.total} aria-valuenow={stats.learned} className="h-2 overflow-hidden rounded-full bg-rose-50"><div className="h-full rounded-full bg-gradient-to-r from-rose-400 to-lilac-400" style={{ width: `${stats.percent}%` }} /></div>;
+  const bar = <div role="progressbar" aria-label="词书学习进度" aria-valuemin={0} aria-valuemax={stats.total} aria-valuenow={stats.learned} className="h-2 overflow-hidden rounded-full bg-stone-200/60"><div className="h-full rounded-full bg-gradient-to-r from-rose-600 to-rose-400" style={{ width: `${stats.percent}%` }} /></div>;
   const firstRun = !state.words.length && !Object.keys(progress.completed).length;
   const step = report ? nextStep(state, report, today) : null;
   const currentLabel = stats.current ? `${stats.current.unitTitle} · 第 ${stats.current.index} 组` : '全书初学完成';
@@ -156,13 +156,13 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
         </div>
       </header>
       <main className="flex flex-1 flex-col justify-center px-4">
-        <Card className="flex min-h-[34vh] flex-col justify-center space-y-5 bg-white px-6 py-8 text-center">
-          {spellingMode ? <p className="whitespace-pre-line text-center text-xl leading-relaxed text-ink">{word.meaning}</p> : <>
-            {showTarget && <h2 className="break-words font-serif text-4xl font-semibold text-ink">{word.word}</h2>}
-            {word.phonetic && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft`}>{word.phonetic}</p>}
+        <Card className="flex min-h-[38vh] flex-col justify-center space-y-6 border border-blush/60 bg-white px-6 py-10 text-center shadow-card">
+          {spellingMode ? <p className="whitespace-pre-line text-center font-serif text-2xl leading-relaxed text-ink">{word.meaning}</p> : <>
+            {showTarget && <h2 className="break-words font-serif text-4xl sm:text-5xl font-semibold tracking-tight text-ink">{word.word}</h2>}
+            {word.phonetic && <p className={`${kind === 'phonetic' && !revealed ? 'text-3xl' : 'text-sm'} break-words text-ink-soft/90 tracking-wide`}>{word.phonetic}</p>}
             {kind === 'phonetic' && !word.phonetic && <p className="text-xs text-ink-soft">暂无音标，本题使用英文提示</p>}
-            <button type="button" className={`${ghostBtn} self-center`} onClick={() => onSpeak(word.word)} aria-label={showTarget ? `朗读 ${word.word}` : '朗读提示'}><Volume2 size={17} /> 朗读</button>
-            {revealed ? <><p className="whitespace-pre-line border-t border-rose-50 pt-5 text-left text-base leading-relaxed text-ink">{word.meaning}</p><ExampleBlock word={word} onSpeak={onSpeak} expanded /></> : <p className="text-sm text-ink-soft">回想中文释义</p>}
+            <button type="button" className={`${ghostBtn} self-center rounded-full px-4 py-1.5 text-xs`} onClick={() => onSpeak(word.word)} aria-label={showTarget ? `朗读 ${word.word}` : '朗读提示'}><Volume2 size={15} /> 朗读</button>
+            {revealed ? <><p className="whitespace-pre-line border-t border-stone-100 pt-5 text-left text-[15px] leading-relaxed text-ink">{word.meaning}</p><ExampleBlock word={word} onSpeak={onSpeak} expanded /></> : <p className="text-sm font-medium text-ink-soft/75">回想中文释义</p>}
           </>}
           {spellingMode && <form id="study-spelling" className="space-y-4" onSubmit={event => { event.preventDefault(); if (checked === null && spelling.trim()) setChecked(spelling); }}>
             <Field label="英文拼写"><input className={inputCls} aria-label="英文拼写" value={spelling} onChange={event => setSpelling(event.target.value)} autoCapitalize="none" autoCorrect="off" spellCheck={false} autoComplete="off" readOnly={checked !== null} placeholder="输入英文" /></Field>

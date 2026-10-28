@@ -4,19 +4,19 @@ import { STAGE_LABELS, type WordExample, type WordItem } from './lib';
 import { exampleFor, highlightParts } from './book';
 
 export const inputCls =
-  'w-full rounded-2xl border border-rose-100 bg-white px-4 py-3 text-[16px] text-ink placeholder:text-ink-faint focus:border-rose-300 focus:outline-none focus:ring-4 focus:ring-rose-100/70 transition';
+  'w-full rounded-2xl border border-blush bg-white px-4 py-3 text-[15px] text-ink placeholder:text-ink-faint focus:border-rose-400 focus:outline-none focus:ring-3 focus:ring-rose-100/70 transition shadow-xs';
 
 export const primaryBtn =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-rose-500 px-5 py-3 font-bold text-white shadow-[0_3px_0_#3D4199] transition hover:bg-rose-600 active:translate-y-[2px] active:shadow-[0_1px_0_#3D4199] disabled:translate-y-0 disabled:opacity-40 disabled:shadow-none';
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 py-3 text-sm font-bold text-white shadow-button transition hover:bg-rose-700 active:scale-[0.985] disabled:scale-100 disabled:opacity-40 disabled:pointer-events-none';
 
 export const softBtn =
-  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 active:scale-[0.98] transition disabled:opacity-40';
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-600 transition hover:bg-rose-100/70 active:scale-[0.985] disabled:scale-100 disabled:opacity-40';
 
 export const ghostBtn =
-  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-blush bg-white px-4 py-2.5 text-sm font-bold text-ink active:scale-[0.98] transition disabled:opacity-40';
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-2xl border border-blush bg-white px-4 py-2.5 text-sm font-bold text-ink shadow-[0_1px_2px_rgba(26,29,41,0.03)] transition hover:bg-stone-50/80 hover:border-stone-300 active:scale-[0.985] disabled:scale-100 disabled:opacity-40';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-3xl bg-white shadow-card ${className}`}>{children}</div>;
+  return <div className={`rounded-3xl border border-blush/60 bg-white shadow-card ${className}`}>{children}</div>;
 }
 
 /** Sourced example sentence with read-aloud; renders nothing without an example. */
@@ -24,7 +24,7 @@ export function ExampleBlock({ word, onSpeak, className = '', expanded = false }
   const example = exampleFor(word);
   if (!example) return null;
   const content = <>
-    <p lang="en" className="mt-1 break-words font-serif text-[15px] leading-snug text-ink">{highlightParts(example.exampleEn, word.word).map((part, index) => part.hit ? <mark key={index} className="rounded-sm bg-[#FDE68A] px-0.5 text-[#332000]">{part.text}</mark> : part.text)}</p>
+    <p lang="en" className="mt-1 break-words font-serif text-[15px] leading-snug text-ink">{highlightParts(example.exampleEn, word.word).map((part, index) => part.hit ? <mark key={index} className="rounded-sm bg-[#FEF08A]/90 px-1 py-0.5 font-medium text-[#2C2100]">{part.text}</mark> : part.text)}</p>
     {example.exampleZh && <p className="mt-0.5 break-words text-xs text-ink-soft">{example.exampleZh}</p>}
     <div className="mt-1 flex flex-wrap items-center gap-2">
       <button type="button" aria-label={`朗读例句：${word.word}`} className="inline-flex min-h-11 items-center gap-1 rounded-lg border border-stone-200 bg-white px-2 text-xs font-bold text-ink-soft" onClick={() => onSpeak(example.exampleEn)}><Volume2 size={13} /> 朗读例句</button>
@@ -49,7 +49,7 @@ export function SectionTitle({ children, right }: { children: ReactNode; right?:
 
 export function PageHeader({ title, subtitle, left, right }: { title: ReactNode; subtitle?: ReactNode; left?: ReactNode; right?: ReactNode }) {
   return (
-    <header className="safe-top sticky top-0 z-20 bg-cream/85 px-5 pb-3 backdrop-blur-md">
+    <header className="safe-top sticky top-0 z-20 border-b border-blush/40 bg-cream/90 px-5 pb-3 backdrop-blur-md">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           {left}
@@ -90,7 +90,7 @@ export interface SegOption<T extends string> {
 
 export function Segmented<T extends string>({ options, value, onChange, size = 'md' }: { options: SegOption<T>[]; value: T; onChange: (k: T) => void; size?: 'sm' | 'md' }) {
   return (
-    <div className="flex rounded-2xl bg-rose-50/90 p-1">
+    <div className="flex rounded-2xl bg-stone-200/60 p-1">
       {options.map((o) => {
         const active = o.key === value;
         return (
