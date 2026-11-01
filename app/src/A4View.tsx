@@ -151,19 +151,19 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
   return (
     <>
     <div className={`paper-desk safe-bottom-pad ${wallpaperActive ? 'paper-desk-wallpaper' : ''}`}>
-      <header className="safe-top sticky top-0 z-20 border-b border-blush bg-cream/95 px-3 pb-2 shadow-card backdrop-blur-md">
+      <header className="safe-top sticky top-0 z-20 border-b border-[#CFC7B6] bg-[#F3EFE6]/95 px-3 pb-2.5 backdrop-blur-md sm:px-4">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-ink shadow-card" aria-label="返回">
-            <ChevronLeft size={20} />
+          <button type="button" onClick={onBack} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] text-ink hover:bg-[#EFE9DC] transition" aria-label="返回">
+            <ChevronLeft size={19} />
           </button>
           <div className="min-w-0 flex-1">
-            <h1 className="truncate text-[20px] font-semibold leading-tight text-ink">
-              {d.getMonth() + 1} 月 {d.getDate()} 日 <span className="text-rose-400">·</span> {focusOnly ? '重点攻坚 A4' : '全部复习 A4'}
+            <h1 className="truncate font-serif text-[19px] sm:text-[21px] font-semibold leading-tight tracking-tight text-ink">
+              {d.getMonth() + 1} 月 {d.getDate()} 日 <span className="text-ink-faint">·</span> {focusOnly ? '重点攻坚 A4' : '全部复习 A4'}
             </h1>
-            <p className="text-[11px] font-bold text-ink-soft">
+            <p className="font-mono text-[11px] font-medium text-ink-soft">
               {relLabel} · 周{weekdayCN(d)} · {list.length} 词{isToday ? ` · ${checkedCount} 已勾选` : ' · 只读'}
             </p>
-            {focusOnly && isToday && !practice.length && <p className="text-[11px] font-bold text-honey-700" data-testid="focus-lifecycle">今日待复习 {focusSummary.due} · 今日已完成 {focusSummary.done} · 未到期 {focusSummary.waiting} · 已退出 {focusSummary.exited}</p>}
+            {focusOnly && isToday && !practice.length && <p className="font-mono text-[11px] font-semibold text-honey-700" data-testid="focus-lifecycle">今日待复习 {focusSummary.due} · 今日已完成 {focusSummary.done} · 未到期 {focusSummary.waiting} · 已退出 {focusSummary.exited}</p>}
           </div>
           <button
             type="button"
@@ -171,40 +171,42 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
               setOrder((o) => shuffle(o));
               setSeed((s) => s + 1);
             }}
-            className="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-2xl bg-white px-3 text-xs font-extrabold text-ink shadow-card"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] px-3 text-xs font-semibold text-ink hover:bg-[#EFE9DC] transition"
           >
             <Shuffle size={14} /> 乱序
           </button>
         </div>
         <div className="mt-2">
           <Segmented options={MASK_MODES} value={mode} onChange={setMode} />
-          <p className="mt-1 text-center text-[11px] font-bold text-ink-soft">{hint}</p>
-            <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-xs font-bold text-rose-600" onClick={() => onScopeChange(focusOnly ? 'all' : 'focus')}>{focusOnly ? '当前：重点攻坚 · 切换全部到期复习' : '当前：全部到期复习 · 切换重点攻坚'}</button>
-          <button ref={printTrigger} type="button" disabled={!list.length} className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white px-3 text-sm font-bold text-ink disabled:opacity-40" onClick={() => setPrintOpen(true)}><Printer size={16} />打印 / 另存 PDF</button>
+          <p className="mt-1 text-center text-[11px] font-medium text-ink-soft">{hint}</p>
+          <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-[1fr_auto]">
+            <button type="button" className="min-h-11 w-full rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] px-3 text-xs font-semibold text-ink hover:bg-[#EFE9DC] transition" onClick={() => onScopeChange(focusOnly ? 'all' : 'focus')}>{focusOnly ? '当前：重点攻坚 · 切换全部到期复习' : '当前：全部到期复习 · 切换重点攻坚'}</button>
+            <button ref={printTrigger} type="button" disabled={!list.length} className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] px-3.5 text-xs font-semibold text-ink hover:bg-[#EFE9DC] transition disabled:opacity-40 sm:w-auto" onClick={() => setPrintOpen(true)}><Printer size={15} />打印 / 另存 PDF</button>
+          </div>
         </div>
       </header>
 
-      <div className="px-3 pt-3">
+      <div className="px-3 pt-3 sm:px-4">
         {list.length === 0 ? (
           <div className="paper paper-empty">
             <Empty emoji="🌷" title={isToday ? '今天没有待复习的单词' : '这一天没有单词'} desc={focusOnly ? '学完一组后，一键选择本组错词或全部词加入复习，次日出现在这里。已有的复习任务也可切换「全部到期复习」查看。' : '从词书学习或录入新词开始；未来日期仅显示当前下次到期预测。'} />
-            <div className="mt-3 flex flex-col gap-2">
-              {focusOnly && isToday && allDueCount > 0 && <button type="button" className="min-h-11 w-full rounded-xl border border-rose-100 bg-white px-3 text-sm font-bold text-rose-500" onClick={() => onScopeChange('all')}>查看全部到期复习 · {allDueCount} 词</button>}
-              {focusOnly && <button type="button" className="min-h-11 w-full rounded-xl bg-white px-3 text-sm font-bold text-ink" onClick={onOpenBook}>去词书学习并加入 A4</button>}
+            <div className="mx-auto mt-3 flex max-w-xs flex-col gap-2 px-4">
+              {focusOnly && isToday && allDueCount > 0 && <button type="button" className="min-h-11 w-full rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] px-3 text-sm font-semibold text-ink hover:bg-[#EFE9DC] transition" onClick={() => onScopeChange('all')}>查看全部到期复习 · {allDueCount} 词</button>}
+              {focusOnly && <button type="button" className={`${primaryBtn} w-full`} onClick={onOpenBook}>去词书学习并加入 A4</button>}
             </div>
-            {focusOnly && isToday && focusSummary.waiting > 0 && focusSummary.nextDate && <p className="mt-2 text-center text-xs font-bold text-honey-700">另有 {focusSummary.waiting} 词攻坚中，最早 {focusSummary.nextDate} 到期</p>}
+            {focusOnly && isToday && focusSummary.waiting > 0 && focusSummary.nextDate && <p className="mt-3 text-center font-mono text-xs font-semibold text-honey-700">另有 {focusSummary.waiting} 词攻坚中，最早 {focusSummary.nextDate} 到期</p>}
           </div>
         ) : (
           <div className="paper relative flex flex-col pb-6 pt-5">
-            <div className="paper-heading mx-5 mb-4 border-b border-[#D8D1C0] pb-4">
-              <p className="text-[10px] font-semibold tracking-[0.24em] text-stone-400 uppercase">CAMBRIDGE IELTS VOCABULARY DRILL SHEET</p>
-              <div className="mt-2 flex items-baseline justify-between gap-2"><h2 className="font-serif text-2xl font-bold tracking-tight text-stone-900">{practice.length ? '自由加练' : focusOnly ? '重点词攻坚' : '长期复习'}</h2><span className="font-mono text-xs text-stone-500">{date}</span></div>
-              <p className="mt-1.5 text-xs text-stone-600 font-medium">{date > today ? '预计复习' : date < today ? '实际复习记录' : '今日复习'} · 本页 {pageWords.length} 词 · 第 {currentPage + 1} / {pageCount} 页</p>
-              <p className="mt-1 break-words text-[11px] text-stone-400">来源：{[...new Set(pageWords.map(w => w.tag || '我的单词'))].join(' / ')}</p>
+            <div className="paper-heading mx-5 mb-3 border-b-2 border-double border-[#C9C1B0] pb-3.5">
+              <p className="font-mono text-[10px] font-semibold tracking-[0.2em] text-ink-faint uppercase">IELTS // ARCHIVAL VOCABULARY WORKSHEET</p>
+              <div className="mt-1.5 flex items-baseline justify-between gap-2"><h2 className="font-serif text-2xl font-semibold tracking-tight text-ink">{practice.length ? '自由加练' : focusOnly ? '重点词攻坚' : '长期复习'}</h2><span className="rounded-xs border border-[#D5CEC0] bg-[#F3EFE6] px-2 py-0.5 font-mono text-xs font-semibold text-ink">{date}</span></div>
+              <p className="mt-1.5 font-mono text-xs text-ink-soft">{date > today ? '预计复习' : date < today ? '实际复习记录' : '今日复习'} · 本页 {pageWords.length} 词 · 第 {currentPage + 1} / {pageCount} 页</p>
+              <p className="mt-1 break-words text-[11px] text-ink-faint">来源：{[...new Set(pageWords.map(w => w.tag || '我的单词'))].join(' / ')}</p>
             </div>
-            {isToday && !practice.length && <p className="mx-5 mb-3 text-[11px] font-semibold leading-relaxed text-stone-700" data-testid="grading-hint">马上想起选「记住」，想了一会儿选「困难」，没想起选「忘记」，很熟选「轻松」</p>}
-            <div className="mb-2 grid grid-cols-2 px-6 text-[10px] font-bold tracking-widest text-stone-500"><span>ENGLISH / 英文</span><span>CHINESE / 中文释义</span></div>
-            <ol className="divide-y divide-stone-200/80 mx-3">
+            {isToday && !practice.length && <p className="mx-5 mb-2.5 text-[11px] font-medium leading-relaxed text-ink-soft" data-testid="grading-hint">马上想起选「记住」，想了一会儿选「困难」，没想起选「忘记」，很熟选「轻松」</p>}
+            <div className="mx-4 mb-1 grid grid-cols-2 border-y border-[#D8D1C2] bg-[#F4EFE4]/80 px-4 py-1.5 font-mono text-[10px] font-semibold tracking-[0.14em] text-ink-soft"><span>ENGLISH / 英文</span><span>CHINESE / 中文释义</span></div>
+            <ol className="mx-4 divide-y divide-[#DFD8C8]">
               {pageWords.map((w, pageIndex) => {
                 const idx = currentPage * 8 + pageIndex;
                 const done = isToday && !practice.length && doneSet.has(w.id) && !dueSet.has(w.id);
@@ -213,47 +215,47 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
                 const cnMasked = sideMasked(w, pageIndex, 'cn');
                 return (
                   <li key={w.id} data-masked={enMasked ? 'en' : cnMasked ? 'cn' : 'none'} className={`relative flex flex-wrap items-stretch gap-1 px-1 py-4 transition ${done ? 'paper-row-done' : isChecked ? 'paper-row-ticked' : ''}`}>
-                    <div className="flex w-6 shrink-0 flex-col items-center justify-center text-[10px] font-bold text-stone-400">
+                    <div className="flex w-7 shrink-0 flex-col items-center justify-center gap-0.5 font-mono text-[10px] font-semibold text-ink-faint">
                       <span>{String(idx + 1).padStart(2, '0')}</span>
                       <StageChip word={w} stage={w.stage} compact />
                     </div>
-                    <div className="grid min-w-0 flex-1 grid-cols-2 gap-2">
+                    <div className="grid min-w-0 flex-1 grid-cols-2 gap-2.5 pl-1">
                       <button type="button" onClick={() => (enMasked || revealed.has(`${w.id}:en`) ? toggleReveal(w, 'en') : onSpeak(w.word))} className="min-w-0 text-left">
-                        <div className={`${enMasked ? 'masked' : ''} min-w-0 px-1 py-0.5`}>
+                        <div className={`${enMasked ? 'masked' : ''} min-w-0 px-1.5 py-1`}>
                           <div className="flex items-start gap-1">
                             <span className="min-w-0 break-words font-serif text-[20px] font-semibold leading-tight text-ink">{w.word}</span>
                             {w.isHard && <Flame size={11} className="mt-0.5 shrink-0 text-honey-500" />}
                           </div>
-                          <div className="flex items-center gap-1 text-[12px] font-normal text-ink-soft">
-                            <Volume2 size={10} className="shrink-0 text-stone-400" />
+                          <div className="mt-0.5 flex items-center gap-1 font-mono text-[11px] font-normal text-ink-soft">
+                            <Volume2 size={10} className="shrink-0 text-ink-faint" />
                             <span className="break-all leading-tight">{w.phonetic || '点击朗读'}</span>
                           </div>
-                          {w.tag && new Set(pageWords.map(item => item.tag)).size > 1 && <div className="break-words text-[10px] text-stone-500">{w.tag}</div>}
+                          {w.tag && new Set(pageWords.map(item => item.tag)).size > 1 && <div className="break-words text-[10px] text-ink-faint">{w.tag}</div>}
                         </div>
                       </button>
                       <button type="button" onClick={() => (cnMasked || revealed.has(`${w.id}:cn`) ? toggleReveal(w, 'cn') : onEdit(w))} className="min-w-0 text-left">
-                        <div className={`${cnMasked ? 'masked' : ''} min-w-0 px-1 py-0.5`}>
+                        <div className={`${cnMasked ? 'masked' : ''} min-w-0 px-1.5 py-1`}>
                           <div className="break-words text-[14px] font-medium leading-snug text-ink">{w.meaning}</div>
-                          {w.synonyms && <div className="break-words text-[12px] italic text-stone-600">≈ {w.synonyms}</div>}
-                          {w.focus?.reason && <div className="truncate text-[9px] font-bold text-honey-600">{w.focus.reason}</div>}
+                          {w.synonyms && <div className="mt-0.5 break-words font-serif text-[12px] italic text-ink-soft">≈ {w.synonyms}</div>}
+                          {w.focus?.reason && <div className="truncate text-[10px] font-medium text-honey-600">{w.focus.reason}</div>}
                         </div>
                       </button>
                     </div>
-                    <ExampleBlock word={w} onSpeak={onSpeak} className="w-full pl-7" />
-                    <div className="flex w-full flex-wrap items-center justify-end gap-1 pt-2">
-                      {done && <span className="mr-auto pl-7 text-xs font-bold text-sage-500">✓ 今日复习完成</span>}
+                    <ExampleBlock word={w} onSpeak={onSpeak} className="w-full pl-8 pt-1" />
+                    <div className="flex w-full flex-wrap items-center justify-end gap-1.5 pt-2.5">
+                      {done && <span className="mr-auto pl-8 font-mono text-xs font-semibold text-sage-500">✓ 今日复习完成</span>}
                       {isToday && !practice.length && !done && <>
-                      {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className={`min-h-11 min-w-11 rounded-xl border bg-white/95 px-2.5 text-xs font-semibold shadow-xs transition hover:bg-stone-50 active:scale-95 ${rating === 1 ? 'border-red-200 text-red-600 hover:border-red-300' : rating === 2 ? 'border-amber-200 text-amber-700 hover:border-amber-300' : rating === 3 ? 'border-rose-300 text-rose-700 hover:border-rose-400' : 'border-sage-300 text-sage-600 hover:border-sage-400'}`} onClick={() => onGrade(w.id, rating)}>{label}</button>)}
+                      {([[1, '忘记'], [2, '困难'], [3, '记住'], [4, '轻松']] as const).map(([rating, label]) => <button key={rating} type="button" aria-label={`${label}：${w.word}`} className={`min-h-11 min-w-11 rounded-md border px-2.5 text-xs font-semibold transition active:translate-y-[0.5px] ${rating === 1 ? 'border-[#D9B8B0] bg-[#FAF3F0] text-[#82281A] hover:bg-[#F2E4DE]' : rating === 2 ? 'border-[#DEC9A4] bg-[#FAF5EA] text-[#5E3E09] hover:bg-[#F1E7D2]' : rating === 3 ? 'border-[#C5BEB0] bg-[#FAF7F0] text-[#181715] hover:bg-[#ECE6DA]' : 'border-[#B4D0C2] bg-[#EFF6F2] text-[#174736] hover:bg-[#E0EDE6]'}`} onClick={() => onGrade(w.id, rating)}>{label}</button>)}
                     </>}
-                      <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} title={`顽固词重置：${w.word}`} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl active:bg-honey-100 disabled:opacity-40 ${w.isHard ? 'text-honey-500' : 'text-ink-soft'}`} aria-label={`顽固词重置：${w.word}`}>
+                      <button type="button" disabled={!isToday || !!practice.length || done} onClick={() => onHardReset(w.id)} title={`顽固词重置：${w.word}`} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-md border border-transparent hover:border-[#D5CEC0] active:bg-honey-100 disabled:opacity-40 ${w.isHard ? 'text-honey-500' : 'text-ink-soft'}`} aria-label={`顽固词重置：${w.word}`}>
                         <Flame size={16} />
                       </button>
                       <button
                         type="button"
                         disabled={done || !isToday}
                         onClick={() => !done && isToday && toggleCheck(w.id)}
-                        className={`ml-0.5 flex h-11 w-11 items-center justify-center rounded-full border-2 transition ${
-                          isChecked ? 'border-sage-500 bg-sage-500 text-white' : 'border-stone-400 bg-white text-transparent'
+                        className={`ml-0.5 flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] transition ${
+                          isChecked ? 'border-[#215E49] bg-[#215E49] text-[#FAF7F0]' : 'border-[#BFB7A6] bg-[#FAF7F0] text-transparent hover:border-[#8F8778]'
                         }`}
                         aria-label={done ? `已评分：${w.word}` : `勾选记住：${w.word}`}
                         title={isToday ? undefined : '非今日只读，到当天再打卡'}
@@ -267,42 +269,42 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
                 );
               })}
             </ol>
-            <footer className="mx-5 mt-auto flex justify-between border-t border-stone-200 pt-3 text-[10px] tracking-widest text-stone-500"><span>IELTS · A4 STUDY NOTES</span><span>{String(currentPage + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</span></footer>
+            <footer className="mx-5 mt-auto flex justify-between border-t border-[#D8D1C2] pt-3 font-mono text-[10px] tracking-[0.18em] text-ink-faint"><span>IELTS · A4 STUDY NOTES</span><span>{String(currentPage + 1).padStart(2, '0')} / {String(pageCount).padStart(2, '0')}</span></footer>
           </div>
         )}
 
-        {isToday && !practice.length && gradedWords.length > 0 && <section data-testid="review-results" aria-labelledby="review-results-title" className="mt-4 rounded-3xl border border-sage-200/80 bg-white p-5 shadow-card">
-          <h2 id="review-results-title" className="text-base font-extrabold text-ink">今日复习结果</h2>
-          <p className="mt-1 text-sm font-bold text-sage-700">已复习 {gradedWords.length} 词</p>
-          {gradedWords.some(({ entry }) => entry.rating === 1 || entry.rating === 2) && <p className="mt-2 text-xs font-bold text-rose-700">其中忘记/困难：{gradedWords.filter(({ entry }) => entry.rating === 1 || entry.rating === 2).map(({ word }) => word.word).join('、')}</p>}
-          <ul className="mt-2 space-y-1 border-t border-stone-100 pt-2 text-xs text-ink">
+        {isToday && !practice.length && gradedWords.length > 0 && <section data-testid="review-results" aria-labelledby="review-results-title" className="mt-4 rounded-xl border border-[#CFC7B6] border-t-2 border-t-[#215E49] bg-[#FAF7F0] p-5 shadow-card">
+          <h2 id="review-results-title" className="font-serif text-base font-semibold text-ink">今日复习结果</h2>
+          <p className="mt-1 text-sm font-semibold text-sage-600">已复习 {gradedWords.length} 词</p>
+          {gradedWords.some(({ entry }) => entry.rating === 1 || entry.rating === 2) && <p className="mt-1.5 text-xs font-semibold text-rose-600">其中忘记/困难：{gradedWords.filter(({ entry }) => entry.rating === 1 || entry.rating === 2).map(({ word }) => word.word).join('、')}</p>}
+          <ul className="mt-2.5 space-y-1.5 border-t border-[#E2DBD0] pt-2.5 text-xs text-ink">
             {gradedWords.map(({ word, entry }) => {
               const next = parseDate(word.nextReviewDate);
               const rating = entry.rating === 1 ? '忘记' : entry.rating === 2 ? '困难' : entry.rating === 3 ? '记住' : '轻松';
-              return <li key={word.id} className="flex flex-wrap justify-between gap-x-3"><span>{word.word} · {rating}</span><span className="font-semibold text-ink-soft">下次 {next.getMonth() + 1} 月 {next.getDate()} 日</span></li>;
+              return <li key={word.id} className="flex flex-wrap justify-between gap-x-3"><span className="font-serif text-sm font-medium">{word.word} · {rating}</span><span className="font-mono text-ink-soft">下次 {next.getMonth() + 1} 月 {next.getDate()} 日</span></li>;
             })}
           </ul>
-          {unratedToday > 0 && <p className="mt-2 text-xs font-bold text-honey-700">还有 {unratedToday} 词未评分，仍在今日待复习</p>}
+          {unratedToday > 0 && <p className="mt-2.5 text-xs font-semibold text-honey-700">还有 {unratedToday} 词未评分，仍在今日待复习</p>}
         </section>}
 
         {pageCount > 1 && <div className="mt-4 flex items-center justify-between text-sm">
-          <button type="button" disabled={currentPage === 0} className="min-h-11 rounded-xl bg-white px-4 font-bold shadow-card disabled:opacity-40" onClick={() => { setPage(currentPage - 1); window.scrollTo({ top: 0 }); }}>上一张</button>
-          <span className="text-xs text-stone-600">{currentPage + 1} / {pageCount}</span>
-          <button type="button" disabled={currentPage === pageCount - 1} className="min-h-11 rounded-xl bg-white px-4 font-bold shadow-card disabled:opacity-40" onClick={() => { setPage(currentPage + 1); window.scrollTo({ top: 0 }); }}>下一张</button>
+          <button type="button" disabled={currentPage === 0} className="min-h-11 rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] px-4 font-semibold text-ink shadow-card hover:bg-[#EFE9DC] disabled:opacity-40" onClick={() => { setPage(currentPage - 1); window.scrollTo({ top: 0 }); }}>上一张</button>
+          <span className="font-mono text-xs text-ink-soft">{currentPage + 1} / {pageCount}</span>
+          <button type="button" disabled={currentPage === pageCount - 1} className="min-h-11 rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] px-4 font-semibold text-ink shadow-card hover:bg-[#EFE9DC] disabled:opacity-40" onClick={() => { setPage(currentPage + 1); window.scrollTo({ top: 0 }); }}>下一张</button>
         </div>}
         {isToday && !practice.length && list.length > 0 && (
           <div className="mt-4">
-            <p className="mb-2 text-center text-sm font-extrabold text-ink" aria-live="polite">本页已评分 {pageRated} / {pageRated + pendingIds.length}</p>
+            <p className="mb-2 text-center font-mono text-sm font-semibold text-ink" aria-live="polite">本页已评分 {pageRated} / {pageRated + pendingIds.length}</p>
             {checkedDue.length > 0 && <button type="button" className={`${primaryBtn} mb-2 w-full text-[15px]`} onClick={() => { const ids = checkedDue; onCheckout(ids); setChecked(prev => new Set([...prev].filter(id => !ids.includes(id)))); }}>
               <CheckCircle2 size={18} /> 提交已勾选 {checkedDue.length} 词 · 按「记住」评分
             </button>}
             {pendingIds.length > 0 ? (
               <>
-                {unrated > 0 && <p className="mt-2 text-center text-[11px] font-semibold text-ink-soft">未评分的 {unrated} 词保留在今日待复习，可稍后处理。只有你点了评分或勾选后提交的词才会更新排期。</p>}
-                <button type="button" className="mt-2 min-h-11 w-full rounded-xl border border-stone-200 bg-white text-sm font-bold text-ink-soft" onClick={onLater}>稍后处理</button>
+                {unrated > 0 && <p className="mt-2 text-center text-[11px] font-medium text-ink-soft">未评分的 {unrated} 词保留在今日待复习，可稍后处理。只有你点了评分或勾选后提交的词才会更新排期。</p>}
+                <button type="button" className="mt-2 min-h-11 w-full rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] text-sm font-semibold text-ink-soft hover:bg-[#EFE9DC] transition" onClick={onLater}>稍后处理</button>
               </>
             ) : (
-              <div role="status" className="rounded-2xl border border-sage-200 bg-sage-50 px-4 py-3 text-center text-sm font-extrabold text-sage-500">本页已完成 ✓ 可以继续用遮挡模式再默一遍</div>
+              <div role="status" className="rounded-lg border border-[#B4D0C2] bg-[#ECF3EF] px-4 py-3 text-center text-sm font-semibold text-sage-600">本页已完成 ✓ 可以继续用遮挡模式再默一遍</div>
             )}
           </div>
         )}
@@ -311,9 +313,9 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
           <p className="mt-2 text-xs text-ink-soft">{practice.length ? '加练模式：遮挡、勾选和朗读不改变复习日期。' : '没有待复习任务时，可以自由加练。'}</p>
         </div>}
         {!isToday && list.length > 0 && (
-          <p className="mt-3 text-center text-[11px] font-semibold text-ink-faint">
+          <p className="mt-3 text-center text-[11px] font-medium text-ink-faint">
             {date < today ? '历史记录只读，不会改动排期' : '这是预计安排，评分后可能变化 · 到当天再打卡'}
-            <button type="button" className="ml-1 inline-flex items-center text-rose-500" onClick={() => list[0] && onEdit(list[0])}>
+            <button type="button" className="ml-1 inline-flex items-center font-semibold text-rose-600 underline-offset-2 hover:underline" onClick={() => list[0] && onEdit(list[0])}>
               <Pencil size={11} className="mr-0.5" />
               点中文可编辑
             </button>
@@ -322,7 +324,7 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
       </div>
     </div>
     {printOpen && <div className="fixed inset-0 z-[70] flex items-center justify-center bg-ink/45 p-4" onClick={() => setPrintOpen(false)}>
-      <div ref={printDialog} role="dialog" aria-modal="true" aria-labelledby="print-options-title" className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-paper" onClick={event => event.stopPropagation()} onKeyDown={event => {
+      <div ref={printDialog} role="dialog" aria-modal="true" aria-labelledby="print-options-title" className="w-full max-w-sm rounded-xl border border-[#CFC7B6] border-t-2 border-t-[#181715] bg-[#FAF7F0] p-5 shadow-paper" onClick={event => event.stopPropagation()} onKeyDown={event => {
         if (event.key === 'Escape') setPrintOpen(false);
         if (event.key !== 'Tab') return;
         const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)'));
@@ -346,13 +348,13 @@ export function A4View({ wallpaperActive = false, words, revlog, today, date, sc
           }
         }
       }}>
-        <div className="flex items-center justify-between gap-3"><h2 id="print-options-title" className="text-lg font-extrabold text-ink">打印选项</h2><button type="button" aria-label="关闭打印选项" className="flex h-11 w-11 items-center justify-center rounded-xl bg-cream text-ink-soft" onClick={() => setPrintOpen(false)}><X size={18} /></button></div>
+        <div className="flex items-center justify-between gap-3"><h2 id="print-options-title" className="font-serif text-lg font-semibold text-ink">打印选项</h2><button type="button" aria-label="关闭打印选项" className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#D4CDC0] bg-[#F3EFE6] text-ink-soft hover:text-ink" onClick={() => setPrintOpen(false)}><X size={18} /></button></div>
         <p className="mt-1 text-sm text-ink-soft">选择要显示的语言；隐藏的一栏会留空供书写。</p>
         <div className="mt-4 space-y-2">
-          <label className="flex min-h-11 items-center gap-3 rounded-xl border border-blush px-3 text-sm font-bold text-ink"><input ref={firstPrintOption} type="checkbox" checked={printEnglish} disabled={printEnglish && !printChinese} onChange={event => setPrintEnglish(event.target.checked)} />英文</label>
-          <label className="flex min-h-11 items-center gap-3 rounded-xl border border-blush px-3 text-sm font-bold text-ink"><input type="checkbox" checked={printChinese} disabled={printChinese && !printEnglish} onChange={event => setPrintChinese(event.target.checked)} />中文</label>
+          <label className="flex min-h-11 items-center gap-3 rounded-lg border border-[#D4CDC0] bg-[#FCFBF7] px-3 text-sm font-semibold text-ink"><input ref={firstPrintOption} type="checkbox" checked={printEnglish} disabled={printEnglish && !printChinese} onChange={event => setPrintEnglish(event.target.checked)} />英文</label>
+          <label className="flex min-h-11 items-center gap-3 rounded-lg border border-[#D4CDC0] bg-[#FCFBF7] px-3 text-sm font-semibold text-ink"><input type="checkbox" checked={printChinese} disabled={printChinese && !printEnglish} onChange={event => setPrintChinese(event.target.checked)} />中文</label>
         </div>
-        <div className="mt-5 grid grid-cols-2 gap-2"><button type="button" className="min-h-11 rounded-xl border border-stone-200 px-3 text-sm font-bold text-ink-soft" onClick={() => setPrintOpen(false)}>取消</button><button type="button" className={`${primaryBtn} px-3`} onClick={() => { setPrintOpen(false); window.setTimeout(() => window.print(), 0); }}>打印 / 另存 PDF</button></div>
+        <div className="mt-5 grid grid-cols-2 gap-2"><button type="button" className="min-h-11 rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] px-3 text-sm font-semibold text-ink-soft hover:bg-[#EFE9DC]" onClick={() => setPrintOpen(false)}>取消</button><button type="button" className={`${primaryBtn} px-3`} onClick={() => { setPrintOpen(false); window.setTimeout(() => window.print(), 0); }}>打印 / 另存 PDF</button></div>
       </div>
     </div>}
     <PrintSheet date={date} scope={practice.length ? '自由加练' : focusOnly ? '重点攻坚 A4' : '全部复习 A4'} words={list} showEnglish={printEnglish} showChinese={printChinese} />

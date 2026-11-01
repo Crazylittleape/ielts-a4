@@ -82,7 +82,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
     { key: 'focus', label: 'A4 攻坚' },
     { key: 'history', label: '攻坚记录' },
     { key: 'due', label: '今日待复习' },
-    { key: 'hard', label: '🔥 错词 / 顽固' },
+    { key: 'hard', label: '错词 / 顽固' },
     { key: 'favorite', label: '★ 收藏' },
     { key: 'mastered', label: '✓ 已掌握' },
   ];
@@ -124,7 +124,7 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
   return (
     <div className="safe-bottom-pad">
       <PageHeader title="我的单词" subtitle={`共 ${words.length} 词 · 顽固 ${counts.hard} · 今日待复习 ${counts.due}`} />
-      <div className="space-y-4 px-4 pt-1">
+      <div className="space-y-4 px-4 pt-3">
         <div className="relative">
           <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input className={`${inputCls} pl-10`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="搜索英文 / 中文 / 音标 / 同义词" autoCapitalize="none" autoCorrect="off" />
@@ -135,19 +135,19 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
               key={f.key}
               type="button"
               onClick={() => setFilter(f.key)}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-[11px] font-extrabold transition ${filter === f.key ? 'bg-gradient-to-r from-rose-400 to-lilac-400 text-white shadow-md shadow-rose-200/60' : 'bg-white text-ink-soft shadow-card'}`}
+              className={`shrink-0 rounded-md border px-3 py-1.5 text-[11px] font-semibold transition ${filter === f.key ? 'border-[#181715] bg-[#181715] text-[#FAF7F0]' : 'border-[#D4CDC0] bg-[#FAF7F0] text-ink-soft hover:bg-[#EFE9DC] hover:text-ink'}`}
             >
-              {f.label} <span className="opacity-70">{counts[f.key]}</span>
+              {f.label} <span className="font-mono opacity-75">{counts[f.key]}</span>
             </button>
           ))}
         </div>
         {tags.length > 0 && (
           <div className="-mx-4 flex gap-1.5 overflow-x-auto px-4 no-scrollbar">
-            <button type="button" onClick={() => setTag('')} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-extrabold ${!tag ? 'bg-lilac-200 text-lilac-500' : 'bg-lilac-50 text-ink-soft'}`}>
+            <button type="button" onClick={() => setTag('')} className={`shrink-0 rounded-sm border px-2.5 py-1 text-[11px] font-semibold ${!tag ? 'border-[#181715] bg-[#EFE9DC] text-ink' : 'border-[#D4CDC0] bg-[#FAF7F0] text-ink-soft'}`}>
               全部来源
             </button>
             {tags.map((t) => (
-              <button key={t} type="button" onClick={() => setTag(t === tag ? '' : t)} className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-extrabold ${tag === t ? 'bg-lilac-200 text-lilac-500' : 'bg-lilac-50 text-ink-soft'}`}>
+              <button key={t} type="button" onClick={() => setTag(t === tag ? '' : t)} className={`shrink-0 rounded-sm border px-2.5 py-1 text-[11px] font-semibold ${tag === t ? 'border-[#181715] bg-[#EFE9DC] text-ink' : 'border-[#D4CDC0] bg-[#FAF7F0] text-ink-soft'}`}>
                 {t}
               </button>
             ))}
@@ -162,33 +162,33 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
           {list.length === 0 ? (
             <Empty emoji="🔍" title="没有匹配的单词" desc="换个筛选条件试试" />
           ) : (
-            <ul className="divide-y divide-rose-50">
+            <ul className="divide-y divide-[#E2DBD0]">
               {list.map((w) => (
-                <li key={w.id} className="flex items-center gap-2 px-3 py-2.5">
+                <li key={w.id} className="flex items-center gap-2 px-3.5 py-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                       <button type="button" onClick={() => onSpeak(w.word)} className="font-serif text-[17px] font-semibold text-ink">
                         {w.word}
                       </button>
-                      <span className="text-[11px] font-semibold text-ink-soft">{w.phonetic}</span>
+                      <span className="font-mono text-[11px] text-ink-soft">{w.phonetic}</span>
                       <StageChip word={w} stage={w.stage} />
-                      {w.review === 'off' && <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10.5px] font-bold text-ink-soft">已学 · 未加入复习</span>}
+                      {w.review === 'off' && <span className="rounded-sm border border-[#D4CDC0] bg-[#EFE9DC] px-1.5 py-0.5 font-mono text-[10px] font-semibold text-ink-soft">已学 · 未加入复习</span>}
                       {w.isHard && <Flame size={12} className="text-honey-500" />}
                     </div>
-                    <p className="truncate text-[12.5px] font-bold text-ink">{w.meaning}</p>
-                    <p className="truncate text-[10.5px] font-semibold text-ink-faint">
-                      {w.synonyms && <span className="italic text-lilac-500">≈ {w.synonyms} · </span>}
+                    <p className="mt-0.5 truncate text-[13px] font-medium text-ink">{w.meaning}</p>
+                    <p className="mt-0.5 truncate font-mono text-[10.5px] text-ink-faint">
+                      {w.synonyms && <span className="font-serif italic text-ink-soft">≈ {w.synonyms} · </span>}
                       {w.isMastered ? "已掌握 · 暂停排期" : `下次 ${w.nextReviewDate}`} · 复习 {w.reviewHistory.length - 1} 次{w.tag ? ` · ${w.tag}` : ''}
                     </p>
-                    {(() => { const status = focusStatus(w, today, state.revlog); return status.key !== 'none' && <div className="mt-1 flex flex-wrap items-center gap-2 text-[10.5px] font-bold"><span className={`rounded px-1.5 py-0.5 ${w.focus?.active ? 'bg-honey-50 text-honey-700' : 'bg-stone-100 text-ink-soft'}`}>{status.label}</span>{w.focus?.active && <button type="button" className="min-h-8 rounded-lg border border-stone-200 px-2 text-ink-soft" onClick={() => void onUnfocus(w.word)}>移出 A4</button>}</div>; })()}
+                    {(() => { const status = focusStatus(w, today, state.revlog); return status.key !== 'none' && <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[10.5px] font-semibold"><span className={`rounded-sm border px-1.5 py-0.5 font-mono ${w.focus?.active ? 'border-[#E3CA96] bg-honey-50 text-honey-700' : 'border-[#D4CDC0] bg-[#EFE9DC] text-ink-soft'}`}>{status.label}</span>{w.focus?.active && <button type="button" className="min-h-8 rounded-md border border-[#D4CDC0] bg-[#FCFBF7] px-2 text-ink-soft hover:bg-[#EFE9DC]" onClick={() => void onUnfocus(w.word)}>移出 A4</button>}</div>; })()}
                   </div>
-                  <div className="flex max-w-[104px] shrink-0 flex-wrap items-center justify-end">
-                    <button type="button" className="rounded-xl p-1.5 text-xs text-rose-500" onClick={() => onToggleFavorite(w.id)} aria-label={w.isFavorite ? "取消收藏" : "收藏"}>{w.isFavorite ? "★" : "☆"}</button>
-                    <button type="button" className="rounded-xl p-1.5 text-xs text-sage-500" onClick={() => onToggleMastered(w.id)}>{w.isMastered ? "恢复复习" : "掌握"}</button>
-                    <button type="button" onClick={() => onSpeak(w.word)} className="rounded-xl p-1.5 text-ink-soft active:bg-rose-50" aria-label="朗读"><Volume2 size={16} /></button>
-                    <button type="button" onClick={() => onToggleHard(w.id)} className={`rounded-xl p-1.5 active:bg-honey-100 ${w.isHard ? 'text-honey-500' : 'text-ink-faint'}`} aria-label="顽固"><Flame size={16} /></button>
-                    <button type="button" onClick={() => onEdit(w)} className="rounded-xl p-1.5 text-ink-soft active:bg-rose-50" aria-label="编辑"><Pencil size={16} /></button>
-                    <button type="button" onClick={() => onDelete(w.id)} className="rounded-xl p-1.5 text-rose-300 active:bg-rose-50" aria-label="删除"><Trash2 size={16} /></button>
+                  <div className="flex max-w-[108px] shrink-0 flex-wrap items-center justify-end gap-0.5">
+                    <button type="button" className="rounded-md p-1.5 text-xs font-semibold text-rose-600 hover:bg-[#EFE9DC]" onClick={() => onToggleFavorite(w.id)} aria-label={w.isFavorite ? "取消收藏" : "收藏"}>{w.isFavorite ? "★" : "☆"}</button>
+                    <button type="button" className="rounded-md p-1.5 text-xs font-semibold text-sage-600 hover:bg-[#EFE9DC]" onClick={() => onToggleMastered(w.id)}>{w.isMastered ? "恢复复习" : "掌握"}</button>
+                    <button type="button" onClick={() => onSpeak(w.word)} className="rounded-md p-1.5 text-ink-soft hover:bg-[#EFE9DC]" aria-label="朗读"><Volume2 size={15} /></button>
+                    <button type="button" onClick={() => onToggleHard(w.id)} className={`rounded-md p-1.5 hover:bg-[#EFE9DC] ${w.isHard ? 'text-honey-500' : 'text-ink-faint'}`} aria-label="顽固"><Flame size={15} /></button>
+                    <button type="button" onClick={() => onEdit(w)} className="rounded-md p-1.5 text-ink-soft hover:bg-[#EFE9DC]" aria-label="编辑"><Pencil size={15} /></button>
+                    <button type="button" onClick={() => onDelete(w.id)} className="rounded-md p-1.5 text-ink-faint hover:bg-rose-50 hover:text-rose-600" aria-label="删除"><Trash2 size={15} /></button>
                   </div>
                 </li>
               ))}
@@ -196,34 +196,34 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
           )}
         </Card>
 
-        <Card className="p-4">
-          <p className="mb-3 text-xs text-ink-soft"><a className="underline" href="./licenses/NOTICE.txt" target="_blank" rel="noreferrer">数据来源与第三方许可</a></p>
+        <Card className="p-5">
+          <p className="mb-3 text-xs text-ink-soft"><a className="underline underline-offset-4 hover:text-ink" href="./licenses/NOTICE.txt" target="_blank" rel="noreferrer">数据来源与第三方许可</a></p>
           <SectionTitle right={<Database size={14} className="text-ink-faint" />}>数据备份与恢复</SectionTitle>
-          <p className="mb-3 text-[11px] font-semibold leading-relaxed text-ink-soft">单词、词书进度和复习记录都只存在这台设备的浏览器里，换手机、清缓存都会丢。建议每周导出一次 JSON 存到 iCloud / 微信文件助手。</p>
+          <p className="mb-3 text-[11px] leading-relaxed text-ink-soft">单词、词书进度和复习记录都只存在这台设备的浏览器里，换手机、清缓存都会丢。建议每周导出一次 JSON 存到 iCloud / 微信文件助手。</p>
           <div className="grid grid-cols-2 gap-2">
             <button type="button" className={softBtn} onClick={download}><Download size={15} /> 下载 JSON 备份</button>
             <button type="button" className={softBtn} onClick={copy}><Copy size={15} /> 复制备份 JSON</button>
             <button type="button" className={ghostBtn} onClick={() => fileRef.current?.click()}><Upload size={15} /> 选择文件恢复</button>
             <button type="button" className={ghostBtn} onClick={() => setPasteOpen((v) => !v)}><ClipboardPaste size={15} /> 粘贴 JSON 恢复</button>
           </div>
-          {storagePersisted !== null && <p data-testid="storage-status" className="mt-2 text-[11px] font-semibold leading-relaxed text-ink-soft">{storagePersisted ? '浏览器已允许持久保存本机记录。' : '浏览器未承诺持久保存：iPhone 请用 Safari「添加到主屏幕」后从主屏幕打开，并定期导出备份。'}</p>}
-          {autoBackups.length > 0 && <div className="mt-3 rounded-xl bg-stone-50 p-3">
-            <p className="text-[11px] font-extrabold text-ink-soft">自动备份 · 覆盖导入或清空前保存，保留最近 {MAX_AUTO_BACKUPS} 份，只存在本机</p>
+          {storagePersisted !== null && <p data-testid="storage-status" className="mt-2.5 text-[11px] leading-relaxed text-ink-soft">{storagePersisted ? '浏览器已允许持久保存本机记录。' : '浏览器未承诺持久保存：iPhone 请用 Safari「添加到主屏幕」后从主屏幕打开，并定期导出备份。'}</p>}
+          {autoBackups.length > 0 && <div className="mt-3 rounded-lg border border-[#D5CEC0] bg-[#F4EFE4] p-3">
+            <p className="font-mono text-[11px] font-semibold text-ink-soft">自动备份 · 覆盖导入或清空前保存，保留最近 {MAX_AUTO_BACKUPS} 份，只存在本机</p>
             <ul className="mt-2 space-y-1.5">{autoBackups.map(b => {
               const label = b.reason === 'clear' ? '清空前' : '覆盖导入前';
               const d = b.createdAt ? new Date(b.createdAt) : null;
               const when = d ? `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : b.day;
               return <li key={b.key} className="flex items-center justify-between gap-2 text-[12px]">
-                <span className="min-w-0 break-words">{label} · {when}{b.summary ? ` · ${b.summary.words} 词 · A4 ${b.summary.focus} 词 · 日志 ${b.summary.logs} 条` : ''}</span>
-                <button type="button" className="min-h-9 shrink-0 rounded-lg border border-stone-200 bg-white px-2.5 text-xs font-bold" aria-label={`下载${label}的自动备份 ${when}`} onClick={() => onDownloadBackup(b.key)}><Download size={12} className="inline" /> 下载</button>
+                <span className="min-w-0 break-words font-mono text-[11px] text-ink">{label} · {when}{b.summary ? ` · ${b.summary.words} 词 · A4 ${b.summary.focus} 词 · 日志 ${b.summary.logs} 条` : ''}</span>
+                <button type="button" className="min-h-9 shrink-0 rounded-md border border-[#D4CDC0] bg-[#FAF7F0] px-2.5 text-xs font-semibold hover:bg-[#EFE9DC]" aria-label={`下载${label}的自动备份 ${when}`} onClick={() => onDownloadBackup(b.key)}><Download size={12} className="inline" /> 下载</button>
               </li>;
             })}</ul>
           </div>}
           <input ref={fileRef} type="file" accept="application/json,.json,text/plain" className="hidden" onChange={onFile} />
-          <div className="mt-3 flex items-center gap-2 text-[11px] font-extrabold text-ink-soft">
+          <div className="mt-3 flex items-center gap-2 text-[11px] font-semibold text-ink-soft">
             恢复方式：
-            <button type="button" onClick={() => setPasteMode('merge')} className={`rounded-full px-2.5 py-1 ${pasteMode === 'merge' ? 'bg-sage-100 text-sage-500' : 'bg-stone-100'}`}>合并（按单词去重）</button>
-            <button type="button" onClick={() => setPasteMode('replace')} className={`rounded-full px-2.5 py-1 ${pasteMode === 'replace' ? 'bg-rose-100 text-rose-500' : 'bg-stone-100'}`}>覆盖</button>
+            <button type="button" onClick={() => setPasteMode('merge')} className={`rounded-sm border px-2.5 py-1 ${pasteMode === 'merge' ? 'border-[#181715] bg-[#181715] text-[#FAF7F0]' : 'border-[#D4CDC0] bg-[#FAF7F0] text-ink-soft'}`}>合并（按单词去重）</button>
+            <button type="button" onClick={() => setPasteMode('replace')} className={`rounded-sm border px-2.5 py-1 ${pasteMode === 'replace' ? 'border-rose-600 bg-rose-600 text-[#FAF7F0]' : 'border-[#D4CDC0] bg-[#FAF7F0] text-ink-soft'}`}>覆盖</button>
           </div>
           {pasteOpen && (
             <div className="mt-3 space-y-2 fade-in">
@@ -233,13 +233,13 @@ export function BankView({ state, today, onEdit, onDelete, onToggleHard, onToggl
               </button>
             </div>
           )}
-          <div className="mt-4 grid grid-cols-1 gap-2 border-t border-rose-50 pt-3">
+          <div className="mt-4 grid grid-cols-1 gap-2 border-t border-[#E2DBD0] pt-3">
             {confirmClear ? (
-              <button type="button" className="inline-flex items-center justify-center gap-1.5 rounded-2xl bg-rose-500 px-4 py-2.5 text-xs font-bold text-white" onClick={() => { onClearAll(); setConfirmClear(false); }}>
+              <button type="button" className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-rose-600 px-4 py-2.5 text-xs font-semibold text-[#FAF7F0]" onClick={() => { onClearAll(); setConfirmClear(false); }}>
                 <Eraser size={14} /> 确认清空单词和进度？
               </button>
             ) : (
-              <button type="button" className={`${ghostBtn} text-xs text-rose-400`} onClick={() => { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 4000); }}>
+              <button type="button" className={`${ghostBtn} text-xs text-rose-600`} onClick={() => { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 4000); }}>
                 <Eraser size={14} /> 清空单词和进度
               </button>
             )}

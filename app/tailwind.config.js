@@ -4,24 +4,25 @@ export default {
   theme: {
     extend: {
       colors: {
-        cream: '#FAF7F0',
-        paper: '#FCFAF6',
-        ink: { DEFAULT: '#1A1D29', soft: '#55596E', faint: '#878B9E' },
-        rose: { 50: '#F0F3F9', 100: '#E2E8F4', 200: '#C6D3E8', 300: '#9FB3D6', 400: '#6B89BF', 500: '#3B5B99', 600: '#284378', 700: '#1D3360' },
-        lilac: { 50: '#F5F1FC', 100: '#EBE3F8', 200: '#D6C6F0', 300: '#B9A0E3', 400: '#9A78D3', 500: '#7B55BE' },
-        sage: { 50: '#F0F7F4', 100: '#DEF0E9', 200: '#B8DFD1', 300: '#86C5B2', 400: '#4B9D87', 500: '#287A66', 600: '#1D5E4E' },
-        honey: { 50: '#FDF9EE', 100: '#FAF1D6', 200: '#F5E2A8', 300: '#ECCB6E', 500: '#B88220', 600: '#946513', 700: '#754E0C' },
-        blush: '#EAE5D8'
+        cream: '#F3EFE6',
+        paper: '#FAF7F0',
+        ink: { DEFAULT: '#181715', soft: '#524E46', faint: '#6E695F' },
+        rose: { 50: '#F7EFEA', 100: '#EFE1D9', 200: '#DFC3B5', 300: '#C89B87', 400: '#B25844', 500: '#9A3424', 600: '#82281A', 700: '#691E13' },
+        lilac: { 50: '#F1EFEA', 100: '#E5E1D8', 200: '#CFC9BC', 300: '#ABA393', 400: '#6E6A61', 500: '#46443F' },
+        sage: { 50: '#ECF3EF', 100: '#D8E7DF', 200: '#B4D0C2', 300: '#7FA996', 400: '#3D7A63', 500: '#215E49', 600: '#174736', 700: '#113629' },
+        honey: { 50: '#F9F3E6', 100: '#F1E4C8', 200: '#E3CA96', 300: '#CFA85B', 500: '#8F6214', 600: '#764F0E', 700: '#5E3E09' },
+        blush: '#D6CFC1'
       },
       fontFamily: {
-        ui: ['Calibri', 'Carlito', '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"SF Pro Display"', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'sans-serif'],
-        serif: ['"Newsreader"', 'Georgia', 'Cambria', '"Times New Roman"', 'Times', '"Liberation Serif"', '"PingFang SC"', 'serif']
+        ui: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', '"Helvetica Neue"', '"PingFang SC"', '"Hiragino Sans GB"', '"Microsoft YaHei"', 'sans-serif'],
+        serif: ['"Iowan Old Style"', '"Palatino Linotype"', 'Palatino', '"Baskerville"', 'Georgia', '"Songti SC"', '"STSong"', 'serif'],
+        mono: ['"SF Mono"', 'ui-monospace', 'Menlo', 'Consolas', 'monospace']
       },
       boxShadow: {
-        card: '0 1px 3px rgba(26, 29, 41, 0.04), 0 4px 14px rgba(26, 29, 41, 0.05)',
-        paper: '0 1px 3px rgba(45, 38, 25, 0.06), 0 6px 18px -3px rgba(45, 38, 25, 0.08), 0 18px 36px -8px rgba(45, 38, 25, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.95)',
-        button: '0 1px 2px rgba(0, 0, 0, 0.08)',
-        sheet: '0 -8px 24px rgba(26, 29, 41, 0.12)'
+        card: '0 1px 2px rgba(24, 23, 21, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7)',
+        paper: '0 1px 2px rgba(28, 25, 20, 0.06), 0 10px 28px -8px rgba(28, 25, 20, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.85)',
+        button: '0 1px 1px rgba(24, 23, 21, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.12)',
+        sheet: '0 -12px 32px rgba(24, 23, 21, 0.14)'
       }
     }
   },

@@ -245,3 +245,15 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
 - Service Worker 缓存版本升级至 `ielts-a4-v3-20261028-polish-1`。
 - 验证：Vitest 107 项全部通过；Playwright 108 项移动端（Chromium + WebKit）端到端测试全绿通过；构建单文件 HTML 产物；`git diff --check` 无语法格式警告。
 - 生产发布：推送到 GitHub 分支 `codex/continue-v3`，打包发布至腾讯云生产服务器并完成热重载，线上地址 `https://ielts.yyd.me/`。
+
+## 2026-11-01 · 去塑料感重构：纸本档案与出版物排版系统（Editorial & Archival Stationery UI）
+
+- 彻底移除 AI 套版痕迹：剔除 `Calibri`/`Carlito` 默认办公字体、大圆角白色塑料气泡卡（`rounded-3xl`）、蓝紫渐变胶囊（`from-rose-400 to-lilac-400`）、突兀的深蓝渐变卡片及可见卡通 Emoji（分段控件通过 `aria-label` 保留无障碍与测试兼容）。
+- 纸张与墨色体系：画布采用亚麻原浆底色 `#F3EFE6` 叠加全局固定 SVG 纸张纤维颗粒层（`body::before`），卡片与书页采用暖白典藏纸 `#FAF7F0`/`#FCFBF7`、1px 细线边框 `#CFC7B6`/`#D5CEC0` 与顶部黑墨界尺（`border-t-[3px] border-t-[#181715]`）。
+- 语义色彩与对比度：主按钮采用活字碳黑墨色 `#181715`（对比度 16.2:1）；批注与错词回退至朱砂红墨 `#82281A`/`#9A3424`；掌握与完成采用植物墨绿 `#215E49`；顽固词与预计提醒采用古铜赭石 `#764F0E`。
+- 页面重构：
+  - 首页 `TodayCoach` 重构为《剑桥每日学习索引卡》风格，配四格细线统计账本与分段标尺进度条；词书封面改为布面精装专著书牌（`#1E2623`）。
+  - A4 刷词页精简吸顶工具栏，纸面加入左侧朱砂装订线、28px 横向练习基准线、双线刊头及斜纹和纸遮挡条（`.masked`）。
+  - 60 秒挑战与看板日历统一至同色系纸本工作台，底栏导航每个入口配置独立图标与顶部墨线指示器。
+- Service Worker 缓存版本升级为 `ielts-a4-v3-20261101-editorial-1`。
+- 验证：Vitest 107 项单测通过，Playwright 108 项移动端（Chromium + WebKit）E2E 全数通过，构建与 `git diff --check` 零警告。

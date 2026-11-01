@@ -19,7 +19,7 @@ export function AddView({ words, onAdd, toast }: Props) {
   return (
     <div className="safe-bottom-pad">
       <PageHeader title="录入新词" subtitle="补充自定义词 · 词书学习请前往词书库" />
-      <div className="space-y-4 px-4 pt-1">
+      <div className="space-y-4 px-4 pt-3">
         <Segmented
           options={[
             { key: 'single', label: '单条' },
@@ -67,7 +67,7 @@ function SingleAdd({ words, onAdd, toast }: { words: WordItem[]; onAdd: Props['o
   };
 
   return (
-    <Card className="space-y-3 p-4">
+    <Card className="space-y-3.5 p-5">
       <Field label="英文单词" hint="必填 · 输入后自动查词典补全">
         <div className="flex gap-2">
           <input className={inputCls} value={f.word} onChange={(e) => set('word', e.target.value)} onBlur={tryLookup} placeholder="ubiquitous" autoCapitalize="none" autoCorrect="off" spellCheck={false} />
@@ -113,9 +113,9 @@ function PasteImport({ words, onAdd, toast }: { words: WordItem[]; onAdd: Props[
   };
 
   return (
-    <Card className="space-y-3 p-4">
-      <div className="flex items-start gap-2 rounded-2xl bg-rose-50 px-3 py-2.5 text-[11px] font-semibold leading-relaxed text-rose-500">
-        <ClipboardPaste size={16} className="mt-0.5 shrink-0" />
+    <Card className="space-y-3.5 p-5">
+      <div className="flex items-start gap-2 rounded-lg border border-[#D4CDC0] bg-[#F4EFE4] px-3.5 py-2.5 text-[11px] leading-relaxed text-ink-soft">
+        <ClipboardPaste size={16} className="mt-0.5 shrink-0 text-ink" />
         <span>
           每行一个词，格式 <b>单词 - 中文释义 - 同义词</b>，分隔符支持「-」「:」「Tab」或两个以上空格；行里带 /音标/ 会自动识别。
         </span>
@@ -131,24 +131,24 @@ function PasteImport({ words, onAdd, toast }: { words: WordItem[]; onAdd: Props[
       />
       {preview && (
         <div className="space-y-2">
-          <div className="flex flex-wrap gap-2 text-[11px] font-extrabold">
-            <span className="rounded-full bg-sage-100 px-2.5 py-1 text-sage-500">可导入 {preview.items.length}</span>
-            {preview.duplicates.length > 0 && <span className="rounded-full bg-honey-100 px-2.5 py-1 text-honey-500">重复 {preview.duplicates.length}</span>}
-            {preview.invalid.length > 0 && <span className="rounded-full bg-rose-100 px-2.5 py-1 text-rose-500">无法解析 {preview.invalid.length}</span>}
+          <div className="flex flex-wrap gap-2 font-mono text-[11px] font-semibold">
+            <span className="rounded-sm border border-[#B4D0C2] bg-sage-50 px-2 py-0.5 text-sage-600">可导入 {preview.items.length}</span>
+            {preview.duplicates.length > 0 && <span className="rounded-sm border border-[#E3CA96] bg-honey-50 px-2 py-0.5 text-honey-700">重复 {preview.duplicates.length}</span>}
+            {preview.invalid.length > 0 && <span className="rounded-sm border border-rose-200 bg-rose-50 px-2 py-0.5 text-rose-600">无法解析 {preview.invalid.length}</span>}
           </div>
           {preview.items.length > 0 && (
             <ul className="max-h-[200px] space-y-1 overflow-y-auto no-scrollbar">
               {preview.items.map((it) => (
-                <li key={it.word} className="flex items-baseline gap-2 rounded-xl bg-cream px-3 py-1.5 text-[12px]">
+                <li key={it.word} className="flex items-baseline gap-2 rounded-md border border-[#E2DBD0] bg-[#F4EFE4] px-3 py-1.5 text-[12px]">
                   <span className="font-serif text-[14px] font-semibold text-ink">{it.word}</span>
-                  <span className="text-ink-soft">{it.phonetic}</span>
-                  <span className="truncate font-bold text-ink">{it.meaning}</span>
-                  {it.synonyms && <span className="truncate italic text-lilac-500">≈ {it.synonyms}</span>}
+                  <span className="font-mono text-ink-soft">{it.phonetic}</span>
+                  <span className="truncate font-medium text-ink">{it.meaning}</span>
+                  {it.synonyms && <span className="truncate font-serif italic text-ink-soft">≈ {it.synonyms}</span>}
                 </li>
               ))}
             </ul>
           )}
-          {preview.invalid.length > 0 && <p className="text-[11px] font-semibold text-rose-400">无法解析：{preview.invalid.slice(0, 5).join(' / ')}{preview.invalid.length > 5 ? ' …' : ''}</p>}
+          {preview.invalid.length > 0 && <p className="text-[11px] font-semibold text-rose-600">无法解析：{preview.invalid.slice(0, 5).join(' / ')}{preview.invalid.length > 5 ? ' …' : ''}</p>}
         </div>
       )}
       <button type="button" className={`${primaryBtn} w-full`} onClick={confirm} disabled={!preview || preview.items.length === 0}>

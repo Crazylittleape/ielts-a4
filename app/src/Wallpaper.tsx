@@ -68,11 +68,11 @@ export function useWallpaper() {
 
 export function WallpaperSettings({ url, busy, error, change }: ReturnType<typeof useWallpaper>) {
   const fileRef = useRef<HTMLInputElement>(null);
-  return <details className="rounded-3xl bg-white p-4 shadow-card">
-    <summary className="min-h-11 cursor-pointer py-3 text-sm font-bold">外观设置</summary>
+  return <details className="rounded-xl border border-[#D5CEC0] bg-[#FAF7F0] p-4 shadow-card">
+    <summary className="min-h-11 cursor-pointer py-2.5 font-serif text-sm font-semibold text-ink">外观设置</summary>
     <div className="space-y-3 pt-2">
       <p className="text-xs leading-relaxed text-ink-soft">用自己的图片作为壁纸。仅存本机，不会上传，也不包含在学习备份中。</p>
-      {url && <img src={url} alt="当前壁纸预览" className="h-28 w-full rounded-xl object-cover" />}
+      {url && <img src={url} alt="当前壁纸预览" className="h-28 w-full rounded-lg border border-[#D5CEC0] object-cover" />}
       <div className="flex flex-wrap gap-2">
         <button type="button" disabled={busy} className={softBtn} onClick={() => fileRef.current?.click()}>上传壁纸</button>
         <button type="button" disabled={busy || !url} className={ghostBtn} onClick={() => void change(null)}>恢复默认背景</button>

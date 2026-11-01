@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Home, BookOpenText, Library, X, Zap, BarChart3 } from 'lucide-react';
+import { CalendarDays, FileText, BookOpenText, Library, X, Zap, BarChart3 } from 'lucide-react';
 import type { AppState, GroupPick, Settings, StateSummary, WordFields, WordItem } from './lib';
 import { backupJson, createWord, DENSITIES, focusSummary, gradeWord, joinReview, parseDate, removeFromFocus, resetWord, parseBackup, mergeBackup, speak, stateSummary, todayStr } from './lib';
 import { dailyReport } from './coach';
@@ -47,12 +47,12 @@ function EditSheet({ word, onSave, onClose }: { word: WordItem; onSave: (w: Word
   }, [onClose]);
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
-    <div className="fixed inset-0 z-[60] flex items-end bg-ink/30 backdrop-blur-sm" onClick={onClose}>
-      <div className="sheet-up w-full rounded-t-[32px] bg-[#FCFAF6] px-5 pb-8 pt-3 shadow-sheet border-t border-stone-200/50" style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }} onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-stone-200" />
+    <div className="fixed inset-0 z-[60] flex items-end bg-ink/40 backdrop-blur-xs" onClick={onClose}>
+      <div className="sheet-up mx-auto w-full max-w-[560px] rounded-t-2xl border-t-2 border-t-[#181715] bg-[#FAF7F0] px-5 pb-8 pt-3 shadow-sheet" style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }} onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#CFC7B6]" />
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-serif text-xl font-semibold text-ink">编辑单词</h3>
-          <button type="button" onClick={onClose} className="rounded-xl bg-stone-100 p-1.5 text-ink-soft hover:bg-stone-200 transition" aria-label="关闭"><X size={18} /></button>
+          <button type="button" onClick={onClose} className="rounded-lg border border-[#D4CDC0] bg-[#F3EFE6] p-1.5 text-ink-soft hover:text-ink transition" aria-label="关闭"><X size={18} /></button>
         </div>
         <div className="space-y-3">
           <Field label="英文单词"><input className={inputCls} value={f.word} onChange={(e) => set('word', e.target.value)} autoCapitalize="none" /></Field>
@@ -80,24 +80,24 @@ function EditSheet({ word, onSave, onClose }: { word: WordItem; onSave: (w: Word
 }
 
 function TabBar({ tab, onChange, due }: { tab: Tab; onChange: (t: Tab) => void; due: number }) {
-  const items: { key: Tab; label: string; Icon: typeof Home }[] = [
+  const items: { key: Tab; label: string; Icon: typeof Library }[] = [
     { key: 'home', label: '词书库', Icon: Library },
-    { key: 'a4', label: 'A4 刷词', Icon: BookOpenText },
-    { key: 'dashboard', label: '看板', Icon: Home },
+    { key: 'a4', label: 'A4 刷词', Icon: FileText },
+    { key: 'dashboard', label: '看板', Icon: CalendarDays },
     { key: 'bank', label: '我的单词', Icon: BookOpenText }
   ];
   return (
-    <nav aria-label="主导航" className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-blush/80 bg-[#FCFAF5]/92 backdrop-blur-lg shadow-[0_-4px_20px_rgba(26,29,41,0.03)]">
-      <div className="mx-auto flex max-w-[480px]">
+    <nav aria-label="主导航" className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-[#CFC7B6] bg-[#F3EFE6]/95 backdrop-blur-md">
+      <div className="mx-auto flex max-w-[560px]">
         {items.map(({ key, label, Icon }) => {
           const active = tab === key;
           return (
-            <button key={key} type="button" aria-current={active ? 'page' : undefined} onClick={() => onChange(key)} className="relative flex min-h-14 flex-1 flex-col items-center gap-0.5 pb-1 pt-2 transition active:scale-95">
-              <span className={`relative rounded-2xl px-3.5 py-1 transition ${active ? 'bg-rose-100/80 text-rose-600' : 'text-ink-soft/75 hover:text-ink'}`}>
-                <Icon size={20} strokeWidth={active ? 2.4 : 1.8} />
-                {key === 'a4' && due > 0 && <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-[18px] text-white shadow-xs">{due}</span>}
+            <button key={key} type="button" aria-current={active ? 'page' : undefined} onClick={() => onChange(key)} className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-1 pb-1 pt-2 transition ${active ? 'before:absolute before:inset-x-5 before:top-0 before:h-[2px] before:bg-[#181715]' : ''}`}>
+              <span className={`relative rounded-md px-3 py-0.5 transition ${active ? 'bg-[#E6DFD1] text-ink' : 'text-ink-soft hover:text-ink'}`}>
+                <Icon size={19} strokeWidth={active ? 2.2 : 1.75} />
+                {key === 'a4' && due > 0 && <span className="absolute -right-2 -top-1 min-w-[18px] rounded-sm bg-rose-600 px-1 text-center font-mono text-[10px] font-semibold leading-[17px] text-[#FAF7F0]">{due}</span>}
               </span>
-              <span className={`text-[11px] ${active ? 'font-bold text-rose-600' : 'font-medium text-ink-soft/75'}`}>{label}</span>
+              <span className={`text-[11px] tracking-wide ${active ? 'font-semibold text-ink' : 'font-medium text-ink-soft'}`}>{label}</span>
             </button>
           );
         })}
@@ -332,18 +332,18 @@ export default function App() {
   };
   const changeTab = (t: Tab) => { if (t === 'a4') { setA4Date(today); setA4Scope('focus'); setA4Back('home'); } setTab(t); window.scrollTo({top:0}); };
 
-  if (!state) return <main className="mx-auto max-w-[480px] space-y-4 p-6"><h1 className="text-xl font-bold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : blocked ? '另一个窗口仍在使用旧版本的学习记录。请关闭其他打开的本站页面或主屏幕 App，读取会自动继续。' : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
+  if (!state) return <main className="mx-auto max-w-[560px] space-y-4 p-6"><h1 className="font-serif text-xl font-semibold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : blocked ? '另一个窗口仍在使用旧版本的学习记录。请关闭其他打开的本站页面或主屏幕 App，读取会自动继续。' : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
   return <>
     {wallpaper.url && <>
       <div aria-hidden="true" data-testid="wallpaper" className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url("${wallpaper.url}")` }} />
-      <div aria-hidden="true" data-testid="wallpaper-overlay" className="pointer-events-none fixed inset-0 z-0 bg-cream/65" />
+      <div aria-hidden="true" data-testid="wallpaper-overlay" className="pointer-events-none fixed inset-0 z-0 bg-cream/70" />
     </>}
-    <div className="relative z-10 mx-auto min-h-screen max-w-[480px] font-ui text-ink">
-    {staleElsewhere && !saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>其他标签页已更新学习记录。请刷新后继续，避免在旧页面上操作。</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>刷新学习记录</button></div>}
-    {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 bg-sage-100 p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
-    {saveError && <div role="alert" className="sticky top-0 z-[90] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
+    <div className="relative z-10 mx-auto min-h-screen max-w-[560px] font-ui text-ink sm:border-x sm:border-[#DFD8C8]/70">
+    {staleElsewhere && !saveError && <div role="alert" className="sticky top-0 z-[90] border-b border-[#E3CA96] bg-honey-100 p-4 text-sm"><p>其他标签页已更新学习记录。请刷新后继续，避免在旧页面上操作。</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>刷新学习记录</button></div>}
+    {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 border-b border-[#B4D0C2] bg-sage-100 p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
+    {saveError && <div role="alert" className="sticky top-0 z-[90] border-b border-[#E3CA96] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><BookView appearance={<WallpaperSettings {...wallpaper} />} more={<div className="flex flex-wrap gap-2"><span className="sr-only">更多练习</span><button className={ghostBtn} onClick={() => changeTab('quiz')}><Zap size={16} className="text-honey-600" aria-hidden="true" />60 秒配对</button><button className={ghostBtn} onClick={() => changeTab('stats')}><BarChart3 size={16} className="text-rose-500" aria-hidden="true" />学习统计</button><button className={ghostBtn} onClick={() => changeTab('cloze')}><BookOpenText size={16} className="text-lilac-500" aria-hidden="true" />语境填空</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
+      {tab === 'home' && <><BookView appearance={<WallpaperSettings {...wallpaper} />} more={<div className="grid grid-cols-3 gap-2"><span className="sr-only">更多练习</span><button className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('quiz')}><Zap size={14} className="text-honey-600" aria-hidden="true" />60 秒配对</button><button className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('stats')}><BarChart3 size={14} className="text-rose-600" aria-hidden="true" />学习统计</button><button className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('cloze')}><BookOpenText size={14} className="text-ink-soft" aria-hidden="true" />语境填空</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} calendar={calendar} onOpenBook={() => changeTab('home')} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View wallpaperActive={Boolean(wallpaper.url)} words={state.words} revlog={state.revlog} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} allDueCount={reviewIds(calendar.all, today, today).length} onOpenBook={() => changeTab('home')} schedule={calendar[a4Scope]} onBack={() => { setTab(a4Back); window.scrollTo({ top: 0 }); }} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
@@ -354,7 +354,7 @@ export default function App() {
       <TabBar tab={tab} onChange={changeTab} due={calendar.focus[today]?.due.length ?? 0} />
       {editing && <EditSheet word={editing} onSave={onSaveEdit} onClose={() => setEditing(null)} />}
     </fieldset>
-    {saving && <p role="status" className="fixed left-1/2 top-2 z-[80] -translate-x-1/2 rounded-full bg-white px-4 py-2 text-sm shadow-card">正在保存…</p>}
+    {saving && <p role="status" className="fixed left-1/2 top-2 z-[80] -translate-x-1/2 rounded-md border border-[#D4CDC0] bg-[#FAF7F0] px-4 py-1.5 font-mono text-xs font-semibold shadow-card">正在保存…</p>}
     {stamp && <DoneStamp title={stamp.title} subtitle={stamp.subtitle} onClose={() => setStamp(null)} />}
     {toast && <Toast message={toast.msg} tone={toast.tone} />}
     </div>
