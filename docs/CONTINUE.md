@@ -266,3 +266,13 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
   - 引入纸面层级阶梯（双线界尺 `border-double`、内凹纸槽 `bg-paper-2 border-y`、棉纸页 `bg-sheet`），清理全大写宽字距眉题（Gate 54/67）、中点拼接串（Gate 63）、320px 按钮折行（Gate 49a）、单通道禁用态（Gate 39a）、`transition-[width]`（Gate 10a）及全页四字重混用（Gate F19，收敛为 400/500/700 三档字重）。
 - Service Worker 缓存版本升级为 `ielts-a4-v3-20261102-hallmark-1`。
 - 验证：`sloplint --render --kept` 达成 `0 FAIL, 0 REFLEX, 0 WARN`（重构前为 `190 FAIL, 8 REFLEX, 2 WARN`）；Vitest 107 项单测通过；Playwright 108 项移动端（Chromium + WebKit）E2E 全绿通过。
+
+## 2026-11-02 · 配色小清新重构（晨雾柔白、薄荷草木绿与珊瑚樱粉）
+
+- 依据用户对原旧报纸发黄泥泞感（Newsprint tan / brick red）的反馈，全面重构为「小清新晨光纸媒与初茶薄荷」配色方案：
+  - 底色与纸面：画布采用通透清爽的晨露柔白 `--color-paper` (`oklch(98.2% 0.007 165)`) 配合微薄荷凹槽 `--color-paper-2`，彻底告别昏暗发黄的做旧感；A4 纸张与卡片采用极柔润纯净的自然白 `--color-sheet` (`oklch(99.5% 0.005 160)`)。
+  - 墨色与排版：正文采用通透雅致的深松黛墨 `--color-ink` (`oklch(22% 0.025 175)`)，边线采用清爽浅玉细线 `--color-rule` (`oklch(89% 0.012 165)`)。
+  - 活力语义色：主行动按键与重点指标采用鲜活护眼的植物薄荷森林绿 `--color-accent` (`oklch(48% 0.135 155)`)；遗忘与错词改用温柔清丽的珊瑚粉樱 `--color-error` (`oklch(52% 0.145 22)`)，告别生硬暗沉的砖褐色；记住采用生机抹茶绿 `--color-success`，困难与挑战采用温润阳光杏子黄 `--color-warn`。
+  - 控件与文具质感：微圆角 4px 搭配轻盈自然漫反射投影；词书封面改为清爽书签本造型；A4 纸张保持精致细格线与轻浅粉调装订线。
+- Service Worker 缓存版本升级为 `ielts-a4-v3-20261102-fresh-mint-1`。
+- 验证：`sloplint --render --kept` 0 FAIL / 0 REFLEX / 0 WARN，Vitest 107 项全过，Playwright 108 项 E2E 全过。

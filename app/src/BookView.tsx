@@ -3,7 +3,7 @@ import { ArrowLeft, Check, ChevronRight, Lock, Volume2 } from 'lucide-react';
 import type { AppState, Density, GroupPick, Settings } from './lib';
 import { BOOK, BOOK_GROUPS, type BookGroup } from './bookCatalog';
 import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, getBookWord, checkBookSpelling, groupMissed, type BookAnswer, type GroupJoinResult } from './book';
-import { Card, PageHeader, Field, inputCls, primaryBtn, ghostBtn, ExampleBlock, Segmented } from './ui';
+import { Card, PageHeader, Field, inputCls, primaryBtn, softBtn, ghostBtn, ExampleBlock, Segmented } from './ui';
 import type { ReviewScope } from './calendar';
 import { nextStep, type DailyReport } from './coach';
 import { TodayCoach } from './Home';
@@ -126,14 +126,14 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
       <div className="space-y-4 lg:col-span-5">
         <Card className="overflow-hidden">
           <div className="flex items-start gap-4 border-b border-rule bg-paper-2 p-5">
-            <div aria-hidden="true" className="flex h-28 w-20 shrink-0 flex-col justify-between rounded-sm border border-ink bg-ink p-3 text-paper"><span className="font-serif text-xs font-bold text-paper-2">IELTS</span><span className="border-t border-rule-2 pt-2 font-serif text-xs font-bold leading-snug">雅思<br />词汇真经</span></div>
+            <div aria-hidden="true" className="relative flex h-28 w-20 shrink-0 flex-col justify-between overflow-hidden rounded-sm border border-rule-2 bg-sheet p-3 text-ink shadow-sm"><div className="absolute right-2 top-0 h-4 w-2.5 rounded-b-xs bg-accent" /><span className="font-serif text-xs font-semibold text-accent">IELTS</span><span className="border-t border-rule pt-2 font-serif text-xs font-semibold leading-snug">雅思<br />词汇真经</span></div>
             <div className="min-w-0 flex-1 pt-0.5"><p className="text-xs font-medium text-ink-soft">我的词书 · 第 <span className="font-mono tabular-nums">{stats.completedGroups + (stats.current ? 1 : 0)} / {BOOK_GROUPS.length}</span> 组</p><h2 className="mt-1.5 font-serif text-xl font-bold text-ink">{BOOK.title}</h2><p className="mt-1.5 text-xs text-ink-soft">{BOOK.edition} · 22 单元</p><p className="mt-0.5 text-xs text-ink-soft">共 {stats.total} 词 · 每组 25 词</p></div>
           </div>
           <div className="space-y-3 p-5">
             <div className="flex justify-between text-xs font-medium"><span>已学 {stats.learned} / {stats.total} 词</span><span className="font-mono tabular-nums">{stats.percent.toFixed(1)}%</span></div>
             {bar}
             <div className="text-xs text-ink-soft"><div className="inline">剩余 {stats.remaining} 词</div><div className="inline"> · {currentLabel}</div></div>
-            <button type="button" className={`${primaryBtn} w-full`} aria-label="雅思词汇真经" onClick={() => go('book')}>打开词书 <ChevronRight size={16} /></button>
+            <button type="button" className={`${softBtn} w-full`} aria-label="雅思词汇真经" onClick={() => go('book')}>打开词书 <ChevronRight size={16} /></button>
           </div>
         </Card>
         {more}

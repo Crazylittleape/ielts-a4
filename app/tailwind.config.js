@@ -30,6 +30,12 @@ export default {
           soft: 'var(--color-accent-soft)',
           rule: 'var(--color-accent-rule)'
         },
+        error: {
+          DEFAULT: 'var(--color-error)',
+          ink: 'var(--color-error-ink)',
+          soft: 'var(--color-error-soft)',
+          rule: 'var(--color-error-rule)'
+        },
         success: {
           DEFAULT: 'var(--color-success)',
           ink: 'var(--color-success-ink)',
@@ -46,14 +52,14 @@ export default {
         scrim: 'var(--color-scrim)',
         veil: 'var(--color-veil)',
         rose: {
-          50: 'var(--color-accent-soft)',
-          100: 'var(--color-accent-soft)',
-          200: 'var(--color-accent-rule)',
-          300: 'var(--color-accent-rule)',
-          400: 'var(--color-accent)',
-          500: 'var(--color-accent)',
-          600: 'var(--color-accent)',
-          700: 'var(--color-accent)'
+          50: 'var(--color-error-soft)',
+          100: 'var(--color-error-soft)',
+          200: 'var(--color-error-rule)',
+          300: 'var(--color-error-rule)',
+          400: 'var(--color-error)',
+          500: 'var(--color-error)',
+          600: 'var(--color-error)',
+          700: 'var(--color-error)'
         },
         lilac: {
           50: 'var(--color-paper-2)',

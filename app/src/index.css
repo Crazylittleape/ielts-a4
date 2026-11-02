@@ -1,7 +1,7 @@
-/* Hallmark · shape: app screen · genre: editorial · theme: Newsprint (deal 1/3, seed ielts-vocabulary-study-desk-b372·02f10ef8·2026-11-02·r0) · redesign: full
+/* Hallmark · shape: app screen · genre: editorial · theme: Dose (custom botanical mint) · redesign: full
  * nav: responsive top masthead and mobile tab bar · signature: ruled A4 spaced-repetition review sheet · states: loading, empty, error, full
- * axes: light/slab-serif/warm · posture: restrained · contrast: pass · v2.0.0 */
-/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: S, replaced stacked card boxes with broadsheet double rules, paper-2 wells, and a dual-column desktop workspace */
+ * axes: light/humanist-sans/fresh-mint · posture: committed · contrast: pass · v2.0.0 */
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 · weakest: P, shifted palette to fresh morning mist, crisp paper, and restorative botanical mint */
 @import "./tokens.css";
 @import "./base.css";
 

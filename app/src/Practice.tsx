@@ -25,7 +25,7 @@ export function matchRound(words: WordItem[], previous: string[] = [], random: (
 
 type Phase = 'idle' | 'playing' | 'over';
 const emptyStats = { matches: 0, attempts: 0, rounds: 0, bestCombo: 0 };
-const stageBtn = 'inline-flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-ink bg-ink px-5 py-3 text-sm font-medium text-paper shadow-button transition-colors hover:bg-ink-2 active:translate-y-[0.5px] disabled:translate-y-0 disabled:border-rule disabled:bg-paper-2 disabled:text-ink-faint disabled:cursor-not-allowed';
+const stageBtn = 'inline-flex min-h-12 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-accent bg-accent px-5 py-3 text-sm font-medium text-accent-ink shadow-button transition-opacity hover:opacity-92 active:translate-y-[0.5px] disabled:translate-y-0 disabled:border-rule disabled:bg-paper-2 disabled:text-ink-faint disabled:cursor-not-allowed';
 const tileBtn = 'w-full min-h-12 break-words rounded-sm border p-3.5 text-left transition-colors active:translate-y-[0.5px] disabled:cursor-not-allowed';
 
 export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: WordItem[]; scopeLabel: string; onBack: () => void; onSpeak: (s: string) => void }) {
@@ -164,7 +164,7 @@ export function MatchingGame({ words, scopeLabel, onBack, onSpeak }: { words: Wo
     <PageHeader title="60 秒英汉配对" subtitle={<><span className="inline">{scopeLabel} · 答对朗读</span><span className="inline"> · 只练习，不改排期</span></>} />
     <div className="mx-auto max-w-3xl space-y-4 px-4 pt-4 sm:px-6">
       <button type="button" className={ghostBtn} onClick={onBack}>返回首页</button>
-      <section className="stage min-w-0 rounded-sm border border-rule border-t-2 border-t-ink bg-sheet p-5 text-ink shadow-paper sm:p-6">
+      <section className="stage min-w-0 rounded-sm border border-rule border-t-2 border-t-accent bg-sheet p-5 text-ink shadow-paper sm:p-6">
         <p data-testid="timer-announce" aria-live="polite" className="sr-only">{announce}</p>
         {phase === 'idle' && <div className="space-y-4">
           <h2 className="font-serif text-2xl font-bold text-ink">准备好就开始</h2>

@@ -72,7 +72,7 @@ export function Dashboard({ words, today, calendar, selectedDay, onSelectDay, on
             <span className="text-xs font-medium text-accent">今日 A4 攻坚</span>
             <span className="font-mono text-xs tabular-nums text-ink-faint">{today}</span>
           </div>
-          <div className="mt-4 flex items-baseline gap-2.5"><span className="font-serif text-5xl font-bold leading-none tabular-nums text-ink">{current.due.length}</span><span className="text-sm font-medium text-ink-soft">词待攻坚</span></div>
+          <div className="mt-4 flex items-baseline gap-2.5"><span className="font-serif text-5xl font-bold leading-none tabular-nums text-accent">{current.due.length}</span><span className="text-sm font-medium text-ink-soft">词待攻坚</span></div>
           <div className="mt-2 text-xs text-ink-soft"><div className="inline">含逾期 {current.due.filter(w => w.overdue).length} 词 · 已完成 {current.done.length} 词</div><div className="inline"> · 今日新增攻坚 {current.added.length} 词</div></div>
           <div className="mt-4 grid grid-cols-2 divide-x divide-rule border-y border-rule bg-paper-2 py-3 text-sm">
             <div className="pr-3"><p className="text-xs text-ink-soft">词书初学 · 已完成</p><p className="mt-1 font-serif text-base font-bold tabular-nums" data-testid="today-learning">{learned?.groups ?? 0} 组 / {learned?.words ?? 0} 词</p></div>

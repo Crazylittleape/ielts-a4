@@ -7,7 +7,7 @@ export const inputCls =
   'w-full rounded-sm border border-rule-2 bg-sheet px-3.5 py-2.5 text-[15px] text-ink placeholder:text-ink-faint focus:border-ink focus:outline-none transition-colors disabled:border-rule disabled:bg-paper-2 disabled:text-ink-faint disabled:cursor-not-allowed';
 
 export const primaryBtn =
-  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-ink bg-ink px-5 py-2.5 text-sm font-medium text-paper shadow-button transition-colors hover:bg-ink-2 active:translate-y-[0.5px] disabled:translate-y-0 disabled:border-rule disabled:bg-paper-2 disabled:text-ink-faint disabled:cursor-not-allowed';
+  'inline-flex min-h-11 items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-accent bg-accent px-5 py-2.5 text-sm font-medium text-accent-ink shadow-button transition-opacity hover:opacity-92 active:translate-y-[0.5px] disabled:translate-y-0 disabled:border-rule disabled:bg-paper-2 disabled:text-ink-faint disabled:cursor-not-allowed';
 
 export const softBtn =
   'inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-sm border border-rule-2 bg-paper-2 px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper-3 active:translate-y-[0.5px] disabled:translate-y-0 disabled:border-rule disabled:bg-paper-2 disabled:text-ink-faint disabled:cursor-not-allowed';
@@ -16,7 +16,7 @@ export const ghostBtn =
   'inline-flex min-h-11 items-center justify-center gap-1.5 whitespace-nowrap rounded-sm border border-rule bg-sheet px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-paper-2 hover:border-rule-2 active:translate-y-[0.5px] disabled:translate-y-0 disabled:border-rule disabled:bg-paper-2 disabled:text-ink-faint disabled:cursor-not-allowed';
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-sm border border-rule border-t-2 border-t-ink bg-sheet ${className}`}>{children}</div>;
+  return <div className={`rounded-sm border border-rule border-t-2 border-t-accent-rule bg-sheet ${className}`}>{children}</div>;
 }
 
 /** Sourced example sentence with read-aloud; renders nothing without an example. */
