@@ -3,7 +3,8 @@ import { CalendarDays, FileText, BookOpenText, Library, X, Zap, BarChart3 } from
 import type { AppState, GroupPick, Settings, StateSummary, WordFields, WordItem } from './lib';
 import { backupJson, createWord, DENSITIES, focusSummary, gradeWord, joinReview, parseDate, removeFromFocus, resetWord, parseBackup, mergeBackup, speak, stateSummary, todayStr } from './lib';
 import { dailyReport } from './coach';
-import { useWallpaper, WallpaperSettings } from './Wallpaper';
+import { useWallpaper } from './Wallpaper';
+import { SettingsSheet } from './SettingsSheet';
 import { buildCalendar, reviewIds, type ReviewScope } from './calendar';
 import { applyUpdate, SW_UPDATE_EVENT } from './pwa';
 import { listAutoBackups, onWorkspaceEvent, openWorkspace, persistWorkspace, saveAutoBackup, type BackupRow } from './db';
@@ -116,6 +117,7 @@ export default function App() {
   const [saveError, setSaveError] = useState('');
   const busy = useRef(false);
   const [tab, setTab] = useState<Tab>('home');
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [a4Date, setA4Date] = useState(today);
   const [a4Scope, setA4Scope] = useState<ReviewScope>('focus');
   const [a4Back, setA4Back] = useState<Tab>('home');
@@ -343,7 +345,7 @@ export default function App() {
     {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 border-b border-success-rule bg-success-soft p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
     {saveError && <div role="alert" className="sticky top-0 z-[90] border-b border-warn-rule bg-warn-soft p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><BookView appearance={<WallpaperSettings {...wallpaper} />} more={<div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3"><span className="sr-only">更多练习</span><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('quiz')}><Zap size={14} className="text-warn" aria-hidden="true" />60 秒配对</button><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('stats')}><BarChart3 size={14} className="text-accent" aria-hidden="true" />学习统计</button><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('cloze')}><BookOpenText size={14} className="text-ink-soft" aria-hidden="true" />语境填空</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
+      {tab === 'home' && <><BookView more={<div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3"><span className="sr-only">更多练习</span><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('quiz')}><Zap size={14} className="text-warn" aria-hidden="true" />60 秒配对</button><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('stats')}><BarChart3 size={14} className="text-accent" aria-hidden="true" />学习统计</button><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('cloze')}><BookOpenText size={14} className="text-ink-soft" aria-hidden="true" />语境填空</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onOpenSettings={() => setSettingsOpen(true)} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} calendar={calendar} onOpenBook={() => changeTab('home')} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View wallpaperActive={Boolean(wallpaper.url)} words={state.words} revlog={state.revlog} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} allDueCount={reviewIds(calendar.all, today, today).length} onOpenBook={() => changeTab('home')} schedule={calendar[a4Scope]} onBack={() => { setTab(a4Back); window.scrollTo({ top: 0 }); }} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
       {tab === 'add' && <><div className="px-4 pt-3 sm:px-6"><button type="button" className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
@@ -354,6 +356,7 @@ export default function App() {
       <TabBar tab={tab} onChange={changeTab} due={calendar.focus[today]?.due.length ?? 0} />
       {editing && <EditSheet word={editing} onSave={onSaveEdit} onClose={() => setEditing(null)} />}
     </fieldset>
+    {settingsOpen && <SettingsSheet settings={state.settings} dailyGroups={getBookProgress(state).dailyGroups} onSetDailyGroups={onSetDailyGroups} onSaveSettings={onSaveSettings} wallpaper={wallpaper} onClose={() => setSettingsOpen(false)} />}
     {saving && <p role="status" className="fixed left-1/2 top-2 z-[80] -translate-x-1/2 rounded-sm border border-rule-2 bg-sheet px-4 py-1.5 text-xs font-medium shadow-paper">正在保存…</p>}
     {stamp && <DoneStamp title={stamp.title} subtitle={stamp.subtitle} onClose={() => setStamp(null)} />}
     {toast && <Toast message={toast.msg} tone={toast.tone} />}

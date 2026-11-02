@@ -276,3 +276,13 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
   - 控件与文具质感：微圆角 4px 搭配轻盈自然漫反射投影；词书封面改为清爽书签本造型；A4 纸张保持精致细格线与轻浅粉调装订线。
 - Service Worker 缓存版本升级为 `ielts-a4-v3-20261102-fresh-mint-1`。
 - 验证：`sloplint --render --kept` 0 FAIL / 0 REFLEX / 0 WARN，Vitest 107 项全过，Playwright 108 项 E2E 全过。
+
+## 2026-11-02 · 首页极简收纳与新手三步指引弹窗化（与 Devin 协同交付）
+
+- 针对用户反馈“首页信息过载、背词怯场”进行减负重构：
+  - **新手引导弹窗化**：`第一次使用 · 三步上手`（`data-testid="first-run-guide"`）从首屏常驻卡片重构为模态对话框 `ModalDialog`，仅在初次进入时优雅居中弹出，点击“我知道了”或“开始今日学习”后关闭并在 localStorage 中持久化记录 `ielts-a4-guide-dismissed`；词书库右上角提供 `<CircleHelp size={19} />` 问号按钮可随时重新唤起。
+  - **设置中心统一收敛**：新增 `SettingsSheet.tsx` 抽屉，将原本散落在词书库及书籍各页的“每日学习组数”、“组完成页的默认选择”、“复习密度”与“外观（壁纸）”设置统一收纳，在 `PageHeader` 右上角提供设置齿轮图标唤起。
+  - **首屏极致专注**：词书库首屏仅保留“今日学习下一步”（TodayCoach）与《雅思词汇真经》进度主卡片，界面轻盈纯粹，开箱即学。
+- 兼容与无障碍：`ModalDialog` 实现双向 Tab 焦点陷阱锁定、Escape 键关闭，并在卸载时异步恢复此前聚焦控件（解决 WebKit 焦点时序边界）。
+- Service Worker 缓存版本升级为 `ielts-a4-v3-20261102-settings-modal-1`。
+- 验证：`sloplint --render` 0 FAIL / 0 REFLEX / 0 WARN；Vitest 107 项单测通过；Playwright 114 项移动端（Chromium 57, WebKit 57）E2E 全数通过。

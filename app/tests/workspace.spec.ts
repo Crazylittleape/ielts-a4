@@ -8,6 +8,11 @@ function shotPath(filename: string): string {
   mkdirSync(dir, { recursive: true });
   return `${dir}/${filename}`;
 }
+function settingsShotPath(filename: string): string {
+  const dir = existsSync('/home/ubuntu/shots/settings') ? '/home/ubuntu/shots/settings' : '/tmp/shots/settings';
+  mkdirSync(dir, { recursive: true });
+  return `${dir}/${filename}`;
+}
 async function start(page: Page, initial: unknown = fixture) {
   await page.clock.install({time:new Date('2026-10-22T12:00:00+08:00')});
   await page.addInitScript(data=>{if(!localStorage.getItem('fixture')){localStorage.setItem('ielts_a4_workspace_v2',JSON.stringify(data));localStorage.setItem('fixture','1');}},initial);
@@ -21,6 +26,17 @@ async function snapshot(page: Page) {
     const result={words:await read('words'),cards:await read('cards'),revlog:await read('revlog'),meta:await read('meta')};db.close();return result;
   });
 }
+
+test.beforeEach(async ({ page }, testInfo) => {
+  const guideTest = testInfo.title.includes('[guide]');
+  await page.addInitScript(dismissed => {
+    const initialized = '__ielts-a4-guide-init';
+    if (sessionStorage.getItem(initialized)) return;
+    sessionStorage.setItem(initialized, '1');
+    if (dismissed) localStorage.setItem('ielts-a4-guide-dismissed', '1');
+    else localStorage.removeItem('ielts-a4-guide-dismissed');
+  }, !guideTest);
+});
 test('migrate, grade once, submit explicitly ticked words and persist after reload',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await start(page);
@@ -56,15 +72,21 @@ test('new word form completes, favorites/mastered are reversible and durable',as
 test('book library uses real units and opening a group does not count as learned',async({page})=>{
   await start(page);
   await expect(page.getByRole('heading',{name:'词书库',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'学习与外观设置',exact:true}).click();
+  await page.getByRole('combobox',{name:'每日学习组数',exact:true}).selectOption('3');
+  await page.getByRole('button',{name:'关闭学习与外观设置',exact:true}).click();
   await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
   await expect(page.getByText('已学 0 词',{exact:true})).toBeVisible();
   await expect(page.getByText('剩余 3630 词',{exact:true})).toBeVisible();
-  await expect(page.getByText('今日计划 2 组 · 50 词',{exact:true})).toBeVisible();
-  await page.getByLabel('每日学习组数',{exact:true}).selectOption('3');
   await expect(page.getByText('今日计划 3 组 · 75 词',{exact:true})).toBeVisible();
   await page.reload();await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
-  await expect(page.getByLabel('每日学习组数',{exact:true})).toHaveValue('3');
-  await page.getByLabel('每日学习组数',{exact:true}).selectOption('2');
+  await expect(page.getByText('今日计划 3 组 · 75 词',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'返回',exact:true}).click();
+  await page.getByRole('button',{name:'学习与外观设置',exact:true}).click();
+  await expect(page.getByRole('combobox',{name:'每日学习组数',exact:true})).toHaveValue('3');
+  await page.getByRole('combobox',{name:'每日学习组数',exact:true}).selectOption('2');
+  await page.getByRole('button',{name:'关闭学习与外观设置',exact:true}).click();
+  await page.getByRole('button',{name:'雅思词汇真经',exact:true}).click();
   await page.getByRole('button',{name:/第 1 单元 自然地理/}).click();
   await expect(page.getByRole('button',{name:/第 10 组 · 16 词/})).toBeDisabled();
   await page.getByRole('button',{name:/第 1 组 · 25 词/}).click();
@@ -416,14 +438,18 @@ test('not-in-review words stay out of home, A4, dashboard and the due count but 
 
 test('review density is saved, survives reload, and changes the next due date of later grades', async ({ page }, testInfo) => {
   await start(page);
-  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
-  await page.getByRole('button', { name: '强化', exact: true }).click();
-  await expect(page.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByText('越密集，间隔越短、每日任务通常越多', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: '学习与外观设置', exact: true }).click();
+  let sheet = page.getByRole('dialog', { name: '学习与外观设置', exact: true });
+  await sheet.getByRole('button', { name: '强化', exact: true }).click();
+  await expect(sheet.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(sheet.getByText('越密集，间隔越短、每日任务通常越多', { exact: false })).toBeVisible();
   await page.screenshot({ path: testInfo.outputPath('density-settings.png'), fullPage: true });
+  await page.getByRole('button', { name: '关闭学习与外观设置', exact: true }).click();
   await page.reload();
-  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
-  await expect(page.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '学习与外观设置', exact: true }).click();
+  sheet = page.getByRole('dialog', { name: '学习与外观设置', exact: true });
+  await expect(sheet.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '关闭学习与外观设置', exact: true }).click();
   const due = async (word: string) => ((await snapshot(page)).words as { word: string; nextReviewDate: string }[]).find(w => w.word === word)!.nextReviewDate;
   const before = await due('beta');
   const grade = async (word: string) => {
@@ -435,9 +461,12 @@ test('review density is saved, survives reload, and changes the next due date of
   await grade('alpha');
   expect(await due('beta')).toBe(before);
   await page.getByRole('button', { name: '词书库', exact: true }).click();
+  await page.getByRole('button', { name: '学习与外观设置', exact: true }).click();
+  sheet = page.getByRole('dialog', { name: '学习与外观设置', exact: true });
+  await sheet.getByRole('button', { name: '轻松', exact: true }).click();
+  await expect(sheet.getByRole('button', { name: '轻松', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: '关闭学习与外观设置', exact: true }).click();
   await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
-  await page.getByRole('button', { name: '轻松', exact: true }).click();
-  await expect(page.getByRole('button', { name: '轻松', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await grade('beta');
   expect(await due('alpha') < await due('beta')).toBe(true);
   expect(((await snapshot(page)).meta as { key: string; value: { density?: string } }[]).find(m => m.key === 'settings')?.value.density).toBe('relaxed');
@@ -518,13 +547,121 @@ test('replace import previews both sides and keeps an automatic pre-import backu
   expect(JSON.parse(text).words).toHaveLength(5);
 });
 
-test('a fresh workspace shows a read-only first-run guide and stores no demo words', async ({ page }) => {
+test('[guide] a fresh workspace sees the dialog, dismisses it persistently, and reopens from help', async ({ page }) => {
   await start(page, { words: [], skipped: [], settings: { dailyClaim: 30, lastClaimDate: '' } });
-  await expect(page.getByTestId('first-run-guide')).toContainText('第一次使用 · 三步上手');
+  const guide = page.getByTestId('first-run-guide');
+  await expect(guide).toBeVisible();
+  await expect(guide).toHaveAttribute('role', 'dialog');
+  await expect(guide).toHaveAttribute('aria-modal', 'true');
+  await expect(guide).toContainText('第一次使用 · 三步上手');
+  await expect(guide.locator('ol li')).toHaveText([
+    '打开词书，按顺序学一组：先教学，再回忆检查，最后拼写强化。',
+    '学完一组，一键把本组错词（或全部词）加入复习。',
+    '第二天打开“A4 刷词”，逐词评分，下次复习会自动安排。'
+  ]);
   expect((await snapshot(page)).words).toHaveLength(0);
+  await guide.getByRole('button', { name: '我知道了', exact: true }).click();
+  await expect(guide).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem('ielts-a4-guide-dismissed'))).toBe('1');
   await page.reload();
-  await expect(page.getByTestId('first-run-guide')).toBeVisible();
+  await expect(page.getByTestId('first-run-guide')).toHaveCount(0);
   expect((await snapshot(page)).words).toHaveLength(0);
+  await page.getByRole('button', { name: '使用指引', exact: true }).click();
+  await expect(page.getByTestId('first-run-guide')).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('ielts-a4-guide-dismissed'))).toBe('1');
+});
+
+test('[guide] starts today learning from its primary action', async ({ page }) => {
+  await start(page, { words: [], skipped: [], settings: { dailyClaim: 30, lastClaimDate: '' } });
+  await expect(page.getByTestId('first-run-guide')).toBeVisible();
+  await page.getByRole('button', { name: '开始今日学习', exact: true }).click();
+  await expect(page.getByTestId('first-run-guide')).toHaveCount(0);
+  await expect(page.getByText('第 1/3 轮 · 1/25', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'atmosphere', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('ielts-a4-guide-dismissed'))).toBe('1');
+});
+
+test('settings sheet persists learning controls, exposes wallpaper options, traps Tab, and restores focus on Escape', async ({ page }) => {
+  await start(page);
+  const opener = page.getByRole('button', { name: '学习与外观设置', exact: true });
+  await opener.click();
+  const sheet = page.getByRole('dialog', { name: '学习与外观设置', exact: true });
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByRole('combobox', { name: '每日学习组数', exact: true })).toHaveValue('2');
+  await sheet.getByRole('combobox', { name: '每日学习组数', exact: true }).selectOption('3');
+  await sheet.getByRole('button', { name: '本组全部单词', exact: true }).click();
+  await sheet.getByRole('button', { name: '强化', exact: true }).click();
+  await expect(page.getByText('复习密度已保存，用于之后的每次评分', { exact: true })).toBeVisible();
+  await expect(sheet.getByRole('button', { name: '上传壁纸', exact: true })).toBeVisible();
+  await expect(sheet.getByRole('button', { name: '恢复默认背景', exact: true })).toBeDisabled();
+  const controls = sheet.locator('button:not(:disabled), select:not(:disabled)');
+  const first = controls.first();
+  const last = controls.last();
+  await first.focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(last).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(first).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+  await expect(opener).toBeFocused();
+
+  await page.reload();
+  await opener.click();
+  const reopened = page.getByRole('dialog', { name: '学习与外观设置', exact: true });
+  await expect(reopened.getByRole('combobox', { name: '每日学习组数', exact: true })).toHaveValue('3');
+  await expect(reopened.getByRole('button', { name: '本组全部单词', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(reopened.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(reopened.getByRole('button', { name: '上传壁纸', exact: true })).toBeVisible();
+});
+
+test('[guide] captures responsive guide and settings layouts with overflow metrics', async ({ page }, testInfo) => {
+  const layouts = testInfo.project.name === 'mobile-chromium'
+    ? [
+      { name: 'chromium-375', width: 375, fontSize: '100%' },
+      { name: 'chromium-320-200', width: 320, fontSize: '200%' }
+    ]
+    : [{ name: 'webkit-390', width: 390, fontSize: '100%' }];
+  const records: { shot: string; scrollWidth: number; clientWidth: number; overflow: boolean; pageErrors: string[] }[] = [];
+  const pageErrors: string[] = [];
+  page.on('pageerror', error => pageErrors.push(error.message));
+  await page.setViewportSize({ width: layouts[0].width, height: 812 });
+  await start(page, { words: [], skipped: [], settings: { dailyClaim: 30, lastClaimDate: '' } });
+
+  for (const [index, layout] of layouts.entries()) {
+    await page.setViewportSize({ width: layout.width, height: 812 });
+    await page.evaluate(fontSize => { document.documentElement.style.fontSize = fontSize; }, layout.fontSize);
+    const guide = page.getByTestId('first-run-guide');
+    if (index > 0) {
+      await page.getByRole('button', { name: '使用指引', exact: true }).click();
+      await expect(guide).toBeVisible();
+    }
+    const capture = async (name: string) => {
+      const shot = `${layout.name}-${name}`;
+      const path = settingsShotPath(`${shot}.png`);
+      await page.screenshot({ path, animations: 'disabled' });
+      const metrics = await page.evaluate(() => ({
+        scrollWidth: document.documentElement.scrollWidth,
+        clientWidth: document.documentElement.clientWidth
+      }));
+      records.push({ shot: path, ...metrics, overflow: metrics.scrollWidth > metrics.clientWidth, pageErrors: [...pageErrors] });
+      console.log(`SETTINGS_VISUAL ${JSON.stringify(records[records.length - 1])}`);
+    };
+    await expect(guide).toBeVisible();
+    await capture('home-first-run-dialog');
+    await guide.getByRole('button', { name: '我知道了', exact: true }).click();
+    await expect(guide).toHaveCount(0);
+    await capture('home-after-dismiss');
+    await page.getByRole('button', { name: '学习与外观设置', exact: true }).click();
+    const sheet = page.getByRole('dialog', { name: '学习与外观设置', exact: true });
+    await expect(sheet).toBeVisible();
+    await sheet.evaluate(element => { element.scrollTop = 0; });
+    await capture('settings-top');
+    await sheet.evaluate(element => { element.scrollTop = element.scrollHeight; });
+    await capture('settings-scrolled-bottom');
+    await page.getByRole('button', { name: '关闭学习与外观设置', exact: true }).click();
+  }
+  writeFileSync(settingsShotPath(`report-${testInfo.project.name}.json`), JSON.stringify(records, null, 2));
 });
 
 test('calendar cells and day detail separate pending, done, new A4 and predicted words', async ({ page }, testInfo) => {
@@ -1032,9 +1169,9 @@ test('60s challenge announces the last 10 seconds once and the summary shows bes
   const meaningOf = Object.fromEntries(fixture.words.map(w => [w.word, w.meaning]));
   for (const w of (await en.allTextContents()).slice(0, 2)) await matchPair(page, w, meaningOf[w]);
   await expect(page.getByTestId('timer-announce')).toHaveText('');
-  await page.clock.fastForward(50500);
+  await page.clock.runFor(50500);
   await expect(page.getByTestId('timer-announce')).toHaveText('还剩 10 秒');
-  await page.clock.fastForward(11000);
+  await page.clock.runFor(11000);
   await expect(page.getByTestId('timer-announce')).toHaveText('时间到，本局结束');
   await expect(page.getByRole('region', { name: '本局总结' })).toContainText('最高连击 2');
 });
@@ -1077,10 +1214,11 @@ test('dark and light wallpaper keep A4 on a readable opaque paper surface', asyn
   const before = await snapshot(page);
   const input = page.getByLabel('选择壁纸图片');
   for (const [color, screenshot] of [['#111111', 'wallpaper-dark-375.png'], ['#fefefe', 'wallpaper-light-375.png']] as const) {
-    await page.getByText('外观设置', { exact: true }).click();
+    await page.getByRole('button', { name: '学习与外观设置', exact: true }).click();
     await input.setInputFiles(await wallpaperFile(page, color));
     await expect(page.getByTestId('wallpaper-overlay')).toBeVisible();
     await expect(page.getByText('壁纸已保存，离线也可使用', { exact: false })).toBeVisible();
+    await page.getByRole('button', { name: '关闭学习与外观设置', exact: true }).click();
     await page.getByRole('button', { name: /A4 刷词/ }).click();
     await expect(page.locator('.paper')).toBeVisible();
     await expect(page.locator('.paper-desk')).toHaveClass(/paper-desk-wallpaper/);
@@ -1150,25 +1288,26 @@ test('context cloze empty state links back to book and A4', async ({ page }) => 
 test('wallpaper persists across learning saves and offline reload, reset keeps all learning records', async ({ page, context }) => {
   await start(page);
   const before = await snapshot(page);
-  await page.getByText('外观设置', { exact: true }).click();
-  await expect(page.getByRole('button', { name: '上传壁纸', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: '学习与外观设置', exact: true }).click();
+  const settings = page.getByRole('dialog', { name: '学习与外观设置', exact: true });
+  await expect(settings.getByRole('button', { name: '上传壁纸', exact: true })).toBeEnabled();
   await page.getByLabel('选择壁纸图片').setInputFiles(await wallpaperFile(page));
   await expect(page.getByText('壁纸已保存，离线也可使用', { exact: false })).toBeVisible();
   await expect(page.getByTestId('wallpaper')).toHaveCount(1);
   expect(await snapshot(page)).toEqual(before);
   const preview = page.getByAltText('当前壁纸预览');
   expect(await preview.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1600);
-  await page.getByRole('button', { name: '雅思词汇真经', exact: true }).click();
-  await page.getByRole('button', { name: '强化', exact: true }).click();
-  await expect(page.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await settings.getByRole('button', { name: '强化', exact: true }).click();
+  await expect(settings.getByRole('button', { name: '强化', exact: true })).toHaveAttribute('aria-pressed', 'true');
   const saved = await snapshot(page);
+  await settings.getByRole('button', { name: '关闭学习与外观设置', exact: true }).click();
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
   await expect(page.getByTestId('wallpaper')).toHaveCount(1);
   await context.setOffline(true);
   await page.reload();
   await expect(page.getByTestId('wallpaper')).toHaveCount(1);
-  await page.getByText('外观设置', { exact: true }).click();
+  await page.getByRole('button', { name: '学习与外观设置', exact: true }).click();
   await page.getByRole('button', { name: '恢复默认背景', exact: true }).click();
   await expect(page.getByTestId('wallpaper')).toHaveCount(0);
   expect(await snapshot(page)).toEqual(saved);
@@ -1179,7 +1318,7 @@ test('wallpaper persists across learning saves and offline reload, reset keeps a
 
 test('invalid wallpaper and storage failure keep the saved image and learning records', async ({ page }) => {
   await start(page);
-  await page.getByText('外观设置', { exact: true }).click();
+  await page.getByRole('button', { name: '学习与外观设置', exact: true }).click();
   const input = page.getByLabel('选择壁纸图片');
   const file = await wallpaperFile(page);
   await expect(page.getByRole('button', { name: '上传壁纸', exact: true })).toBeEnabled();

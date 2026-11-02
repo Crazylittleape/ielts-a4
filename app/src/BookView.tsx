@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { ArrowLeft, Check, ChevronRight, Lock, Volume2 } from 'lucide-react';
-import type { AppState, Density, GroupPick, Settings } from './lib';
+import { ArrowLeft, Check, ChevronRight, CircleHelp, Lock, Settings, Volume2 } from 'lucide-react';
+import type { AppState, GroupPick } from './lib';
 import { BOOK, BOOK_GROUPS, type BookGroup } from './bookCatalog';
 import { dailyPlan, getBookProgress, getBookStats, getBookQuestion, getBookWord, checkBookSpelling, groupMissed, type BookAnswer, type GroupJoinResult } from './book';
-import { Card, PageHeader, Field, inputCls, primaryBtn, softBtn, ghostBtn, ExampleBlock, Segmented } from './ui';
+import { Card, PageHeader, Field, inputCls, primaryBtn, softBtn, ghostBtn, ExampleBlock, ModalDialog } from './ui';
 import type { ReviewScope } from './calendar';
 import { nextStep, type DailyReport } from './coach';
 import { TodayCoach } from './Home';
@@ -13,19 +13,16 @@ interface Props {
   today: string;
   onBegin: (groupId: string) => Promise<boolean>;
   onAnswer: (answer: BookAnswer) => Promise<boolean>;
-  onSetDailyGroups: (count: number) => void;
   onSpeak: (word: string) => void;
   onJoinGroup: (groupId: string, pick: GroupPick) => Promise<GroupJoinResult | null>;
-  onSaveSettings: (patch: Partial<Settings>) => Promise<boolean>;
   report?: DailyReport;
   onOpenA4?: (scope: ReviewScope) => void;
   onQuiz?: () => void;
+  onOpenSettings: () => void;
   more?: ReactNode;
-  appearance?: ReactNode;
 }
 
 const PICK_LABEL: Record<GroupPick, string> = { missed: '本组错词', all: '本组全部' };
-const DENSITY_OPTIONS: { key: Density; label: string }[] = [{ key: 'relaxed', label: '轻松' }, { key: 'standard', label: '标准' }, { key: 'intense', label: '强化' }];
 
 export function joinMessage(r: GroupJoinResult): string {
   if (!r.total) return '本组没有错词，没有加入任何词';
@@ -74,7 +71,7 @@ function GroupReview({ group, state, onJoin, onSpeak }: { group: BookGroup; stat
   </Card>;
 }
 
-export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, onSpeak, onJoinGroup, onSaveSettings, report, onOpenA4, onQuiz, more, appearance }: Props) {
+export function BookView({ state, today, onBegin, onAnswer, onSpeak, onJoinGroup, report, onOpenA4, onQuiz, onOpenSettings, more }: Props) {
   const [screen, setScreen] = useState<'library' | 'book' | 'unit' | 'study' | 'review'>('library');
   const [finishedId, setFinishedId] = useState<string | null>(null);
   const [reviewId, setReviewId] = useState<string | null>(null);
@@ -82,6 +79,10 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   const [revealed, setRevealed] = useState(false);
   const [spelling, setSpelling] = useState('');
   const [checked, setChecked] = useState<string | null>(null);
+  const [guideDismissed, setGuideDismissed] = useState(() => {
+    try { return window.localStorage.getItem('ielts-a4-guide-dismissed') === '1'; } catch { return false; }
+  });
+  const [guideOpen, setGuideOpen] = useState(false);
   const progress = getBookProgress(state);
   const stats = getBookStats(state);
   const plan = dailyPlan(state, today);
@@ -107,21 +108,27 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
   const firstRun = !state.words.length && !Object.keys(progress.completed).length;
   const step = report ? nextStep(state, report, today) : null;
   const currentLabel = stats.current ? `${stats.current.unitTitle} · 第 ${stats.current.index} 组` : '全书初学完成';
+  useEffect(() => {
+    if (firstRun && !guideDismissed) setGuideOpen(true);
+  }, [firstRun, guideDismissed]);
+  const dismissGuide = () => {
+    try { window.localStorage.setItem('ielts-a4-guide-dismissed', '1'); } catch { /* keep the preference in memory for this session */ }
+    setGuideDismissed(true);
+    setGuideOpen(false);
+  };
+  const startTodayBook = () => {
+    const group = step?.kind === 'book' ? BOOK_GROUPS.find(g => g.id === step.groupId) : undefined;
+    if (group) void start(group);
+  };
 
   if (screen === 'library') return <div className="safe-bottom-pad">
-    <PageHeader title="词书库" subtitle="选一本书，按单元慢慢学完" />
+    <PageHeader title="词书库" subtitle="选一本书，按单元慢慢学完" right={<div className="flex shrink-0 gap-1">
+      <button type="button" aria-label="使用指引" className="flex h-11 w-11 items-center justify-center rounded-sm border border-rule bg-sheet text-ink-soft transition-colors hover:bg-paper-2 hover:text-ink" onClick={e => { e.currentTarget.focus(); setGuideOpen(true); }}><CircleHelp size={19} /></button>
+      <button type="button" aria-label="学习与外观设置" className="flex h-11 w-11 items-center justify-center rounded-sm border border-rule bg-sheet text-ink-soft transition-colors hover:bg-paper-2 hover:text-ink" onClick={e => { e.currentTarget.focus(); onOpenSettings(); }}><Settings size={19} /></button>
+    </div>} />
     <div className="grid gap-6 px-4 pt-4 sm:px-6 lg:grid-cols-12 lg:items-start">
       <div className="space-y-5 lg:col-span-7">
-        {report && step && <TodayCoach today={today} report={report} step={step} plan={{ done: plan.completed, target: progress.dailyGroups }} firstRun={firstRun} onA4={scope => onOpenA4?.(scope)} onQuiz={() => onQuiz?.()} onBook={() => { const group = step.kind === 'book' ? BOOK_GROUPS.find(g => g.id === step.groupId) : undefined; if (group) void start(group); }} />}
-        {firstRun && <section data-testid="first-run-guide" className="border-y border-rule bg-paper-2 p-5">
-          <h2 className="font-serif text-base font-bold text-ink">第一次使用 · 三步上手</h2>
-          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-xs leading-relaxed text-ink-soft">
-            <li>打开词书，按顺序学一组：先教学，再回忆检查，最后拼写强化。</li>
-            <li>学完一组，一键把本组错词（或全部词）加入复习。</li>
-            <li>第二天打开“A4 刷词”，逐词评分，下次复习会自动安排。</li>
-          </ol>
-          <p className="mt-3 border-t border-rule pt-2.5 text-xs text-ink-faint">这里没有示例词，词库从你学的第一组开始。</p>
-        </section>}
+        {report && step && <TodayCoach today={today} report={report} step={step} plan={{ done: plan.completed, target: progress.dailyGroups }} firstRun={firstRun} onA4={scope => onOpenA4?.(scope)} onQuiz={() => onQuiz?.()} onBook={startTodayBook} />}
       </div>
       <div className="space-y-4 lg:col-span-5">
         <Card className="overflow-hidden">
@@ -137,9 +144,21 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
           </div>
         </Card>
         {more}
-        {appearance}
       </div>
     </div>
+    {guideOpen && <ModalDialog labelledBy="first-run-guide-title" onClose={dismissGuide} testId="first-run-guide" backdropClassName="fixed inset-0 z-[100] flex items-center justify-center bg-scrim p-4" dialogClassName="fade-in max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto rounded-sm border border-rule border-t-2 border-t-accent bg-sheet p-5 shadow-paper">
+      <h2 id="first-run-guide-title" className="font-serif text-lg font-bold text-ink">第一次使用 · 三步上手</h2>
+      <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-ink-soft">
+        <li>打开词书，按顺序学一组：先教学，再回忆检查，最后拼写强化。</li>
+        <li>学完一组，一键把本组错词（或全部词）加入复习。</li>
+        <li>第二天打开“A4 刷词”，逐词评分，下次复习会自动安排。</li>
+      </ol>
+      <p className="mt-4 border-t border-rule pt-3 text-xs text-ink-faint">这里没有示例词，词库从你学的第一组开始。</p>
+      <div className="mt-5 grid gap-2 sm:grid-cols-2">
+        <button type="button" className={ghostBtn} onClick={dismissGuide}>我知道了</button>
+        <button type="button" className={primaryBtn} onClick={() => { dismissGuide(); startTodayBook(); }}>开始今日学习</button>
+      </div>
+    </ModalDialog>}
   </div>;
 
   if (screen === 'study') {
@@ -220,16 +239,10 @@ export function BookView({ state, today, onBegin, onAnswer, onSetDailyGroups, on
           <p className="border-t border-rule pt-3 text-xs text-ink-soft">当前：{currentLabel}</p>
         </Card>
         <Card className="space-y-3 p-5">
-          <Field label="每日学习组数"><select aria-label="每日学习组数" className={inputCls} value={progress.dailyGroups} onChange={event => onSetDailyGroups(Number(event.target.value))}>{Array.from({ length: 10 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1} 组 · 通常 {(index + 1) * 25} 词</option>)}</select></Field>
           <p className="font-serif text-base font-bold text-ink">今日计划 {plan.groups.length} 组 · {plan.wordCount} 词</p>
           <p className="text-xs text-ink-soft">今日已完成 {plan.completed} / {progress.dailyGroups} 组</p>
           <button type="button" className={`${primaryBtn} w-full`} disabled={!activeGroup && !plan.remainingGroups.length} onClick={() => { const group = activeGroup || plan.remainingGroups[0]; if (group) void start(group); }}>{activeGroup ? '继续本组学习' : plan.remainingGroups.length ? '开始今日学习' : stats.remaining ? '今日计划已完成' : '全书初学已完成'}</button>
         </Card>
-        <section className="space-y-4 border-y border-rule bg-paper-2 p-5">
-          <h2 id="study-settings" className="font-serif text-base font-bold text-ink">学习设置</h2>
-          <div><p className="mb-1.5 text-xs font-medium text-ink-soft" id="pick-label">组完成页的默认选择</p><div role="group" aria-labelledby="pick-label"><Segmented options={[{ key: 'missed' as GroupPick, label: '本组错词' }, { key: 'all' as GroupPick, label: '本组全部单词' }]} value={state.settings.groupPick ?? 'missed'} onChange={pick => void onSaveSettings({ groupPick: pick })} /></div><p className="mt-1 text-xs text-ink-soft">组完成页会把这个选项放在最前面，点按后才会加入。</p></div>
-          <div><p className="mb-1.5 text-xs font-medium text-ink-soft" id="density-label">复习密度</p><div role="group" aria-labelledby="density-label"><Segmented options={DENSITY_OPTIONS} value={state.settings.density ?? 'standard'} onChange={density => void onSaveSettings({ density })} /></div><p className="mt-1 text-xs leading-relaxed text-ink-soft">越密集，间隔越短、每日任务通常越多。保存后用于之后的每次评分，已经排好的日期不变。</p></div>
-        </section>
       </div>
       <div className="space-y-3 lg:col-span-7">
         <div className="flex items-center justify-between border-b border-rule-2 pb-2 pt-1"><h2 className="font-serif text-lg font-bold text-ink">单元目录</h2><span className="text-xs font-medium text-ink-soft">已完成 <span className="font-mono tabular-nums">{stats.completedGroups} / {BOOK_GROUPS.length}</span> 组</span></div>
