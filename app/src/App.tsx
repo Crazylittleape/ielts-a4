@@ -47,12 +47,12 @@ function EditSheet({ word, onSave, onClose }: { word: WordItem; onSave: (w: Word
   }, [onClose]);
   const set = (k: keyof typeof f, v: string) => setF((p) => ({ ...p, [k]: v }));
   return (
-    <div className="fixed inset-0 z-[60] flex items-end bg-ink/40 backdrop-blur-xs" onClick={onClose}>
-      <div className="sheet-up mx-auto w-full max-w-[560px] rounded-t-2xl border-t-2 border-t-[#181715] bg-[#FAF7F0] px-5 pb-8 pt-3 shadow-sheet" style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }} onClick={(e) => e.stopPropagation()}>
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[#CFC7B6]" />
+    <div className="fixed inset-0 z-[60] flex items-end bg-scrim sm:items-center sm:p-4" onClick={onClose}>
+      <div className="sheet-up mx-auto w-full max-w-[560px] rounded-t-sm border border-rule border-t-2 border-t-ink bg-sheet px-5 pb-8 pt-4 shadow-sheet sm:rounded-sm" style={{ paddingBottom: 'calc(24px + env(safe-area-inset-bottom))' }} onClick={(e) => e.stopPropagation()}>
+        <div className="mx-auto mb-3 h-1 w-10 rounded-sm bg-rule sm:hidden" />
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="font-serif text-xl font-semibold text-ink">编辑单词</h3>
-          <button type="button" onClick={onClose} className="rounded-lg border border-[#D4CDC0] bg-[#F3EFE6] p-1.5 text-ink-soft hover:text-ink transition" aria-label="关闭"><X size={18} /></button>
+          <h3 className="font-serif text-xl font-bold text-ink">编辑单词</h3>
+          <button type="button" onClick={onClose} className="flex h-11 w-11 items-center justify-center rounded-sm border border-rule bg-paper text-ink-soft transition-colors hover:bg-paper-2 hover:text-ink" aria-label="关闭"><X size={18} /></button>
         </div>
         <div className="space-y-3">
           <Field label="英文单词"><input className={inputCls} value={f.word} onChange={(e) => set('word', e.target.value)} autoCapitalize="none" /></Field>
@@ -87,17 +87,17 @@ function TabBar({ tab, onChange, due }: { tab: Tab; onChange: (t: Tab) => void; 
     { key: 'bank', label: '我的单词', Icon: BookOpenText }
   ];
   return (
-    <nav aria-label="主导航" className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-[#CFC7B6] bg-[#F3EFE6]/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[560px]">
+    <nav aria-label="主导航" className="tabbar fixed inset-x-0 bottom-0 z-30 border-t border-rule-2 bg-paper">
+      <div className="mx-auto flex max-w-[1080px] divide-x divide-rule">
         {items.map(({ key, label, Icon }) => {
           const active = tab === key;
           return (
-            <button key={key} type="button" aria-current={active ? 'page' : undefined} onClick={() => onChange(key)} className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-1 pb-1 pt-2 transition ${active ? 'before:absolute before:inset-x-5 before:top-0 before:h-[2px] before:bg-[#181715]' : ''}`}>
-              <span className={`relative rounded-md px-3 py-0.5 transition ${active ? 'bg-[#E6DFD1] text-ink' : 'text-ink-soft hover:text-ink'}`}>
+            <button key={key} type="button" aria-current={active ? 'page' : undefined} onClick={() => onChange(key)} className={`relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 py-1.5 transition-colors sm:flex-row sm:gap-2 ${active ? 'bg-paper-2 text-ink before:absolute before:inset-x-0 before:top-0 before:h-[2px] before:bg-ink' : 'text-ink-soft hover:bg-paper-2 hover:text-ink'}`}>
+              <span className="relative px-2 py-0.5">
                 <Icon size={19} strokeWidth={active ? 2.2 : 1.75} />
-                {key === 'a4' && due > 0 && <span className="absolute -right-2 -top-1 min-w-[18px] rounded-sm bg-rose-600 px-1 text-center font-mono text-[10px] font-semibold leading-[17px] text-[#FAF7F0]">{due}</span>}
+                {key === 'a4' && due > 0 && <span className="absolute -right-2 -top-1 min-w-[18px] rounded-sm bg-accent px-1 text-center font-mono text-[10px] font-medium leading-[17px] text-accent-ink">{due}</span>}
               </span>
-              <span className={`text-[11px] tracking-wide ${active ? 'font-semibold text-ink' : 'font-medium text-ink-soft'}`}>{label}</span>
+              <span className={`whitespace-nowrap text-xs ${active ? 'font-bold text-ink' : 'font-medium text-ink-soft'}`}>{label}</span>
             </button>
           );
         })}
@@ -332,29 +332,29 @@ export default function App() {
   };
   const changeTab = (t: Tab) => { if (t === 'a4') { setA4Date(today); setA4Scope('focus'); setA4Back('home'); } setTab(t); window.scrollTo({top:0}); };
 
-  if (!state) return <main className="mx-auto max-w-[560px] space-y-4 p-6"><h1 className="font-serif text-xl font-semibold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : blocked ? '另一个窗口仍在使用旧版本的学习记录。请关闭其他打开的本站页面或主屏幕 App，读取会自动继续。' : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
+  if (!state) return <main className="mx-auto max-w-[1080px] space-y-4 p-6"><h1 className="font-serif text-xl font-bold">雅思 A4</h1><p role={loadError ? 'alert' : 'status'}>{loadError ? `读取失败：${loadError}。已有数据未被覆盖。请保留原始数据后重试。` : blocked ? '另一个窗口仍在使用旧版本的学习记录。请关闭其他打开的本站页面或主屏幕 App，读取会自动继续。' : '正在读取本机学习记录…'}</p>{loadError && <button className={primaryBtn} onClick={() => location.reload()}>重试读取</button>}</main>;
   return <>
     {wallpaper.url && <>
       <div aria-hidden="true" data-testid="wallpaper" className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center" style={{ backgroundImage: `url("${wallpaper.url}")` }} />
-      <div aria-hidden="true" data-testid="wallpaper-overlay" className="pointer-events-none fixed inset-0 z-0 bg-cream/70" />
+      <div aria-hidden="true" data-testid="wallpaper-overlay" className="pointer-events-none fixed inset-0 z-0 bg-veil" />
     </>}
-    <div className="relative z-10 mx-auto min-h-screen max-w-[560px] font-ui text-ink sm:border-x sm:border-[#DFD8C8]/70">
-    {staleElsewhere && !saveError && <div role="alert" className="sticky top-0 z-[90] border-b border-[#E3CA96] bg-honey-100 p-4 text-sm"><p>其他标签页已更新学习记录。请刷新后继续，避免在旧页面上操作。</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>刷新学习记录</button></div>}
-    {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 border-b border-[#B4D0C2] bg-sage-100 p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
-    {saveError && <div role="alert" className="sticky top-0 z-[90] border-b border-[#E3CA96] bg-honey-100 p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
+    <div className="relative z-10 mx-auto min-h-screen max-w-[1080px] font-ui text-ink lg:border-x lg:border-rule">
+    {staleElsewhere && !saveError && <div role="alert" className="sticky top-0 z-[90] border-b border-warn-rule bg-warn-soft p-4 text-sm"><p>其他标签页已更新学习记录。请刷新后继续，避免在旧页面上操作。</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>刷新学习记录</button></div>}
+    {update && !staleElsewhere && !saveError && <div role="status" className="sticky top-0 z-[90] flex items-center justify-between gap-2 border-b border-success-rule bg-success-soft p-3 text-sm"><p>新版本已下载，学习记录不受影响。</p><button type="button" className={ghostBtn} disabled={saving} onClick={() => { window.dispatchEvent(new Event(SW_UPDATE_EVENT + ':apply')); applyUpdate(update); }}>立即更新</button></div>}
+    {saveError && <div role="alert" className="sticky top-0 z-[90] border-b border-warn-rule bg-warn-soft p-4 text-sm"><p>保存未完成：{saveError}</p><button type="button" className={ghostBtn} onClick={() => location.reload()}>重新读取学习记录</button></div>}
     <fieldset disabled={saving} className="min-w-0 border-0 p-0">
-      {tab === 'home' && <><BookView appearance={<WallpaperSettings {...wallpaper} />} more={<div className="grid grid-cols-3 gap-2"><span className="sr-only">更多练习</span><button className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('quiz')}><Zap size={14} className="text-honey-600" aria-hidden="true" />60 秒配对</button><button className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('stats')}><BarChart3 size={14} className="text-rose-600" aria-hidden="true" />学习统计</button><button className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('cloze')}><BookOpenText size={14} className="text-ink-soft" aria-hidden="true" />语境填空</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
+      {tab === 'home' && <><BookView appearance={<WallpaperSettings {...wallpaper} />} more={<div className="grid grid-cols-1 gap-2 min-[360px]:grid-cols-3"><span className="sr-only">更多练习</span><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('quiz')}><Zap size={14} className="text-warn" aria-hidden="true" />60 秒配对</button><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('stats')}><BarChart3 size={14} className="text-accent" aria-hidden="true" />学习统计</button><button type="button" className={`${ghostBtn} px-2.5 text-xs`} onClick={() => changeTab('cloze')}><BookOpenText size={14} className="text-ink-soft" aria-hidden="true" />语境填空</button></div>} state={state} today={today} report={report ?? undefined} onOpenA4={scope => openA4(today, scope, 'home')} onQuiz={() => changeTab('quiz')} onBegin={onBeginGroup} onAnswer={onBookAnswer} onSetDailyGroups={onSetDailyGroups} onSpeak={onSpeak} onJoinGroup={onJoinGroup} onSaveSettings={onSaveSettings} /></>}
       {tab === 'dashboard' && <Dashboard words={state.words} today={today} calendar={calendar} onOpenBook={() => changeTab('home')} selectedDay={selectedDay} onSelectDay={setSelectedDay} onOpenA4={openA4} onSpeak={onSpeak} />}
       {tab === 'a4' && <A4View wallpaperActive={Boolean(wallpaper.url)} words={state.words} revlog={state.revlog} today={today} date={a4Date} scope={a4Scope} onScopeChange={setA4Scope} allDueCount={reviewIds(calendar.all, today, today).length} onOpenBook={() => changeTab('home')} schedule={calendar[a4Scope]} onBack={() => { setTab(a4Back); window.scrollTo({ top: 0 }); }} onHardReset={onHardReset} onCheckout={onCheckout} onLater={() => { setTab('home'); window.scrollTo({ top: 0 }); showToast('未评分的词保留在今日待复习，随时回来处理', 'info'); }} focusSummary={focusSummary(state, today)} onGrade={onGrade} onSpeak={onSpeak} onEdit={setEditing} />}
-      {tab === 'add' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
-      {tab === 'bank' && <><div className="px-4 pt-3"><button className={ghostBtn} onClick={() => changeTab('add')}>录入新词</button></div><BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onUnfocus={onUnfocus} onJoin={onJoinIds} autoBackups={autoBackups} onDownloadBackup={onDownloadBackup} storagePersisted={storagePersisted} onClearAll={onClearAll} toast={showToast} /></>}
+      {tab === 'add' && <><div className="px-4 pt-3 sm:px-6"><button type="button" className={ghostBtn} onClick={() => changeTab('bank')}>返回我的单词</button></div><AddView words={state.words} onAdd={addWords} toast={showToast} /></>}
+      {tab === 'bank' && <><div className="px-4 pt-3 sm:px-6"><button type="button" className={ghostBtn} onClick={() => changeTab('add')}>录入新词</button></div><BankView state={state} today={today} onEdit={setEditing} onDelete={onDelete} onToggleHard={id => toggle(id,'isHard')} onToggleFavorite={id => toggle(id,'isFavorite')} onToggleMastered={id => toggle(id,'isMastered')} onSpeak={onSpeak} onImport={onImport} onUnfocus={onUnfocus} onJoin={onJoinIds} autoBackups={autoBackups} onDownloadBackup={onDownloadBackup} storagePersisted={storagePersisted} onClearAll={onClearAll} toast={showToast} /></>}
       {tab === 'quiz' && <MatchingGame words={gameWords} scopeLabel={todayWords.length ? '今日新词与复习词' : '今天没有任务，使用全部词库加练'} onBack={() => setTab('home')} onSpeak={onSpeak} />}
       {tab === 'stats' && <Statistics state={state} today={today} onBack={() => setTab('home')} />}
       {tab === 'cloze' && <ContextCloze state={state} onBack={() => changeTab('home')} onA4={() => changeTab('a4')} />}
       <TabBar tab={tab} onChange={changeTab} due={calendar.focus[today]?.due.length ?? 0} />
       {editing && <EditSheet word={editing} onSave={onSaveEdit} onClose={() => setEditing(null)} />}
     </fieldset>
-    {saving && <p role="status" className="fixed left-1/2 top-2 z-[80] -translate-x-1/2 rounded-md border border-[#D4CDC0] bg-[#FAF7F0] px-4 py-1.5 font-mono text-xs font-semibold shadow-card">正在保存…</p>}
+    {saving && <p role="status" className="fixed left-1/2 top-2 z-[80] -translate-x-1/2 rounded-sm border border-rule-2 bg-sheet px-4 py-1.5 text-xs font-medium shadow-paper">正在保存…</p>}
     {stamp && <DoneStamp title={stamp.title} subtitle={stamp.subtitle} onClose={() => setStamp(null)} />}
     {toast && <Toast message={toast.msg} tone={toast.tone} />}
     </div>

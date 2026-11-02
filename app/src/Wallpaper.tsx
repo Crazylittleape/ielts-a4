@@ -22,7 +22,7 @@ async function prepareImage(file: File): Promise<Blob> {
     canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
     const context = canvas.getContext('2d');
     if (!context) throw new Error('浏览器无法处理图片');
-    context.fillStyle = '#FAF6EF';
+    context.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-paper').trim();
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
@@ -68,22 +68,24 @@ export function useWallpaper() {
 
 export function WallpaperSettings({ url, busy, error, change }: ReturnType<typeof useWallpaper>) {
   const fileRef = useRef<HTMLInputElement>(null);
-  return <details className="rounded-xl border border-[#D5CEC0] bg-[#FAF7F0] p-4 shadow-card">
-    <summary className="min-h-11 cursor-pointer py-2.5 font-serif text-sm font-semibold text-ink">外观设置</summary>
-    <div className="space-y-3 pt-2">
-      <p className="text-xs leading-relaxed text-ink-soft">用自己的图片作为壁纸。仅存本机，不会上传，也不包含在学习备份中。</p>
-      {url && <img src={url} alt="当前壁纸预览" className="h-28 w-full rounded-lg border border-[#D5CEC0] object-cover" />}
-      <div className="flex flex-wrap gap-2">
-        <button type="button" disabled={busy} className={softBtn} onClick={() => fileRef.current?.click()}>上传壁纸</button>
-        <button type="button" disabled={busy || !url} className={ghostBtn} onClick={() => void change(null)}>恢复默认背景</button>
+  return <section className="border-y border-rule bg-paper-2 px-4 py-2">
+    <details>
+      <summary className="flex min-h-11 cursor-pointer items-center font-serif text-sm font-bold text-ink">外观设置</summary>
+      <div className="space-y-3 pb-2 pt-2">
+        <p className="text-xs leading-relaxed text-ink-soft">用自己的图片作为壁纸。仅存本机，不会上传，也不包含在学习备份中。</p>
+        {url && <img src={url} alt="当前壁纸预览" width={320} height={112} className="h-28 w-full rounded-sm border border-rule object-cover" />}
+        <div className="flex flex-wrap gap-2">
+          <button type="button" disabled={busy} className={softBtn} onClick={() => fileRef.current?.click()}>上传壁纸</button>
+          <button type="button" disabled={busy || !url} className={ghostBtn} onClick={() => void change(null)}>恢复默认背景</button>
+        </div>
+        <input ref={fileRef} type="file" aria-label="选择壁纸图片" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={event => {
+          const file = event.target.files?.[0];
+          event.target.value = '';
+          if (file) void change(file);
+        }} />
+        <p role="status" className="text-xs text-ink-soft">{busy ? '正在处理壁纸…' : url ? '壁纸已保存，离线也可使用' : '当前使用默认背景'} · JPG / PNG / WebP，最多 10 MB</p>
+        {error && <p role="alert" className="text-xs text-ink">{error}</p>}
       </div>
-      <input ref={fileRef} type="file" aria-label="选择壁纸图片" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={event => {
-        const file = event.target.files?.[0];
-        event.target.value = '';
-        if (file) void change(file);
-      }} />
-      <p role="status" className="text-xs text-ink-soft">{busy ? '正在处理壁纸…' : url ? '壁纸已保存，离线也可使用' : '当前使用默认背景'} · JPG / PNG / WebP，最多 10 MB</p>
-      {error && <p role="alert" className="text-xs text-ink">{error}</p>}
-    </div>
-  </details>;
+    </details>
+  </section>;
 }

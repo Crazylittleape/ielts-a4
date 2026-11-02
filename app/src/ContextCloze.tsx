@@ -68,40 +68,40 @@ export function ContextCloze({ state, onBack, onA4 }: { state: AppState; onBack:
   };
 
   return <div className="safe-bottom-pad">
-    <header className="safe-top sticky top-0 z-20 flex items-center gap-3 border-b border-[#D5CEC0] bg-[#F3EFE6]/95 px-4 pb-3 pt-2 backdrop-blur-md">
-      <button type="button" className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-[#D4CDC0] bg-[#FAF7F0] text-ink hover:bg-[#EFE9DC]" aria-label="返回词书" onClick={onBack}><ArrowLeft size={18} /></button>
-      <h1 className="font-serif text-2xl font-semibold text-ink">语境填空</h1>
+    <header className="safe-top sticky top-0 z-20 flex items-center gap-3 border-b border-rule-2 bg-paper px-4 pb-3.5 pt-2 sm:px-6">
+      <button type="button" className="flex min-h-11 min-w-11 items-center justify-center rounded-sm border border-rule bg-sheet text-ink transition-colors hover:bg-paper-2" aria-label="返回词书" onClick={onBack}><ArrowLeft size={18} /></button>
+      <h1 className="font-serif text-2xl font-bold text-ink">语境填空</h1>
     </header>
-    <main className="space-y-4 px-4 pt-3">
+    <main className="mx-auto max-w-2xl space-y-4 px-4 pt-4 sm:px-6">
       <Card className="space-y-3 p-5">
         <Segmented options={[{ key: 'missed', label: '错词与 A4 攻坚词' }, { key: 'all', label: '全部已学词' }]} value={scope} onChange={changeScope} />
-        <p className="text-center font-mono text-xs font-semibold text-ink-soft">范围内有例句的词 {questions.length} / {words.length}</p>
+        <p className="text-center text-xs font-medium text-ink-soft">范围内有例句的词 {questions.length} / {words.length}</p>
       </Card>
       {!canStart && <Card className="space-y-3 p-5 text-center">
         <p className="text-sm leading-relaxed text-ink-soft">{questions.length === 0 ? '这个范围暂时没有带例句的词。先去词书学习，或在 A4 中加入攻坚词后再来练习。' : '至少需要两个不同的词才能开始语境填空。'}</p>
         <div className="grid grid-cols-2 gap-2"><button type="button" className={ghostBtn} onClick={onBack}><BookOpen size={16} />返回词书</button><button type="button" className={ghostBtn} onClick={onA4}><Layers size={16} />去 A4</button></div>
       </Card>}
       {canStart && finished && <section role="region" aria-label="本轮总结"><Card className="space-y-4 p-6 text-center">
-        <h2 className="font-serif text-2xl font-semibold text-ink">本轮完成</h2>
-        <p className="font-mono text-sm text-ink-soft">答对 {correct} / {questions.length} 题</p>
+        <h2 className="font-serif text-2xl font-bold text-ink">本轮完成</h2>
+        <p className="text-sm text-ink-soft">答对 {correct} / {questions.length} 题</p>
         <button type="button" className={`${primaryBtn} w-full`} onClick={retry}>重练本轮</button>
         <button type="button" className={`${ghostBtn} w-full`} onClick={onBack}>返回词书</button>
       </Card></section>}
       {canStart && !finished && question && <Card className="space-y-4 p-5">
-        <p className="font-mono text-xs font-semibold text-ink-soft">第 {index + 1} / {questions.length} 题 · 选出句中空缺的词</p>
+        <p className="text-xs font-medium text-ink-soft">第 {index + 1} / {questions.length} 题 · 选出句中空缺的词</p>
         <p data-testid="cloze-question" className="break-words font-serif text-lg leading-relaxed text-ink">{question.parts.map((part, i) => part.hit ? <span key={i}>____</span> : part.text)}</p>
         {question.example.exampleZh && <p className="text-sm leading-relaxed text-ink-soft">{question.example.exampleZh}</p>}
         <div data-testid="cloze-choices" className="grid grid-cols-2 gap-2">{choices.map(choice => {
           const isAnswer = choice.word.toLowerCase() === question.word.word.toLowerCase();
           const chosen = selected?.toLowerCase() === choice.word.toLowerCase();
-          const style = selected === null ? `${ghostBtn} font-serif` : isAnswer ? 'inline-flex min-h-11 items-center justify-center rounded-lg border border-[#215E49] bg-[#ECF3EF] px-4 py-2.5 font-serif text-sm font-semibold text-sage-600' : chosen ? 'inline-flex min-h-11 items-center justify-center rounded-lg border border-rose-500 bg-rose-50 px-4 py-2.5 font-serif text-sm font-semibold text-rose-600' : `${ghostBtn} font-serif`;
+          const style = selected === null ? `${ghostBtn} font-serif` : isAnswer ? 'inline-flex min-h-11 items-center justify-center rounded-sm border border-success bg-success-soft px-4 py-2.5 font-serif text-sm font-medium text-success' : chosen ? 'inline-flex min-h-11 items-center justify-center rounded-sm border border-accent bg-accent-soft px-4 py-2.5 font-serif text-sm font-medium text-accent' : `${ghostBtn} font-serif`;
           return <button key={choice.id} type="button" className={style} disabled={selected !== null} onClick={() => answer(choice.word)}>{choice.word}</button>;
         })}</div>
-        {selected !== null && <div role="status" className="space-y-2 border-t border-[#E2DBD0] pt-3">
-          <p className={`font-semibold ${selected.toLowerCase() === question.word.word.toLowerCase() ? 'text-sage-600' : 'text-rose-600'}`}>{selected.toLowerCase() === question.word.word.toLowerCase() ? '回答正确' : `再想想 · 正确答案：${question.word.word}`}</p>
-          <p lang="en" className="break-words font-serif text-base leading-relaxed text-ink">{question.parts.map((part, i) => part.hit ? <mark key={i} className="rounded-sm bg-[#EED9A4] px-1 py-0.5 font-semibold text-[#181715]">{part.text}</mark> : part.text)}</p>
+        {selected !== null && <div role="status" className="space-y-2 border-t border-rule pt-3">
+          <p className={`font-medium ${selected.toLowerCase() === question.word.word.toLowerCase() ? 'text-success' : 'text-accent'}`}>{selected.toLowerCase() === question.word.word.toLowerCase() ? '回答正确' : `再想想 · 正确答案：${question.word.word}`}</p>
+          <p lang="en" className="break-words font-serif text-base leading-relaxed text-ink">{question.parts.map((part, i) => part.hit ? <mark key={i} className="rounded-sm bg-highlight px-1 py-0.5 font-medium text-ink">{part.text}</mark> : part.text)}</p>
           {question.example.exampleZh && <p className="text-sm text-ink-soft">{question.example.exampleZh}</p>}
-          <p className="break-words font-mono text-xs text-ink-faint">来源：{question.example.exampleSource}</p>
+          <p className="break-words text-xs text-ink-faint">来源：{question.example.exampleSource}</p>
           <button type="button" className={`${primaryBtn} w-full`} onClick={next}>{index + 1 === questions.length ? '查看本轮总结' : '下一题'}</button>
         </div>}
       </Card>}

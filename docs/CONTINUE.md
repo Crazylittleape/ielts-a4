@@ -257,3 +257,12 @@ On actual iPhone, separately check Safari speech voices, silent-mode behavior, A
   - 60 秒挑战与看板日历统一至同色系纸本工作台，底栏导航每个入口配置独立图标与顶部墨线指示器。
 - Service Worker 缓存版本升级为 `ielts-a4-v3-20261101-editorial-1`。
 - 验证：Vitest 107 项单测通过，Playwright 108 项移动端（Chromium + WebKit）E2E 全数通过，构建与 `git diff --check` 零警告。
+
+## 2026-11-02 · Hallmark 技能全量审计与桌面/移动双态纸媒工作台重构
+
+- 基于 Hallmark v2（`Newsprint` 纸媒材质主题，`--scope app --redesign full`）完成基线审计与全量重构：
+  - 统一 `:root` OKLCH Token 体系（`app/src/tokens.css`、`app/src/base.css`、`app/tailwind.config.js`），消除组件与样式表中 162 处散落硬编码色值与字族字面量（Gate 48）。
+  - 重构桌面与移动响应式布局：移除全站 `max-w-[560px]` 窄条限制，扩展至 `max-w-[1080px]` 桌面双栏工作台（词书库、词书详情与目录、看板日历、我的单词、学习统计均支持 `lg:grid-cols-12` 主次分栏，A4 刷词页扩展至 `860px` 宽幅手账桌面），移动端保持单栏流畅操作。
+  - 引入纸面层级阶梯（双线界尺 `border-double`、内凹纸槽 `bg-paper-2 border-y`、棉纸页 `bg-sheet`），清理全大写宽字距眉题（Gate 54/67）、中点拼接串（Gate 63）、320px 按钮折行（Gate 49a）、单通道禁用态（Gate 39a）、`transition-[width]`（Gate 10a）及全页四字重混用（Gate F19，收敛为 400/500/700 三档字重）。
+- Service Worker 缓存版本升级为 `ielts-a4-v3-20261102-hallmark-1`。
+- 验证：`sloplint --render --kept` 达成 `0 FAIL, 0 REFLEX, 0 WARN`（重构前为 `190 FAIL, 8 REFLEX, 2 WARN`）；Vitest 107 项单测通过；Playwright 108 项移动端（Chromium + WebKit）E2E 全绿通过。
